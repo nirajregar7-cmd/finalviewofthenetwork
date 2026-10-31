@@ -7,8 +7,6 @@ import {
   CheckCheck,
   Check,
   LoaderCircle,
-  Phone,
-  Video,
   ChevronLeft,
   Copy,
   Globe,
@@ -21,10 +19,13 @@ import {
   FileText,
   Reply,
   UserPlus,
+  ShieldAlert,
+  Users,
+  ShieldCheck,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { api, PUBLIC_APP_URL } from '../../api';
-import { ChatConversation, ChatMessage, User } from '../types';
+import { ChatConversation, ChatMessage, Community, User } from '../types';
 import {
   compareConversationsByLatestActivity,
   sortChatMessagesChronologically,
@@ -56,7 +57,9 @@ interface ChatsViewProps {
   conversations: ChatConversation[];
   currentUser: User;
   users?: User[];
+  communities?: Community[];
   onOpenProfile: (user: User) => void;
+  onOpenSafetyOptions?: (user: User) => void;
   onCreateGroup?: (input: {
     name: string;
     description: string;
@@ -91,7 +94,9 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
   conversations,
   currentUser,
   users = [],
+  communities = [],
   onOpenProfile,
+  onOpenSafetyOptions,
   onCreateGroup,
   onAcceptGroupInvite,
   onDeclineGroupInvite,
@@ -127,6 +132,8 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
   const [visibleViewportHeight, setVisibleViewportHeight] = useState<number | null>(null);
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showCommunityInfo, setShowCommunityInfo] = useState(false);
+  const [communityMemberSearch, setCommunityMemberSearch] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [newGroupPurpose, setNewGroupPurpose] = useState<'study' | 'chat'>('study');
@@ -174,6 +181,20 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
     };
   }, [lightboxImage]);
 
+  useEffect(() => {
+    if (!showCommunityInfo) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowCommunityInfo(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showCommunityInfo]);
+
   const activeConv =
     conversations.find((c) =>
       c.id === selectedConversationId &&
@@ -183,6 +204,32 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
     conversations.find((c) =>
       c.type === CHAT_TAB_CONVERSATION_TYPE[activeTab] && !c.isInvitePending,
     );
+  const activeCommunity = activeConv?.type === 'community'
+    ? communities.find((community) =>
+        community.slug === activeConv.communitySlug ||
+        activeConv.id === `community-${community.id}`,
+      )
+    : undefined;
+  const communityMemberRows = useMemo(() => {
+    if (!activeCommunity) return [];
+    const userById = new Map(users.map((user) => [user.id, user]));
+    const adminIds = new Set([activeCommunity.creatorId, ...(activeCommunity.adminIds || [])].filter(Boolean));
+    const query = communityMemberSearch.trim().toLocaleLowerCase();
+    return (activeCommunity.memberIds || [])
+      .map((id) => ({ id, user: userById.get(id), isAdmin: adminIds.has(id) }))
+      .filter(({ user }) => Boolean(user) && (!query || [
+        user?.name,
+        user?.college,
+        user?.branch,
+      ].some((value) => value?.toLocaleLowerCase().includes(query))))
+      .sort((first, second) =>
+        Number(second.isAdmin) - Number(first.isAdmin) ||
+        Number(Boolean(second.user?.isOnline)) - Number(Boolean(first.user?.isOnline)) ||
+        (first.user?.name || '').localeCompare(second.user?.name || ''),
+      );
+  }, [activeCommunity, communityMemberSearch, users]);
+  const visibleCommunityMemberCount = activeCommunity?.memberIds
+    ?.filter((id) => users.some((user) => user.id === id)).length || 0;
   const visibleMessages = useMemo(() => {
     const result: ChatMessage[] = [];
     const indexByMessageKey = new Map<string, number>();
@@ -867,57 +914,92 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                     <ChevronLeft className="w-6 h-6" />
                   </button>
 
-                  <div className="relative">
-                    {activeConv.type === 'community' ? (
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono font-bold text-xs">
-                        {(activeConv.title || 'Chat').slice(1, 3).toUpperCase()}
-                      </div>
-                    ) : (
-                      <SafeAvatar
-                        src={activeConv.avatar}
-                        name={activeConv.title || 'Chat'}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    )}
-                    {activeConv.online && (
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h2 className="text-sm font-semibold tracking-tight text-slate-900">
-                        {activeConv.title}
-                      </h2>
-                      {activeConv.verified && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 rounded-full">
-                          ✓ Verified
-                        </span>
+                  <div
+                    role={
+                      activeConv.type === 'community' || (
+                        activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId
+                      ) ? 'button' : undefined
+                    }
+                    tabIndex={
+                      activeConv.type === 'community' || (
+                        activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId
+                      ) ? 0 : undefined
+                    }
+                    aria-label={
+                      activeConv.type === 'community'
+                        ? `View ${activeConv.title || 'community'} information and members`
+                        : activeConv.type === 'direct'
+                          ? `Open ${activeConv.title || 'user'} profile`
+                          : undefined
+                    }
+                    onClick={() => {
+                      if (activeConv.type === 'community') {
+                        setCommunityMemberSearch('');
+                        setShowCommunityInfo(true);
+                      } else if (activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId) {
+                        onOpenProfile(activeConv.participant);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        (event.key === 'Enter' || event.key === ' ') &&
+                        (
+                          activeConv.type === 'community' ||
+                          (activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId)
+                        )
+                      ) {
+                        event.preventDefault();
+                        if (activeConv.type === 'community') {
+                          setCommunityMemberSearch('');
+                          setShowCommunityInfo(true);
+                        } else if (activeConv.participant) {
+                          onOpenProfile(activeConv.participant);
+                        }
+                      }
+                    }}
+                    className={`flex items-center gap-3 rounded-xl text-left outline-none ${
+                      activeConv.type === 'community' ||
+                      (activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId)
+                        ? 'cursor-pointer hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-indigo-400'
+                        : ''
+                    }`}
+                  >
+                    <div className="relative">
+                      {activeConv.type === 'community' ? (
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono font-bold text-xs">
+                          {(activeConv.title || 'Chat').slice(1, 3).toUpperCase()}
+                        </div>
+                      ) : (
+                        <SafeAvatar
+                          src={activeConv.avatar}
+                          name={activeConv.title || 'Chat'}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      )}
+                      {activeConv.online && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500">
-                      {activeConv.subtitle || 'Active now'}
-                    </p>
+
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+                          {activeConv.title}
+                        </h2>
+                        {activeConv.verified && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 rounded-full">
+                            ✓ Verified
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        {activeConv.subtitle || 'Active now'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-0.5 text-slate-500">
-                  <button
-                    onClick={() => confetti({ particleCount: 20, spread: 35 })}
-                    className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-slate-100 hover:text-indigo-600"
-                    title="Audio call"
-                    aria-label="Audio call"
-                  >
-                    <Phone className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => confetti({ particleCount: 20, spread: 35 })}
-                    className="hidden h-9 w-9 items-center justify-center rounded-full transition hover:bg-slate-100 hover:text-indigo-600 sm:flex"
-                    title="Video call"
-                    aria-label="Video call"
-                  >
-                    <Video className="w-4 h-4" />
-                  </button>
                   {activeConv.type === 'study_group' ? (
                     <div className="relative">
                       <button
@@ -1015,6 +1097,21 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                         </div>
                       )}
                     </div>
+                  ) : activeConv.type === 'direct' ? (
+                    <button
+                      type="button"
+                      aria-label={`Safety options for ${activeConv.title || 'this account'}`}
+                      title="Safety options"
+                      disabled={!activeConv.participant || Boolean(activeConv.anonymousTargetId)}
+                      onClick={() => {
+                        if (activeConv.participant && !activeConv.anonymousTargetId) {
+                          onOpenSafetyOptions?.(activeConv.participant);
+                        }
+                      }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                    </button>
                   ) : (
                     <button aria-label="Conversation options" className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-slate-100 hover:text-slate-800">
                       <MoreVertical className="w-4 h-4" />
@@ -1661,6 +1758,214 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
             </div>
           </form>
         </div>
+      )}
+      {showCommunityInfo && activeConv?.type === 'community' && (
+        createPortal(
+          <div
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:p-5"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setShowCommunityInfo(false);
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="community-chat-info-title"
+              className="flex max-h-[min(92dvh,52rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+            >
+              <header className="flex items-start gap-3 border-b border-slate-100 p-5 sm:p-6">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-sm font-black text-indigo-700">
+                  {(activeCommunity?.displayName || activeConv.title || 'Community')
+                    .split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 id="community-chat-info-title" className="truncate text-lg font-black text-slate-900">
+                    {activeCommunity?.displayName || activeConv.communityName || activeConv.title || 'Community'}
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {activeCommunity
+                      ? `${activeCommunity.membersCount.toLocaleString()} members · ${activeCommunity.onlineCount.toLocaleString()} online`
+                      : activeConv.subtitle || 'Community chat'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCommunityInfo(false)}
+                  aria-label="Close community information"
+                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </header>
+
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+                {activeCommunity ? (
+                  <>
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                        <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                        About this community
+                      </div>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                        {activeCommunity.description || 'No description has been added yet.'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-slate-100 p-3">
+                        <p className="text-lg font-black text-slate-900">{activeCommunity.membersCount.toLocaleString()}</p>
+                        <p className="text-[11px] font-semibold text-slate-500">Members</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-100 p-3">
+                        <p className="text-lg font-black text-emerald-700">{activeCommunity.onlineCount.toLocaleString()}</p>
+                        <p className="text-[11px] font-semibold text-slate-500">Online now</p>
+                      </div>
+                      <div className="col-span-2 rounded-2xl border border-slate-100 p-3 sm:col-span-1">
+                        <p className="truncate text-sm font-black capitalize text-slate-900">
+                          {activeCommunity.category === 'interest'
+                            ? 'Interest-based'
+                            : activeCommunity.category === 'college'
+                              ? 'College'
+                              : 'Career'}
+                        </p>
+                        <p className="text-[11px] font-semibold text-slate-500">Category</p>
+                      </div>
+                    </div>
+
+                    {activeCommunity.tags && activeCommunity.tags.length > 0 && (
+                      <section aria-label="Community topics">
+                        <h3 className="text-xs font-black uppercase tracking-wide text-slate-500">Topics</h3>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {activeCommunity.tags.map((tag) => (
+                            <span key={tag} className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold text-indigo-700">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    <section aria-labelledby="community-info-rules-title" className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+                      <h3 id="community-info-rules-title" className="text-xs font-black text-slate-800">Community guidelines</h3>
+                      <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-slate-600">
+                        {(activeCommunity.rules?.length
+                          ? activeCommunity.rules
+                          : ['Be respectful to all members.', 'Keep discussions relevant and constructive.', 'Do not spam or share harmful content.']
+                        ).map((rule) => <li key={rule}>• {rule}</li>)}
+                      </ul>
+                    </section>
+
+                    <section aria-labelledby="community-info-members-title">
+                      <div className="flex flex-wrap items-end justify-between gap-2">
+                        <div>
+                          <h3 id="community-info-members-title" className="text-sm font-black text-slate-900">
+                            Members
+                          </h3>
+                          <p className="mt-0.5 text-[11px] text-slate-500">
+                            {visibleCommunityMemberCount} profiles visible · {activeCommunity.membersCount} members total
+                          </p>
+                        </div>
+                        <label className="relative w-full sm:w-56">
+                          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="search"
+                            value={communityMemberSearch}
+                            onChange={(event) => setCommunityMemberSearch(event.target.value)}
+                            placeholder="Search members"
+                            aria-label="Search community members"
+                            className="min-h-10 w-full rounded-xl border border-slate-200 pl-9 pr-3 text-xs outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="mt-3 max-h-72 space-y-1 overflow-y-auto rounded-2xl border border-slate-100 p-2">
+                        {communityMemberRows.length ? communityMemberRows.map(({ id, user, isAdmin }) => {
+                          const memberContent = (
+                            <>
+                              <SafeAvatar
+                                src={user?.avatar}
+                                name={user?.name || 'Network member'}
+                                className="h-10 w-10 shrink-0 rounded-full object-cover"
+                              />
+                              <span className="min-w-0 flex-1">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="truncate text-xs font-bold text-slate-800">
+                                    {user?.name || 'Network member'}
+                                  </span>
+                                  {isAdmin && (
+                                    <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-black text-indigo-700">
+                                      {id === activeCommunity.creatorId ? 'Creator' : 'Admin'}
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="mt-0.5 block truncate text-[10px] text-slate-500">
+                                  {[user?.branch, user?.college].filter(Boolean).join(' · ') || 'Community member'}
+                                </span>
+                              </span>
+                              {user?.isOnline && (
+                                <span className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-emerald-700">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Online
+                                </span>
+                              )}
+                            </>
+                          );
+                          return user ? (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                setShowCommunityInfo(false);
+                                onOpenProfile(user);
+                              }}
+                              className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                            >
+                              {memberContent}
+                            </button>
+                          ) : (
+                            <div key={id} className="flex items-center gap-3 rounded-xl px-2.5 py-2">
+                              {memberContent}
+                            </div>
+                          );
+                        }) : (
+                          <p className="px-3 py-8 text-center text-xs font-medium text-slate-500">
+                            {visibleCommunityMemberCount
+                              ? 'No members match your search.'
+                              : activeCommunity.membersCount
+                                ? 'Member profiles are hidden or unavailable.'
+                                : 'No members are listed yet.'}
+                          </p>
+                        )}
+                      </div>
+                      {visibleCommunityMemberCount < activeCommunity.membersCount && (
+                        <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+                          Some members may have hidden their profile or their account is no longer available.
+                        </p>
+                      )}
+                    </section>
+                  </>
+                ) : (
+                  <div className="rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
+                    Community details are not available right now. Try again after the community list refreshes.
+                  </div>
+                )}
+              </div>
+              <footer className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 sm:px-6">
+                <span className="inline-flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+                  <Users className="h-4 w-4" /> Community chat
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowCommunityInfo(false)}
+                  className="min-h-9 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white transition hover:bg-indigo-700"
+                >
+                  Done
+                </button>
+              </footer>
+            </section>
+          </div>,
+          document.body,
+        )
       )}
       {lightboxImage && (
         createPortal(

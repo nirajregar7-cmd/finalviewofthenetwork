@@ -46,6 +46,7 @@ export interface User {
   communities: string[]; // slugs
   goals?: string[];
   connectPreference?: string | null;
+  directMessagePreference?: 'everyone' | 'connections' | 'nobody';
   matchScore?: number;
   mutualCommunitiesCount?: number;
   mutualCommunityIcons?: string[];

@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Bell, X, Sparkles, Hash, UserCheck, ChevronRight, SlidersHorizontal, Trophy, CalendarDays, FileText, UsersRound, Send, LayoutDashboard, Plus } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Search, Bell, X, Sparkles, Hash, UserCheck, ChevronRight, SlidersHorizontal, Trophy, CalendarDays, FileText, UsersRound, Send, LayoutDashboard, Plus, LogOut } from 'lucide-react';
 import { User, Community, Post, NavTab } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 import NetworkLogo from '../../components/NetworkLogo';
@@ -62,6 +63,7 @@ interface HeaderProps {
   activeTab?: NavTab;
   onOpenInvite?: () => void;
   onOpenCreatePost?: () => void;
+  onLogout: () => void;
   showCompete?: boolean;
   onNavigateFromLauncher?: (destination: LauncherDestination) => void;
 }
@@ -84,6 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onOpenInvite,
   onOpenCreatePost,
+  onLogout,
   showCompete = true,
   onNavigateFromLauncher,
 }) => {
@@ -178,7 +181,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [isSearchOpen]);
 
   return (
-    <header ref={headerRef} className={`top-nav network-top-nav h-14 lg:h-[72px] sticky top-0 z-40 px-3 sm:px-8 flex items-center justify-between shadow-xs ${isSearchOpen ? 'search-open' : ''}`}>
+    <header ref={headerRef} className={`top-nav network-top-nav h-14 lg:h-[72px] sticky top-0 ${isLauncherOpen ? 'z-[210]' : 'z-40'} px-3 sm:px-8 flex items-center justify-between shadow-xs ${isSearchOpen ? 'search-open' : ''}`}>
       <div className="network-header-inner w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Brand mark opens the app launcher. */}
         <div className="network-header-brand relative flex shrink-0 items-center">
@@ -202,8 +205,8 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="mt-0.5 block text-[9px] font-medium leading-tight text-slate-400">Connect. Learn. Grow.</span>
             </span>
           </button>
-          {isLauncherOpen && (
-            <div className="fixed inset-0 z-[100] flex" data-testid="network-app-launcher">
+          {isLauncherOpen && createPortal(
+            <div className="fixed inset-0 z-[200] flex" data-testid="network-app-launcher">
               <button
                 type="button"
                 aria-label="Close app menu"
@@ -216,9 +219,9 @@ export const Header: React.FC<HeaderProps> = ({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="network-app-launcher-title"
-                className="relative z-10 flex h-[100dvh] w-[80vw] max-w-[390px] shrink-0 flex-col overflow-y-auto overscroll-contain bg-white px-[14px] pb-[max(22px,env(safe-area-inset-bottom))] pt-[max(38px,env(safe-area-inset-top))] shadow-2xl"
+                className="relative z-10 flex h-[100dvh] w-[min(88vw,420px)] shrink-0 flex-col overflow-hidden overscroll-contain bg-gradient-to-b from-white via-white to-violet-50/60 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))] shadow-2xl"
               >
-                <div className="mb-8 flex items-center justify-between gap-3 px-2">
+                <div className="mb-5 flex items-center justify-between gap-3 px-1.5">
                   <div className="flex min-w-0 items-center gap-4">
                     <NetworkLogo size={50} className="shrink-0 rounded-[13px] shadow-sm" />
                     <div className="min-w-0">
@@ -232,14 +235,14 @@ export const Header: React.FC<HeaderProps> = ({
                     type="button"
                     onClick={closeLauncher}
                     aria-label="Close app menu"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-100 hover:text-slate-800"
                     data-testid="button-close-app-launcher"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                <nav aria-label="The Network sections" className="space-y-3">
+                <nav aria-label="The Network sections" className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-4">
                   {APP_LAUNCHER_ITEMS
                   .filter((item) => item.id !== 'compete' || showCompete)
                     .map(({ id, title, description, icon: Icon }) => (
@@ -250,17 +253,17 @@ export const Header: React.FC<HeaderProps> = ({
                           closeLauncher();
                           onNavigateFromLauncher?.(id);
                         }}
-                        className="flex min-h-[94px] w-full items-center gap-4 rounded-[19px] border border-slate-200/80 bg-white px-3 py-3 text-left transition-all hover:border-violet-200 hover:bg-violet-50/30 active:scale-[0.99]"
+                        className="group flex min-h-[88px] w-full items-center gap-3.5 rounded-[20px] border border-slate-200/80 bg-white/90 px-3.5 py-3 text-left shadow-[0_2px_10px_rgba(15,23,42,0.025)] transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-md active:scale-[0.99]"
                         data-testid={`button-launcher-${id}`}
                       >
-                        <span className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-[17px] bg-[#f6f1ff] text-[#7444d6]">
+                        <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[17px] bg-gradient-to-br from-violet-50 to-indigo-50 text-violet-600 ring-1 ring-violet-100/80 transition-colors group-hover:from-violet-100 group-hover:to-indigo-100">
                           <Icon className="h-[26px] w-[26px]" strokeWidth={1.9} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-[15px] font-extrabold leading-tight text-slate-950">{title}</span>
                           <span className="mt-1.5 block text-[12px] leading-[1.35] text-slate-500">{description}</span>
                         </span>
-                        <ChevronRight className="h-5 w-5 shrink-0 text-slate-500" />
+                        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-500" />
                       </button>
                     ))}
                   <button
@@ -269,21 +272,56 @@ export const Header: React.FC<HeaderProps> = ({
                       closeLauncher();
                       onOpenInvite?.();
                     }}
-                    className="mt-2 flex min-h-[90px] w-full items-center gap-4 rounded-[19px] border border-slate-200/80 bg-white px-3 py-3 text-left transition-all hover:border-violet-200 hover:bg-violet-50/30 active:scale-[0.99]"
+                    className="group mt-1 flex min-h-[84px] w-full items-center gap-3.5 rounded-[20px] border border-slate-200/80 bg-white/90 px-3.5 py-3 text-left shadow-[0_2px_10px_rgba(15,23,42,0.025)] transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md active:scale-[0.99]"
                     data-testid="button-launcher-invite"
                   >
-                    <span className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-[17px] bg-[#f6f1ff] text-[#7444d6]">
+                    <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[17px] bg-gradient-to-br from-violet-50 to-indigo-50 text-violet-600 ring-1 ring-violet-100/80 transition-colors group-hover:from-violet-100 group-hover:to-indigo-100">
                       <Send className="h-[26px] w-[26px]" strokeWidth={1.9} />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[15px] font-extrabold leading-tight text-slate-950">Invite Friends</span>
                       <span className="mt-1.5 block text-[12px] leading-[1.35] text-slate-500">Bring your friends to The Network</span>
                     </span>
-                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-500" />
+                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-500" />
                   </button>
                 </nav>
+                <div className="mt-auto shrink-0 border-t border-violet-100/80 bg-gradient-to-t from-white via-white to-white/90 pt-3 pb-[max(4px,env(safe-area-inset-bottom))]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeLauncher();
+                      onOpenProfile(currentUser);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/90 p-3 text-left shadow-sm transition-colors hover:border-violet-200 hover:bg-white"
+                    data-testid="button-launcher-profile"
+                  >
+                    <SafeAvatar
+                      src={currentUser.avatar}
+                      name={currentUser.name}
+                      className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-violet-100"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-slate-900">{currentUser.name}</span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-500">{currentUser.college}</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeLauncher();
+                      onLogout();
+                    }}
+                    className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-700 shadow-sm transition-colors hover:border-rose-300 hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                    data-testid="button-launcher-logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
               </aside>
-            </div>
+            </div>,
+            document.body,
           )}
         </div>
 

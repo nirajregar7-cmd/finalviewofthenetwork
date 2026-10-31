@@ -100,10 +100,34 @@ export const users = pgTable('users', {
   privacySettings: jsonb('privacy_settings').notNull().default({
     showEmail: true,
     onlyAllowVerifiedConnections: false,
-    hideProfileFromSearch: false
+    hideProfileFromSearch: false,
+    directMessages: 'connections',
   }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+export const workshopRegistrations = pgTable('workshop_registrations', {
+  id: text('id').primaryKey(),
+  workshopId: text('workshop_id').notNull(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  registeredAt: timestamp('registered_at').notNull().defaultNow(),
+}, (table) => ({
+  workshopUserUnique: uniqueIndex('workshop_registrations_workshop_id_user_id_key').on(table.workshopId, table.userId),
+  workshopIdIdx: index('workshop_registrations_workshop_id_idx').on(table.workshopId),
+}));
+
+export const hostedWorkshops = pgTable('hosted_workshops', {
+  id: text('id').primaryKey(),
+  hostUserId: text('host_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  scheduledDate: text('scheduled_date').notNull().default(''),
+  venue: text('venue').notNull().default(''),
+  isOnline: boolean('is_online').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  hostUserIdIdx: index('hosted_workshops_host_user_id_idx').on(table.hostUserId),
+}));
 
 export const collegeAnnouncements = pgTable('college_announcements', {
   id: text('id').primaryKey(),
@@ -167,6 +191,14 @@ export const connections = pgTable('connections', {
   status: text('status').notNull().default('pending'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+export const userBlocks = pgTable('user_blocks', {
+  blockerId: text('blocker_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  blockedUserId: text('blocked_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, table => ({
+  userBlockUnique: uniqueIndex('user_blocks_pair_idx').on(table.blockerId, table.blockedUserId),
+}));
 
 export const messages = pgTable('messages', {
   id: text('id').primaryKey(),

@@ -78,7 +78,7 @@ import {
 interface UploadedAppProps {
   authenticatedUser: UserProfile;
   offlineSnapshot?: OfflineScreenSnapshot | null;
-  onLogout?: () => void;
+  onLogout: () => void;
   openOwnProfileRequest?: number;
   pushNavigationRequest?: {
     view: string;
@@ -98,6 +98,7 @@ export function getInitialUploadedTab(pathname: string, search: string): NavTab 
   if (initialView === 'messages' || initialGroupId) return 'chats';
   if (initialView === 'communities') return 'communities';
   if (initialView === 'compete') return 'compete';
+  if (initialView === 'workshops') return 'workshops';
   if (hasCommunityPath || initialCommunityId) return 'communities';
   return 'home';
 }
@@ -2125,6 +2126,15 @@ export const App: React.FC<UploadedAppProps> = ({
     setIsCreateModalOpen(true);
   };
 
+  const openWorkshopSharePost = (draft: { title: string; content: string }) => {
+    setInitialCreateMode('post');
+    setInitialRequestType(undefined);
+    setInitialDraftCommunitySlug('');
+    setInitialPostTitle(draft.title);
+    setInitialPostContent(draft.content);
+    setIsCreateModalOpen(true);
+  };
+
   const handleOpenProfile = (user: User) => {
     if (user.id === 'anonymous') return;
     setActiveProfileUser(user);
@@ -3482,6 +3492,39 @@ export const App: React.FC<UploadedAppProps> = ({
     }
   };
 
+  const handleUpdateDirectMessagePreference = async (
+    preference: NonNullable<User['directMessagePreference']>,
+  ) => {
+    await api.safety.updateSettings(preference);
+    setCurrentUser((previous) => ({ ...previous, directMessagePreference: preference }));
+    setUsers((previous) => ({
+      ...previous,
+      [currentUser.id]: { ...previous[currentUser.id], directMessagePreference: preference },
+    }));
+  };
+
+  const handleBlockUser = async (userId: string) => {
+    await api.safety.block(userId);
+    connectionsRef.current = connectionsRef.current.filter((connection) =>
+      connection.senderId !== userId && connection.receiverId !== userId,
+    );
+    setConnections((previous) => {
+      const next = previous.filter((connection) =>
+        connection.senderId !== userId && connection.receiverId !== userId,
+      );
+      setUsers((currentUsers) => applyConnectionFlags(currentUsers, next, authenticatedUser.id));
+      return next;
+    });
+    setConversations((previous) => previous.filter((conversation) =>
+      conversation.type !== 'direct' ||
+      (conversation.participant?.id !== userId && conversation.anonymousTargetId !== userId),
+    ));
+  };
+
+  const handleReportUser = async (userId: string, reason: string, description: string) => {
+    await api.reports.create({ reportedUserId: userId, reason, description });
+  };
+
   return (
     <div className={`network-app-shell ${activeTab === 'chats' ? 'h-[100dvh] overflow-hidden' : isCommunityChatScreen ? 'h-[100dvh]' : 'min-h-screen'} bg-[#F8FAFC] text-[#0F172A] flex font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900`}>
       {/* 1. Sleek Glass Sidebar (Desktop) */}
@@ -3532,6 +3575,7 @@ export const App: React.FC<UploadedAppProps> = ({
             onOpenNotification={handleNotificationOpened}
             onOpenInvite={() => setInviteSheet({})}
             onOpenCreatePost={() => openCreatePostModal()}
+            onLogout={onLogout}
             onNavigateFromLauncher={handleLauncherNavigation}
           />
         </div>
@@ -3760,6 +3804,7 @@ export const App: React.FC<UploadedAppProps> = ({
               onToggleJoinCommunity={handleToggleJoinCommunity}
               onOpenOpportunity={(opp) => setActiveOpportunity(opp)}
               onOpenRecommendQuiz={() => setIsRecommendModalOpen(true)}
+              onShareWorkshop={openWorkshopSharePost}
             />
           ) : activeTab === 'my-space' ? (
             <MySpaceView
@@ -3784,6 +3829,7 @@ export const App: React.FC<UploadedAppProps> = ({
               conversations={conversations}
               currentUser={currentUser}
               users={Object.values(users)}
+              communities={communities}
               onOpenProfile={handleOpenProfile}
               onCreateGroup={handleCreateStandaloneGroup}
               onUpdateGroupVisibility={handleUpdateGroupVisibility}
@@ -3799,6 +3845,7 @@ export const App: React.FC<UploadedAppProps> = ({
               initialConversationId={requestedConversationId}
               initialTab={requestedChatTab}
               sharedGroupMessage={sharedGroupMessage}
+              onOpenSafetyOptions={(user) => handleOpenProfile(user)}
             />
           ) : activeTab === 'admin' && currentUser.role === 'admin' ? (
             <div className="network-admin-page p-4 lg:p-8 max-w-7xl mx-auto w-full">
@@ -3867,6 +3914,9 @@ export const App: React.FC<UploadedAppProps> = ({
           onToggleConnect={handleToggleConnect}
           onStartDirectChat={handleStartDirectChat}
           onUpdateCurrentUserProfile={handleUpdateCurrentUserProfile}
+          onUpdateDirectMessagePreference={handleUpdateDirectMessagePreference}
+          onBlockUser={handleBlockUser}
+          onReportUser={handleReportUser}
         />
       )}
 

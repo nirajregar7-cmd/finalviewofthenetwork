@@ -28,8 +28,6 @@ const _isCloudflarePagesHost = typeof window !== 'undefined' && (
   _hostname.endsWith('.the-network-1vw.pages.dev')
 );
 const _isReplitPreviewHost = typeof window !== 'undefined' && (
-  _hostname === 'localhost' ||
-  _hostname === '127.0.0.1' ||
   _hostname.endsWith('.replit.dev') ||
   _hostname.endsWith('.replit.app')
 );
@@ -56,6 +54,31 @@ export function filterVisibleCommunities<T extends { id?: unknown; name?: unknow
 }
 
 import { buildHomeFeedPath, HOME_FEED_PAGE_SIZE, type HomeFeedFilter } from './uploaded/homeFeed';
+
+export interface WorkshopParticipant {
+  networkId: string;
+  name: string;
+  email: string;
+  college: string;
+  schoolName: string;
+  branch: string;
+  year: number;
+  registeredAt: string;
+}
+
+export interface HostedWorkshop {
+  id: string;
+  title: string;
+  description: string;
+  scheduledDate: string;
+  venue: string;
+  isOnline: boolean;
+  isHost: boolean;
+  hostName: string;
+  participantCount: number;
+  registered: boolean;
+  createdAt: string;
+}
 
 // API responses may contain relative media paths because the Replit-hosted
 // app serves its API and frontend from one origin. Firebase Hosting serves
@@ -432,6 +455,21 @@ export const api = {
     markRead: (_receiverId: string, otherUserId: string) =>
       put('/messages/read', { otherUserId }),
   },
+  safety: {
+    getSettings: () => get('/safety/settings') as Promise<{
+      directMessages: 'everyone' | 'connections' | 'nobody';
+    }>,
+    updateSettings: (directMessages: 'everyone' | 'connections' | 'nobody') =>
+      put('/safety/settings', { directMessages }),
+    block: (userId: string) => post('/safety/blocks', { userId }),
+    unblock: (userId: string) => del(`/safety/blocks/${encodeURIComponent(userId)}`),
+    getBlockedUsers: () => get('/safety/blocks') as Promise<Array<{
+      id: string;
+      name: string;
+      avatar: string;
+      college: string;
+    }>>,
+  },
   communities: {
     getAll: async (): Promise<Community[]> =>
       filterVisibleCommunities<Community>(await get('/communities') as Community[]),
@@ -520,6 +558,22 @@ export const api = {
     delete: (id: string) => del(`/events/${id}`),
     register: (id: string, userId: string) => put(`/events/${id}/register`, { userId }),
     unregister: (id: string, userId: string) => put(`/events/${id}/unregister`, { userId }),
+  },
+  workshops: {
+    getAll: (): Promise<{ workshops: HostedWorkshop[] }> => get('/workshops'),
+    create: (data: {
+      title: string;
+      description: string;
+      scheduledDate: string;
+      venue: string;
+      isOnline: boolean;
+    }): Promise<HostedWorkshop> => post('/workshops', data),
+    getRegistration: (id: string): Promise<{ registered: boolean; participantCount: number }> =>
+      get(`/workshops/${encodeURIComponent(id)}/registration`),
+    register: (id: string): Promise<{ registered: boolean; participantCount: number }> =>
+      post(`/workshops/${encodeURIComponent(id)}/register`, {}),
+    getParticipants: (id: string): Promise<{ participants: WorkshopParticipant[] }> =>
+      get(`/workshops/${encodeURIComponent(id)}/participants`),
   },
   competitions: {
     getAll: () => get('/competitions'),

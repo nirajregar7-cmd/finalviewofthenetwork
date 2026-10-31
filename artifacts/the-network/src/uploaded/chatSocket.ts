@@ -10,11 +10,14 @@ function normalizedOrigin(value: string): string {
 function resolveSocketOrigin(): string {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    const isReplitPreviewOrLocal = hostname === 'localhost'
-      || hostname === '127.0.0.1'
-      || hostname.endsWith('.replit.dev')
+    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isReplitPreview = hostname.endsWith('.replit.dev')
       || hostname.endsWith('.replit.app');
-    if (isReplitPreviewOrLocal) return window.location.origin;
+    if (isReplitPreview && !isLocalHost) return window.location.origin;
+    if (isLocalHost) {
+      const configuredApiOrigin = import.meta.env.VITE_API_URL?.trim();
+      return normalizedOrigin(configuredApiOrigin || window.location.origin);
+    }
   }
 
   const configuredApiOrigin = import.meta.env.VITE_API_URL?.trim();

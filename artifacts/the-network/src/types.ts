@@ -27,6 +27,7 @@ export interface UserProfile {
     showEmail: boolean;
     onlyAllowVerifiedConnections: boolean;
     hideProfileFromSearch: boolean;
+    directMessages?: 'everyone' | 'connections' | 'nobody';
   };
   createdAt: string;
 }

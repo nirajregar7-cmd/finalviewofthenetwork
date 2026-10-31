@@ -12,8 +12,8 @@ import admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
 import { db, pool } from './db.js';
 import {
-  users, posts, comments, connections, messages, communities, stories, reports, pushSubscriptions,
-  notifications, projects, events, groupChats, groupMessages, collegeAnnouncements, attendanceSubjects, savedItems,
+  users, posts, comments, connections, userBlocks, messages, communities, stories, reports, pushSubscriptions,
+  notifications, projects, events, workshopRegistrations, hostedWorkshops, groupChats, groupMessages, collegeAnnouncements, attendanceSubjects, savedItems,
   collegeSettings, referrals, findPeopleRequests, findPeopleApplications, customColleges,
   networkCompetitions, networkCompetitionTeams, networkCompetitionSubmissions, networkCompetitionVotes,
   aptitudeExams, aptitudeAttempts
@@ -3481,6 +3481,16 @@ app.get('/api/connections', async (req, res) => {
 app.post('/api/connections', async (req, res) => {
   try {
     const { senderId, receiverId, type, message } = req.body;
+    const authenticatedUserId = (req as any).authUser.id as string;
+    if (senderId !== authenticatedUserId) {
+      return res.status(403).json({ error: 'Connection requests can only be sent from your signed-in account.' });
+    }
+    if (typeof receiverId !== 'string' || !receiverId || receiverId === senderId) {
+      return res.status(400).json({ error: 'Choose another account to connect with.' });
+    }
+    if (await hasBlockBetween(senderId, receiverId)) {
+      return res.status(403).json({ error: 'This account is unavailable.' });
+    }
     const existing = await db.select().from(connections).where(and(
       eq(connections.senderId, senderId),
       eq(connections.receiverId, receiverId),
@@ -3519,7 +3529,17 @@ app.post('/api/connections', async (req, res) => {
 app.put('/api/connections/:id', async (req, res) => {
   try {
     const { status } = req.body;
+    const authenticatedUserId = (req as any).authUser.id as string;
     const found = await db.select().from(connections).where(eq(connections.id, req.params.id));
+    if (!found.length || found[0].receiverId !== authenticatedUserId) {
+      return res.status(404).json({ error: 'Connection request not found.' });
+    }
+    if (await hasBlockBetween(found[0].senderId, found[0].receiverId)) {
+      return res.status(403).json({ error: 'This account is unavailable.' });
+    }
+    if (status !== 'accepted' && status !== 'rejected') {
+      return res.status(400).json({ error: 'Choose a valid connection status.' });
+    }
     const updated = await db.update(connections).set({ status }).where(eq(connections.id, req.params.id)).returning();
     bust('bootstrap');
     // Notify sender when accepted
@@ -3563,6 +3583,151 @@ function authenticatedChatUserId(req: express.Request): string | null {
   return typeof userId === 'string' && userId ? userId : null;
 }
 
+type DirectMessagePermission = 'everyone' | 'connections' | 'nobody';
+
+function isDirectMessagePermission(value: unknown): value is DirectMessagePermission {
+  return value === 'everyone' || value === 'connections' || value === 'nobody';
+}
+
+async function hasBlockBetween(firstUserId: string, secondUserId: string): Promise<boolean> {
+  const [block] = await db.select({ blockerId: userBlocks.blockerId })
+    .from(userBlocks)
+    .where(or(
+      and(eq(userBlocks.blockerId, firstUserId), eq(userBlocks.blockedUserId, secondUserId)),
+      and(eq(userBlocks.blockerId, secondUserId), eq(userBlocks.blockedUserId, firstUserId)),
+    ))
+    .limit(1);
+  return Boolean(block);
+}
+
+async function directMessageDenial(receiverId: string, senderId: string): Promise<string | null> {
+  if (await hasBlockBetween(senderId, receiverId)) {
+    return 'This conversation is unavailable.';
+  }
+  const [receiver] = await db.select({ privacySettings: users.privacySettings })
+    .from(users)
+    .where(eq(users.id, receiverId))
+    .limit(1);
+  const settings = receiver?.privacySettings;
+  const preference = settings && typeof settings === 'object'
+    ? (settings as Record<string, unknown>).directMessages
+    : undefined;
+  const permission: DirectMessagePermission = isDirectMessagePermission(preference)
+    ? preference
+    : 'connections';
+  if (permission === 'nobody') return 'This user is not accepting direct messages.';
+  if (permission === 'connections') {
+    const [connection] = await db.select({ id: connections.id })
+      .from(connections)
+      .where(and(
+        eq(connections.status, 'accepted'),
+        or(
+          and(eq(connections.senderId, senderId), eq(connections.receiverId, receiverId)),
+          and(eq(connections.senderId, receiverId), eq(connections.receiverId, senderId)),
+        ),
+      ))
+      .limit(1);
+    if (!connection) return 'Connect with this user before sending a direct message.';
+  }
+  return null;
+}
+
+app.get('/api/safety/settings', async (req, res) => {
+  try {
+    const userId = (req as any).authUser.id as string;
+    const [user] = await db.select({ privacySettings: users.privacySettings })
+      .from(users).where(eq(users.id, userId)).limit(1);
+    const raw = user?.privacySettings;
+    const settings = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+    const directMessages = isDirectMessagePermission(settings.directMessages)
+      ? settings.directMessages
+      : 'connections';
+    return res.json({ directMessages });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/safety/settings', async (req, res) => {
+  try {
+    const userId = (req as any).authUser.id as string;
+    const { directMessages } = req.body;
+    if (!isDirectMessagePermission(directMessages)) {
+      return res.status(400).json({ error: 'Choose a valid direct message permission.' });
+    }
+    const { rows } = await pool.query(
+      `UPDATE users
+       SET privacy_settings = COALESCE(privacy_settings, '{}'::jsonb) || jsonb_build_object('directMessages', $1::text)
+       WHERE id = $2
+       RETURNING privacy_settings`,
+      [directMessages, userId],
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Account not found.' });
+    bust('bootstrap');
+    return res.json({ directMessages });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/safety/blocks', async (req, res) => {
+  try {
+    const userId = (req as any).authUser.id as string;
+    const blockedUsers = await db.select({
+      id: users.id,
+      name: users.fullName,
+      avatar: users.avatar,
+      college: users.college,
+    })
+      .from(userBlocks)
+      .innerJoin(users, eq(users.id, userBlocks.blockedUserId))
+      .where(eq(userBlocks.blockerId, userId))
+      .orderBy(desc(userBlocks.createdAt));
+    return res.json(blockedUsers);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/safety/blocks', async (req, res) => {
+  try {
+    const userId = (req as any).authUser.id as string;
+    const blockedUserId = typeof req.body?.userId === 'string' ? req.body.userId.trim() : '';
+    if (!blockedUserId || blockedUserId === userId) {
+      return res.status(400).json({ error: 'Choose another account to block.' });
+    }
+    const [target] = await db.select({ id: users.id }).from(users)
+      .where(eq(users.id, blockedUserId)).limit(1);
+    if (!target) return res.status(404).json({ error: 'Account not found.' });
+    await db.insert(userBlocks).values({ blockerId: userId, blockedUserId })
+      .onConflictDoNothing();
+    await db.delete(connections).where(or(
+      and(eq(connections.senderId, userId), eq(connections.receiverId, blockedUserId)),
+      and(eq(connections.senderId, blockedUserId), eq(connections.receiverId, userId)),
+    ));
+    bust('bootstrap');
+    return res.json({ blockedUserId });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/safety/blocks/:userId', async (req, res) => {
+  try {
+    const userId = (req as any).authUser.id as string;
+    const blockedUserId = typeof req.params.userId === 'string' ? req.params.userId : '';
+    const removed = await db.delete(userBlocks).where(and(
+      eq(userBlocks.blockerId, userId),
+      eq(userBlocks.blockedUserId, blockedUserId),
+    )).returning({ blockedUserId: userBlocks.blockedUserId });
+    if (!removed.length) return res.status(404).json({ error: 'Blocked account not found.' });
+    bust('bootstrap');
+    return res.json({ blockedUserId });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 function idempotentChatMessageId(prefix: string, conversationId: string, senderId: string, clientMessageId: string): string {
   const digest = crypto.createHash('sha256')
     .update(`${conversationId}\u0000${senderId}\u0000${clientMessageId}`)
@@ -3590,6 +3755,9 @@ app.get('/api/messages', async (req, res) => {
 
     if (peerId) {
       if (peerId === authenticatedUserId) return res.status(400).json({ error: 'A conversation needs another participant.' });
+      if (await hasBlockBetween(authenticatedUserId, peerId)) {
+        return res.status(403).json({ error: 'This conversation is unavailable.' });
+      }
       const threadFilter = or(
         and(eq(messages.senderId, authenticatedUserId), eq(messages.receiverId, peerId)),
         and(eq(messages.senderId, peerId), eq(messages.receiverId, authenticatedUserId)),
@@ -3618,6 +3786,13 @@ app.get('/api/messages', async (req, res) => {
       const page = await db.select().from(messages).where(and(
         or(eq(messages.senderId, authenticatedUserId), eq(messages.receiverId, authenticatedUserId)),
         gte(messages.createdAt, afterDate),
+        sql`NOT EXISTS (
+          SELECT 1 FROM user_blocks b
+          WHERE (b.blocker_id = ${authenticatedUserId} AND b.blocked_user_id =
+            CASE WHEN ${messages.senderId} = ${authenticatedUserId} THEN ${messages.receiverId} ELSE ${messages.senderId} END)
+             OR (b.blocked_user_id = ${authenticatedUserId} AND b.blocker_id =
+            CASE WHEN ${messages.senderId} = ${authenticatedUserId} THEN ${messages.receiverId} ELSE ${messages.senderId} END)
+        )`,
       )).orderBy(messages.createdAt, messages.id);
       return res.json(page.map(m => ({ ...m, createdAt: m.createdAt.toISOString() })));
     }
@@ -3637,7 +3812,14 @@ app.get('/api/messages', async (req, res) => {
              ORDER BY m.created_at DESC, m.id DESC
            ) AS conversation_rank
          FROM messages m
-         WHERE m.sender_id = $1 OR m.receiver_id = $1
+         WHERE (m.sender_id = $1 OR m.receiver_id = $1)
+           AND NOT EXISTS (
+             SELECT 1 FROM user_blocks b
+             WHERE (b.blocker_id = $1 AND b.blocked_user_id =
+               CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END)
+                OR (b.blocked_user_id = $1 AND b.blocker_id =
+               CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END)
+           )
        )
        SELECT id, sender_id, receiver_id, content, attachment_name, attachment_data,
               attachment_mime_type, poll_options, poll_votes, reply_to_id, reactions,
@@ -3734,9 +3916,17 @@ app.post('/api/messages', async (req, res) => {
     const normalizedPollOptions = Array.isArray(pollOptions)
       ? pollOptions.map((option: unknown) => String(option).trim()).filter(Boolean).slice(0, 6)
       : [];
-    if (!senderId || !receiverId || (!normalizedContent && !attachmentData && normalizedPollOptions.length < 2)) {
-      return res.status(400).json({ error: 'A message, attachment, or poll is required.' });
+    if (
+      !senderId ||
+      typeof receiverId !== 'string' ||
+      !receiverId ||
+      receiverId === senderId ||
+      (!normalizedContent && !attachmentData && normalizedPollOptions.length < 2)
+    ) {
+      return res.status(400).json({ error: 'A message, attachment, poll, and another recipient are required.' });
     }
+    const denial = await directMessageDenial(receiverId, senderId);
+    if (denial) return res.status(403).json({ error: denial });
     if (typeof attachmentData === 'string' && attachmentData.length > 14_000_000) {
       return res.status(413).json({ error: 'Attachments must be 10 MB or smaller.' });
     }
@@ -3865,6 +4055,9 @@ app.post('/api/messages/:id/poll-vote', async (req, res) => {
     if (authenticatedUserId !== message.senderId && authenticatedUserId !== message.receiverId) {
       return res.status(403).json({ error: 'You are not part of this conversation.' });
     }
+    if (await hasBlockBetween(message.senderId, message.receiverId)) {
+      return res.status(403).json({ error: 'This conversation is unavailable.' });
+    }
     const options = Array.isArray(message.pollOptions) ? message.pollOptions : [];
     if (!Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= options.length) {
       return res.status(400).json({ error: 'Invalid poll option.' });
@@ -3893,6 +4086,9 @@ app.post('/api/messages/:id/reaction', async (req, res) => {
     if (!message) return res.status(404).json({ error: 'Message not found' });
     if (authenticatedUserId !== message.senderId && authenticatedUserId !== message.receiverId) {
       return res.status(403).json({ error: 'You are not part of this conversation.' });
+    }
+    if (await hasBlockBetween(message.senderId, message.receiverId)) {
+      return res.status(403).json({ error: 'This conversation is unavailable.' });
     }
     const reactions = (message.reactions && typeof message.reactions === 'object'
       ? message.reactions
@@ -3944,6 +4140,8 @@ app.post('/api/messages/anonymous', async (req, res) => {
     if (targetPost.authorId === senderId) {
       return res.status(400).json({ error: 'You cannot start an anonymous chat with yourself.' });
     }
+    const denial = await directMessageDenial(targetPost.authorId, senderId);
+    if (denial) return res.status(403).json({ error: denial });
     const normalizedClientMessageId = typeof clientMessageId === 'string'
       ? clientMessageId.trim().slice(0, 120)
       : '';
@@ -4020,6 +4218,9 @@ app.put('/api/messages/read', async (req, res) => {
     const senderId = typeof req.body.otherUserId === 'string' ? req.body.otherUserId : '';
     if (!senderId || senderId === receiverId) {
       return res.status(400).json({ error: 'A conversation participant is required.' });
+    }
+    if (await hasBlockBetween(receiverId, senderId)) {
+      return res.status(403).json({ error: 'This conversation is unavailable.' });
     }
     const updated = await db.update(messages).set({ isRead: true })
       .where(and(
@@ -5164,6 +5365,213 @@ app.get('/api/competitions', async (_req, res) => {
 
 // ─── EVENTS ──────────────────────────────────────────────────────────────────
 
+app.get('/api/workshops', async (req, res) => {
+  const authUser = (req as any).authUser as { id: string } | undefined;
+  if (!authUser?.id) return res.status(401).json({ error: 'Sign in with your Network account to view workshops.' });
+
+  try {
+    const result = await pool.query<{
+      id: string;
+      title: string;
+      description: string;
+      scheduled_date: string;
+      venue: string;
+      is_online: boolean;
+      host_user_id: string;
+      host_name: string;
+      participant_count: number;
+      registered: boolean;
+      created_at: Date;
+    }>(
+      `SELECT w.id, w.title, w.description, w.scheduled_date, w.venue, w.is_online,
+              w.host_user_id, u.full_name AS host_name,
+              COUNT(r.id)::int AS participant_count,
+              COALESCE(BOOL_OR(r.user_id = $1), FALSE) AS registered,
+              w.created_at
+       FROM hosted_workshops w
+       INNER JOIN users u ON u.id = w.host_user_id
+       LEFT JOIN workshop_registrations r ON r.workshop_id = w.id
+       GROUP BY w.id, u.full_name
+       ORDER BY w.created_at DESC`,
+      [authUser.id],
+    );
+    return res.json({
+      workshops: result.rows.map((workshop) => ({
+        id: workshop.id,
+        title: workshop.title,
+        description: workshop.description,
+        scheduledDate: workshop.scheduled_date,
+        venue: workshop.venue,
+        isOnline: workshop.is_online,
+        isHost: workshop.host_user_id === authUser.id,
+        hostName: workshop.host_name,
+        participantCount: workshop.participant_count,
+        registered: workshop.registered,
+        createdAt: workshop.created_at.toISOString(),
+      })),
+    });
+  } catch (error) {
+    console.error('Unable to load hosted workshops', error);
+    return res.status(500).json({ error: 'Unable to load hosted workshops right now.' });
+  }
+});
+
+app.post('/api/workshops', async (req, res) => {
+  const authUser = (req as any).authUser as { id: string } | undefined;
+  if (!authUser?.id) return res.status(401).json({ error: 'Sign in with your Network account to host a workshop.' });
+
+  const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+  const description = typeof req.body?.description === 'string' ? req.body.description.trim() : '';
+  const scheduledDate = typeof req.body?.scheduledDate === 'string' ? req.body.scheduledDate.trim() : '';
+  const venue = typeof req.body?.venue === 'string' ? req.body.venue.trim() : '';
+  const isOnline = typeof req.body?.isOnline === 'boolean' ? req.body.isOnline : false;
+  const parsedDate = scheduledDate
+    ? new Date(`${scheduledDate}T00:00:00.000Z`)
+    : null;
+  const validDate = !scheduledDate || (
+    /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) &&
+    parsedDate !== null &&
+    Number.isFinite(parsedDate.getTime()) &&
+    parsedDate.toISOString().slice(0, 10) === scheduledDate
+  );
+  if (
+    !title ||
+    title.length > 120 ||
+    !description ||
+    description.length > 3000 ||
+    venue.length > 160 ||
+    !validDate ||
+    (req.body?.isOnline !== undefined && typeof req.body.isOnline !== 'boolean')
+  ) {
+    return res.status(400).json({ error: 'Add a title (up to 120 characters) and description (up to 3,000 characters); use a valid date, and keep the location under 160 characters.' });
+  }
+
+  try {
+    const host = await db.select({ name: users.fullName }).from(users).where(eq(users.id, authUser.id)).limit(1);
+    if (!host.length) return res.status(401).json({ error: 'Your Network account could not be verified.' });
+    const [created] = await db.insert(hostedWorkshops).values({
+      id: generateId('wrk'),
+      hostUserId: authUser.id,
+      title,
+      description,
+      scheduledDate,
+      venue,
+      isOnline,
+    }).returning();
+    return res.status(201).json({
+      id: created.id,
+      title: created.title,
+      description: created.description,
+      scheduledDate: created.scheduledDate,
+      venue: created.venue,
+      isOnline: created.isOnline,
+      isHost: true,
+      hostName: host[0].name,
+      participantCount: 0,
+      registered: false,
+      createdAt: created.createdAt.toISOString(),
+    });
+  } catch (error) {
+    console.error('Unable to create hosted workshop', error);
+    return res.status(500).json({ error: 'Unable to create this workshop right now.' });
+  }
+});
+
+async function findHostedWorkshop(id: string) {
+  const hosted = await db.select({
+    id: hostedWorkshops.id,
+    hostUserId: hostedWorkshops.hostUserId,
+  }).from(hostedWorkshops).where(eq(hostedWorkshops.id, id)).limit(1);
+  return hosted[0];
+}
+
+app.get('/api/workshops/:id/registration', async (req, res) => {
+  const authUser = (req as any).authUser as { id: string } | undefined;
+  if (!authUser?.id) return res.status(401).json({ error: 'Sign in with your Network account to view registration.' });
+
+  try {
+    if (!(await findHostedWorkshop(req.params.id))) {
+      return res.status(404).json({ error: 'Workshop not found.' });
+    }
+    const result = await pool.query<{ participant_count: number; registered: boolean | null }>(
+      `SELECT COUNT(*)::int AS participant_count,
+              BOOL_OR(user_id = $2) AS registered
+       FROM workshop_registrations
+       WHERE workshop_id = $1`,
+      [req.params.id, authUser.id],
+    );
+    return res.json({
+      registered: Boolean(result.rows[0]?.registered),
+      participantCount: result.rows[0]?.participant_count ?? 0,
+    });
+  } catch (error) {
+    console.error('Unable to load workshop registration status', error);
+    return res.status(500).json({ error: 'Unable to load workshop registration right now.' });
+  }
+});
+
+app.post('/api/workshops/:id/register', async (req, res) => {
+  const authUser = (req as any).authUser as { id: string } | undefined;
+  if (!authUser?.id) return res.status(401).json({ error: 'Sign in with your Network account to join this workshop.' });
+
+  try {
+    if (!(await findHostedWorkshop(req.params.id))) {
+      return res.status(404).json({ error: 'Workshop not found.' });
+    }
+    await db.insert(workshopRegistrations).values({
+      id: generateId('wreg'),
+      workshopId: req.params.id,
+      userId: authUser.id,
+    }).onConflictDoNothing();
+    const result = await pool.query<{ participant_count: number }>(
+      'SELECT COUNT(*)::int AS participant_count FROM workshop_registrations WHERE workshop_id = $1',
+      [req.params.id],
+    );
+    return res.json({ registered: true, participantCount: result.rows[0]?.participant_count ?? 0 });
+  } catch (error) {
+    console.error('Unable to register for workshop', error);
+    return res.status(500).json({ error: 'Unable to complete workshop registration right now.' });
+  }
+});
+
+app.get('/api/workshops/:id/participants', async (req, res) => {
+  const authUser = (req as any).authUser as { id: string; role: string } | undefined;
+  if (!authUser?.id) return res.status(401).json({ error: 'Sign in to continue.' });
+
+  try {
+    const workshop = await findHostedWorkshop(req.params.id);
+    if (!workshop) {
+      return res.status(404).json({ error: 'Workshop not found.' });
+    }
+    if (authUser.role !== 'admin' && workshop?.hostUserId !== authUser.id) {
+      return res.status(403).json({ error: 'Only this workshop’s host or an admin can view participant details.' });
+    }
+    const participants = await db.select({
+      networkId: users.id,
+      name: users.fullName,
+      email: users.email,
+      college: users.college,
+      schoolName: users.schoolName,
+      branch: users.branch,
+      year: users.year,
+      registeredAt: workshopRegistrations.registeredAt,
+    })
+      .from(workshopRegistrations)
+      .innerJoin(users, eq(users.id, workshopRegistrations.userId))
+      .where(eq(workshopRegistrations.workshopId, req.params.id))
+      .orderBy(desc(workshopRegistrations.registeredAt));
+    return res.json({
+      participants: participants.map((participant) => ({
+        ...participant,
+        registeredAt: participant.registeredAt.toISOString(),
+      })),
+    });
+  } catch (error) {
+    console.error('Unable to load workshop participants', error);
+    return res.status(500).json({ error: 'Unable to load participant details right now.' });
+  }
+});
+
 app.get('/api/events', async (_req, res) => {
   try {
     const all = await db.select().from(events).orderBy(desc(events.createdAt));
@@ -5387,14 +5795,22 @@ app.get('/api/reports', async (req, res) => {
 
 app.post('/api/reports', async (req, res) => {
   try {
-    const { reporterId, reportedUserId, reason, description } = req.body;
-    if (!reporterId || !reportedUserId || !reason) {
+    const reporterId = (req as any).authUser.id as string;
+    const { reportedUserId, reason, description } = req.body;
+    if (typeof reportedUserId !== 'string' || !reportedUserId || reportedUserId === reporterId || typeof reason !== 'string' || !reason.trim()) {
       return res.status(400).json({ error: 'A reported account and reason are required.' });
     }
+    if (reason.trim().length > 120 || (typeof description === 'string' && description.length > 2_000)) {
+      return res.status(400).json({ error: 'The report details are too long.' });
+    }
+    const [target] = await db.select({ id: users.id }).from(users)
+      .where(eq(users.id, reportedUserId)).limit(1);
+    if (!target) return res.status(404).json({ error: 'Reported account not found.' });
     const newReport = await db.insert(reports).values({
       id: generateId('rep'),
       reporterId, reportedUserId,
-      reason, description: description || '',
+      reason: reason.trim(),
+      description: typeof description === 'string' ? description.trim() : '',
       status: 'pending',
     }).returning();
     return res.json({ ...newReport[0], createdAt: newReport[0].createdAt.toISOString() });
@@ -5679,7 +6095,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
       isVerified: true,
       isSuspended: false,
       role: 'student',
-      privacySettings: { showEmail: true, onlyAllowVerifiedConnections: false, hideProfileFromSearch: false },
+      privacySettings: { showEmail: true, onlyAllowVerifiedConnections: false, hideProfileFromSearch: false, directMessages: 'connections' },
     }).returning();
     const session = await createAuthSession(newUserId);
     // Credit referral if code was provided at registration
@@ -6153,7 +6569,7 @@ app.post('/api/admin/import-users', async (req, res) => {
           isVerified: false,
           isSuspended: false,
           role: (row.role === 'admin' ? 'admin' : 'student') as 'student' | 'admin',
-          privacySettings: { showEmail: true, onlyAllowVerifiedConnections: false, hideProfileFromSearch: false },
+          privacySettings: { showEmail: true, onlyAllowVerifiedConnections: false, hideProfileFromSearch: false, directMessages: 'connections' },
         });
         results.inserted++;
       } catch (rowErr: any) {
@@ -9055,7 +9471,7 @@ await pool.query(`
     is_suspended boolean NOT NULL DEFAULT false,
     role text NOT NULL DEFAULT 'student',
     college_admin_of text,
-    privacy_settings jsonb NOT NULL DEFAULT '{"showEmail":true,"onlyAllowVerifiedConnections":false,"hideProfileFromSearch":false}',
+    privacy_settings jsonb NOT NULL DEFAULT '{"showEmail":true,"onlyAllowVerifiedConnections":false,"hideProfileFromSearch":false,"directMessages":"connections"}',
     created_at timestamptz NOT NULL DEFAULT now()
   );
   CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -9067,6 +9483,35 @@ await pool.query(`
   );
   CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions(user_id);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS connect_preference text;
+  ALTER TABLE users ALTER COLUMN privacy_settings SET DEFAULT '{"showEmail":true,"onlyAllowVerifiedConnections":false,"hideProfileFromSearch":false,"directMessages":"connections"}'::jsonb;
+  CREATE TABLE IF NOT EXISTS user_blocks (
+    blocker_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (blocker_id, blocked_user_id),
+    CHECK (blocker_id <> blocked_user_id)
+  );
+  CREATE INDEX IF NOT EXISTS user_blocks_blocked_user_id_idx ON user_blocks(blocked_user_id);
+  CREATE TABLE IF NOT EXISTS hosted_workshops (
+    id text PRIMARY KEY,
+    host_user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    description text NOT NULL,
+    scheduled_date text NOT NULL DEFAULT '',
+    venue text NOT NULL DEFAULT '',
+    is_online boolean NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS hosted_workshops_host_user_id_idx ON hosted_workshops(host_user_id);
+  CREATE TABLE IF NOT EXISTS workshop_registrations (
+    id text PRIMARY KEY,
+    workshop_id text NOT NULL,
+    user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    registered_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (workshop_id, user_id)
+  );
+  CREATE INDEX IF NOT EXISTS workshop_registrations_workshop_id_idx
+    ON workshop_registrations(workshop_id);
   CREATE TABLE IF NOT EXISTS community_merge_audits (
     id text PRIMARY KEY,
     actor_id text NOT NULL,

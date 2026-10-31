@@ -123,6 +123,7 @@ export function toUploadedUser(profile: UserProfile): User {
     communities: [],
     goals: profile.lookingFor || [],
     connectPreference: profile.connectPreference || null,
+    directMessagePreference: profile.privacySettings?.directMessages || 'connections',
     connectionsCount: 0,
     stats: { postsCount: 0, connectionsCount: 0, points: 0 },
   };

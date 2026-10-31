@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { api, PUBLIC_APP_URL, type HostedWorkshop, type WorkshopParticipant } from '../../api';
 import { getEducationDisplay } from '../../utils/education';
 import {
   BookOpen,
@@ -24,6 +25,10 @@ import {
   Search,
   Trophy,
   CalendarDays,
+  MessageCircle,
+  Linkedin,
+  Link2,
+  Share2,
 } from 'lucide-react';
 import { Community, LearningTopic, Opportunity, RoadmapStep, User } from '../types';
 import { SafeAvatar } from './SafeAvatar';
@@ -321,6 +326,7 @@ interface LearnViewProps {
   onToggleJoinCommunity: (slug: string) => void;
   onOpenOpportunity: (opp: Opportunity) => void;
   onOpenRecommendQuiz: () => void;
+  onShareWorkshop: (draft: { title: string; content: string }) => void;
 }
 
 export const LearnView: React.FC<LearnViewProps> = ({
@@ -342,6 +348,7 @@ export const LearnView: React.FC<LearnViewProps> = ({
   onToggleJoinCommunity,
   onOpenOpportunity,
   onOpenRecommendQuiz,
+  onShareWorkshop,
 }) => {
   const [hubTab, setHubTab] = useState<LearningHubTab>(initialHubTab);
   const [activeTab, setActiveTab] = useState<LearningSectionTab>(initialSectionTab);
@@ -352,6 +359,192 @@ export const LearnView: React.FC<LearnViewProps> = ({
   );
   const [selectedCatalog, setSelectedCatalog] = useState<CatalogItem | null>(null);
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [hostedWorkshops, setHostedWorkshops] = useState<HostedWorkshop[]>([]);
+  const [hostedWorkshopsError, setHostedWorkshopsError] = useState('');
+  const [copiedWorkshopId, setCopiedWorkshopId] = useState<string | null>(null);
+  const [workshopShareErrors, setWorkshopShareErrors] = useState<Record<string, string>>({});
+  const [showHostWorkshopForm, setShowHostWorkshopForm] = useState(false);
+  const [hostedWorkshopTitle, setHostedWorkshopTitle] = useState('');
+  const [hostedWorkshopDescription, setHostedWorkshopDescription] = useState('');
+  const [hostedWorkshopDate, setHostedWorkshopDate] = useState('');
+  const [hostedWorkshopVenue, setHostedWorkshopVenue] = useState('');
+  const [hostedWorkshopIsOnline, setHostedWorkshopIsOnline] = useState(false);
+  const [isCreatingHostedWorkshop, setIsCreatingHostedWorkshop] = useState(false);
+  const [hostedWorkshopFormError, setHostedWorkshopFormError] = useState('');
+  const [joiningHostedWorkshopId, setJoiningHostedWorkshopId] = useState<string | null>(null);
+  const [hostedWorkshopActionErrors, setHostedWorkshopActionErrors] = useState<Record<string, string>>({});
+  const [expandedWorkshopRosterId, setExpandedWorkshopRosterId] = useState<string | null>(null);
+  const [participantsByWorkshop, setParticipantsByWorkshop] = useState<Record<string, WorkshopParticipant[]>>({});
+  const [loadingWorkshopRosterId, setLoadingWorkshopRosterId] = useState<string | null>(null);
+  const [workshopRosterErrors, setWorkshopRosterErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    setHostedWorkshopsError('');
+    void api.workshops.getAll()
+      .then(({ workshops: availableWorkshops }) => {
+        if (!cancelled) setHostedWorkshops(availableWorkshops);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setHostedWorkshopsError(error instanceof Error ? error.message : 'Unable to load hosted workshops.');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser.id]);
+
+  const handleCreateHostedWorkshop = async () => {
+    setIsCreatingHostedWorkshop(true);
+    setHostedWorkshopFormError('');
+    try {
+      const created = await api.workshops.create({
+        title: hostedWorkshopTitle.trim(),
+        description: hostedWorkshopDescription.trim(),
+        scheduledDate: hostedWorkshopDate,
+        venue: hostedWorkshopVenue.trim(),
+        isOnline: hostedWorkshopIsOnline,
+      });
+      setHostedWorkshops((existing) => [created, ...existing]);
+      setHostedWorkshopTitle('');
+      setHostedWorkshopDescription('');
+      setHostedWorkshopDate('');
+      setHostedWorkshopVenue('');
+      setHostedWorkshopIsOnline(false);
+      setShowHostWorkshopForm(false);
+    } catch (error) {
+      setHostedWorkshopFormError(error instanceof Error ? error.message : 'Unable to create this workshop.');
+    } finally {
+      setIsCreatingHostedWorkshop(false);
+    }
+  };
+
+  const handleJoinHostedWorkshop = async (workshopId: string) => {
+    setJoiningHostedWorkshopId(workshopId);
+    setHostedWorkshopActionErrors((current) => ({ ...current, [workshopId]: '' }));
+    try {
+      const result = await api.workshops.register(workshopId);
+      setHostedWorkshops((current) => current.map((workshop) =>
+        workshop.id === workshopId
+          ? { ...workshop, registered: true, participantCount: result.participantCount }
+          : workshop,
+      ));
+      if (currentUser.role === 'admin' || hostedWorkshops.some((workshop) =>
+        workshop.id === workshopId && workshop.isHost,
+      )) {
+        setWorkshopRosterErrors((current) => ({ ...current, [workshopId]: '' }));
+        try {
+          const { participants } = await api.workshops.getParticipants(workshopId);
+          setParticipantsByWorkshop((current) => ({ ...current, [workshopId]: participants }));
+        } catch (error) {
+          setWorkshopRosterErrors((current) => ({
+            ...current,
+            [workshopId]: error instanceof Error ? error.message : 'Unable to load participant details.',
+          }));
+        }
+      }
+    } catch (error) {
+      setHostedWorkshopActionErrors((current) => ({
+        ...current,
+        [workshopId]: error instanceof Error ? error.message : 'Unable to join this workshop.',
+      }));
+    } finally {
+      setJoiningHostedWorkshopId(null);
+    }
+  };
+
+  const handleToggleWorkshopRoster = async (workshopId: string) => {
+    if (expandedWorkshopRosterId === workshopId) {
+      setExpandedWorkshopRosterId(null);
+      return;
+    }
+    setExpandedWorkshopRosterId(workshopId);
+    setLoadingWorkshopRosterId(workshopId);
+    setWorkshopRosterErrors((current) => ({ ...current, [workshopId]: '' }));
+    try {
+      const { participants } = await api.workshops.getParticipants(workshopId);
+      setParticipantsByWorkshop((current) => ({ ...current, [workshopId]: participants }));
+    } catch (error) {
+      setWorkshopRosterErrors((current) => ({
+        ...current,
+        [workshopId]: error instanceof Error ? error.message : 'Unable to load participant details.',
+      }));
+    } finally {
+      setLoadingWorkshopRosterId(null);
+    }
+  };
+
+  const getWorkshopShareUrl = () => {
+    const url = new URL(PUBLIC_APP_URL);
+    url.searchParams.set('view', 'workshops');
+    return url.toString();
+  };
+
+  const getWorkshopShareText = (workshop: HostedWorkshop) => {
+    const workshopUrl = getWorkshopShareUrl();
+    const details = [
+      workshop.scheduledDate ? `Date: ${formatWorkshopDate(workshop.scheduledDate)}` : '',
+      workshop.isOnline ? 'Online' : workshop.venue,
+    ].filter(Boolean);
+    return `Take a look at this workshop: ${workshop.title}\n\n${workshop.description}${details.length ? `\n\n${details.join(' · ')}` : ''}\n\nJoin with your Network ID: ${workshopUrl}`;
+  };
+
+  const copyWorkshopLink = async (workshopId: string) => {
+    setWorkshopShareErrors((current) => ({ ...current, [workshopId]: '' }));
+    try {
+      const workshopUrl = getWorkshopShareUrl();
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(workshopUrl);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = workshopUrl;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        const copied = document.execCommand('copy');
+        input.remove();
+        if (!copied) throw new Error('Could not copy the workshop link.');
+      }
+      setCopiedWorkshopId(workshopId);
+      window.setTimeout(() => setCopiedWorkshopId(null), 2000);
+    } catch (error) {
+      console.error('Unable to copy the workshop link', error);
+      setWorkshopShareErrors((current) => ({
+        ...current,
+        [workshopId]: 'Could not copy the link. Please copy the page URL from your browser.',
+      }));
+    }
+  };
+
+  const escapeCsvValue = (value: string | number) =>
+    `"${String(value).replace(/^[\t\r ]*[=+\-@]/, "'$&").replace(/"/g, '""')}"`;
+
+  const downloadParticipantsCsv = (participants: WorkshopParticipant[], filename: string) => {
+    const headers = ['Network ID', 'Name', 'Email', 'College', 'School', 'Branch', 'Year', 'Registered at'];
+    const rows = participants.map((participant) => [
+      participant.networkId,
+      participant.name,
+      participant.email,
+      participant.college,
+      participant.schoolName,
+      participant.branch,
+      participant.year,
+      new Date(participant.registeredAt).toLocaleString(),
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCsvValue).join(','))
+      .join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
   const roadmapRef = useRef<HTMLElement | null>(null);
   const hubTabs = [
     ...(showCompete ? [{ id: 'compete' as const, label: 'Compete', icon: Trophy }] : []),
@@ -551,10 +744,284 @@ export const LearnView: React.FC<LearnViewProps> = ({
         </div>
         {showHubNavigation && hubNavigation}
         <section role="tabpanel" aria-label="Workshops" className="space-y-4">
-          <div>
-            <h2 className="text-lg font-black text-slate-900">Upcoming workshops</h2>
-            <p className="mt-1 text-xs text-slate-500">Live workshops shared by schools and communities on The Network.</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">Upcoming workshops</h2>
+              <p className="mt-1 text-xs text-slate-500">Join workshops hosted by The Network community or host one yourself.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setHostedWorkshopFormError('');
+                setShowHostWorkshopForm((open) => !open);
+              }}
+              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+            >
+              <Users className="h-4 w-4" /> Host a workshop
+            </button>
           </div>
+          {showHostWorkshopForm && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleCreateHostedWorkshop();
+              }}
+              className="space-y-4 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm sm:p-5"
+            >
+              <div>
+                <h3 className="text-sm font-black text-slate-900">Create a community workshop</h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Your Network account will be listed as host. Only you and admins can view the participant contact details.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-xs font-bold text-slate-700">
+                  Workshop title
+                  <input
+                    value={hostedWorkshopTitle}
+                    onChange={(event) => setHostedWorkshopTitle(event.target.value)}
+                    required
+                    maxLength={120}
+                    placeholder="e.g. Build your first website"
+                    className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
+                <label className="text-xs font-bold text-slate-700">
+                  Date (optional)
+                  <input
+                    type="date"
+                    value={hostedWorkshopDate}
+                    onChange={(event) => setHostedWorkshopDate(event.target.value)}
+                    className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
+              </div>
+              <label className="block text-xs font-bold text-slate-700">
+                Description
+                <textarea
+                  value={hostedWorkshopDescription}
+                  onChange={(event) => setHostedWorkshopDescription(event.target.value)}
+                  required
+                  maxLength={3000}
+                  rows={4}
+                  placeholder="What will participants learn or do?"
+                  className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <label className="text-xs font-bold text-slate-700">
+                  {hostedWorkshopIsOnline ? 'Online location or link (optional)' : 'Location (optional)'}
+                  <input
+                    value={hostedWorkshopVenue}
+                    onChange={(event) => setHostedWorkshopVenue(event.target.value)}
+                    maxLength={160}
+                    placeholder={hostedWorkshopIsOnline ? 'Online' : 'City, venue, or campus'}
+                    className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </label>
+                <label className="inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={hostedWorkshopIsOnline}
+                    onChange={(event) => setHostedWorkshopIsOnline(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  Online workshop
+                </label>
+              </div>
+              {hostedWorkshopFormError && (
+                <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
+                  {hostedWorkshopFormError}
+                </p>
+              )}
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHostWorkshopForm(false)}
+                  className="min-h-10 rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingHostedWorkshop}
+                  className="min-h-10 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isCreatingHostedWorkshop ? 'Publishing…' : 'Publish workshop'}
+                </button>
+              </div>
+            </form>
+          )}
+          {hostedWorkshopsError && (
+            <p role="alert" className="rounded-xl bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700">
+              {hostedWorkshopsError}
+            </p>
+          )}
+          {hostedWorkshops.length > 0 && (
+            <section className="space-y-3">
+              <div>
+                <h3 className="text-base font-black text-slate-900">Community-hosted workshops</h3>
+                <p className="mt-1 text-xs text-slate-500">Participant details are shared only with each workshop’s host and admins.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {hostedWorkshops.map((workshop) => {
+                  const canViewRoster = currentUser.role === 'admin' || workshop.isHost;
+                  const participants = participantsByWorkshop[workshop.id] || [];
+                  const isRosterExpanded = expandedWorkshopRosterId === workshop.id;
+                  return (
+                    <article key={workshop.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                      <div className="p-4 sm:p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <span className="inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700">
+                              Community workshop
+                            </span>
+                            <h4 className="mt-2 text-sm font-black text-slate-900">{workshop.title}</h4>
+                          </div>
+                          <CalendarDays className="mt-1 h-5 w-5 shrink-0 text-indigo-500" />
+                        </div>
+                        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{workshop.description}</p>
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                          <span>{formatWorkshopDate(workshop.scheduledDate)}</span>
+                          <span>{workshop.isOnline ? 'Online' : workshop.venue || 'Location to be announced'}</span>
+                        </div>
+                        <p className="mt-2 text-[11px] font-semibold text-indigo-700">
+                          Hosted by {workshop.isHost ? 'you' : workshop.hostName}
+                        </p>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                          <p className="text-[11px] font-semibold text-slate-500">
+                            {workshop.participantCount} {workshop.participantCount === 1 ? 'participant' : 'participants'}
+                          </p>
+                          {workshop.registered ? (
+                            <span className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-emerald-50 px-3 text-[11px] font-bold text-emerald-700">
+                              <CheckCircle2 className="h-4 w-4" /> You’re registered
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void handleJoinHostedWorkshop(workshop.id)}
+                              disabled={joiningHostedWorkshopId !== null}
+                              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-[11px] font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {joiningHostedWorkshopId === workshop.id ? 'Joining…' : 'Join with your Network ID'}
+                            </button>
+                          )}
+                        </div>
+                        <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                          Joining shares your profile name, Network ID, email, school/college, class/year, and branch with this host and admins.
+                        </p>
+                        {hostedWorkshopActionErrors[workshop.id] && (
+                          <p role="alert" className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+                            {hostedWorkshopActionErrors[workshop.id]}
+                          </p>
+                        )}
+                        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                          <span className="mr-1 inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600">
+                            <Share2 className="h-3.5 w-3.5" /> Share
+                          </span>
+                          <a
+                            href={`https://wa.me/?text=${encodeURIComponent(getWorkshopShareText(workshop))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                          </a>
+                          <a
+                            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getWorkshopShareUrl())}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 text-[10px] font-bold text-sky-800 transition hover:bg-sky-100"
+                          >
+                            <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => void copyWorkshopLink(workshop.id)}
+                            className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-bold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            {copiedWorkshopId === workshop.id ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+                            {copiedWorkshopId === workshop.id ? 'Link copied' : 'Copy link'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onShareWorkshop({
+                              title: workshop.title,
+                              content: getWorkshopShareText(workshop),
+                            })}
+                            className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-indigo-600 px-2.5 text-[10px] font-bold text-white transition hover:bg-indigo-700"
+                          >
+                            <Share2 className="h-3.5 w-3.5" /> Share on The Network
+                          </button>
+                        </div>
+                        {workshopShareErrors[workshop.id] && (
+                          <p role="alert" className="mt-2 text-[10px] font-medium text-rose-700">
+                            {workshopShareErrors[workshop.id]}
+                          </p>
+                        )}
+                        {canViewRoster && (
+                          <button
+                            type="button"
+                            aria-expanded={isRosterExpanded}
+                            onClick={() => void handleToggleWorkshopRoster(workshop.id)}
+                            className="mt-3 text-[11px] font-bold text-indigo-700 hover:text-indigo-900"
+                          >
+                            {isRosterExpanded ? 'Hide participants' : 'View participant details'}
+                          </button>
+                        )}
+                      </div>
+                      {canViewRoster && isRosterExpanded && (
+                        <div className="border-t border-slate-100 bg-slate-50/60">
+                          <div className="flex items-center justify-between gap-2 px-4 py-3">
+                            <p className="text-[11px] font-black text-slate-700">
+                              {participants.length} registered
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => downloadParticipantsCsv(
+                                participants,
+                                `workshop-${workshop.id.replace(/[^a-zA-Z0-9_-]/g, '-')}-participants.csv`,
+                              )}
+                              disabled={participants.length === 0 || loadingWorkshopRosterId === workshop.id}
+                              className="min-h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-bold text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Download CSV
+                            </button>
+                          </div>
+                          {loadingWorkshopRosterId === workshop.id ? (
+                            <p className="px-4 pb-4 text-[11px] text-slate-500">Loading participant details…</p>
+                          ) : workshopRosterErrors[workshop.id] ? (
+                            <p role="alert" className="mx-4 mb-4 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+                              {workshopRosterErrors[workshop.id]}
+                            </p>
+                          ) : participants.length === 0 ? (
+                            <p className="px-4 pb-4 text-[11px] text-slate-500">No participants have registered yet.</p>
+                          ) : (
+                            <div className="divide-y divide-slate-100">
+                              {participants.map((participant) => (
+                                <article key={participant.networkId} className="grid gap-1.5 px-4 py-3 sm:grid-cols-2">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-[11px] font-bold text-slate-900">{participant.name}</p>
+                                    <p className="truncate text-[10px] text-slate-500">Network ID: {participant.networkId}</p>
+                                    <p className="truncate text-[10px] text-indigo-700">{participant.email}</p>
+                                  </div>
+                                  <div className="min-w-0 text-[10px] text-slate-600">
+                                    <p className="truncate">{participant.schoolName || participant.college || 'Institution not provided'}</p>
+                                    <p className="mt-0.5 truncate">{participant.branch || 'Branch not provided'} · Year/Class {participant.year || 'not provided'}</p>
+                                    <p className="mt-0.5 text-slate-500">Joined {new Date(participant.registeredAt).toLocaleString()}</p>
+                                  </div>
+                                </article>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
           {workshops.length > 0 ? (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {workshops.map((workshop) => (
@@ -584,8 +1051,8 @@ export const LearnView: React.FC<LearnViewProps> = ({
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
               <CalendarDays className="mx-auto h-8 w-8 text-slate-300" />
-              <h3 className="mt-3 text-sm font-bold text-slate-700">No upcoming workshops yet</h3>
-              <p className="mt-1 text-xs text-slate-500">New workshop listings will appear here when they are shared.</p>
+              <h3 className="mt-3 text-sm font-bold text-slate-700">No additional workshops right now</h3>
+              <p className="mt-1 text-xs text-slate-500">More community workshop listings will appear here when they are shared.</p>
             </div>
           )}
         </section>
