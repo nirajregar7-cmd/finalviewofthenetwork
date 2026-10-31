@@ -1,0 +1,2292 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+
+/*
+ * The Network — campus journal
+ * A clean, violet-accented skin deliberately scoped to the signed-in app.
+ * Public pages and authentication keep their own visual language.
+ */
+.network-app-shell {
+  --nw-paper: #f7f8fc;
+  --nw-paper-deep: #eff0f7;
+  --nw-card: #ffffff;
+  --nw-ink: #171827;
+  --nw-muted: #6c7182;
+  --nw-line: #e6e8f0;
+  --nw-forest: #6542e8;
+  --nw-forest-deep: #512fcf;
+  --nw-rust: #6542e8;
+  --nw-sun: #a78bfa;
+  --nw-lavender: #f0ecff;
+  --nw-lavender-line: #ded6ff;
+  background: var(--nw-paper) !important;
+  color: var(--nw-ink) !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+.network-app-shell :where(*) {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.network-app-shell :where(h1, h2, h3, h4, h5) {
+  color: var(--nw-ink);
+  letter-spacing: -0.035em;
+}
+
+.network-app-shell :where(h1, h2) {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 600;
+}
+
+.network-app-shell .main-content {
+  background: var(--nw-paper) !important;
+}
+
+.network-app-shell .glass-sidebar {
+  width: 264px;
+  min-width: 264px;
+  background: #f3f4fa;
+  border-right: 1px solid var(--nw-line);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, .65);
+}
+
+.network-app-shell .glass-sidebar > div:first-child {
+  padding-top: 30px;
+}
+
+.network-app-shell .glass-sidebar [class*="bg-indigo-600"] {
+  background: var(--nw-forest) !important;
+  box-shadow: 0 5px 12px rgba(101, 66, 232, .18) !important;
+}
+
+.network-app-shell .glass-sidebar [class*="text-indigo-600"],
+.network-app-shell .glass-sidebar [class*="text-indigo-700"] {
+  color: var(--nw-forest) !important;
+}
+
+.network-app-shell .nav-item {
+  min-height: 43px;
+  margin: 4px 12px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  color: var(--nw-muted);
+  letter-spacing: .005em;
+}
+
+.network-app-shell .nav-item:hover {
+  color: var(--nw-ink);
+  background: rgba(255, 255, 255, .64);
+}
+
+.network-app-shell .nav-item.active {
+  position: relative;
+  color: var(--nw-forest);
+  background: var(--nw-lavender);
+  box-shadow: inset 3px 0 0 var(--nw-forest);
+}
+
+.network-app-shell .nav-item.active > span:first-child {
+  color: var(--nw-forest) !important;
+}
+
+.network-app-shell .glass-sidebar > div:last-child {
+  background: #eff0f7;
+  border-color: var(--nw-line);
+}
+
+.network-app-shell .top-nav {
+  height: 70px;
+  background: rgba(255, 255, 255, .96);
+  border-color: var(--nw-line);
+  backdrop-filter: blur(16px);
+}
+
+.network-app-shell .network-top-nav {
+  box-shadow: 0 1px 0 rgba(23, 24, 39, .025);
+}
+
+.network-app-shell .search-bar {
+  background: #f1f2f7;
+  border-radius: 8px;
+}
+
+.network-app-shell .search-bar:focus-within,
+.network-app-shell .network-header-search .search-bar:focus-within {
+  background: #ffffff !important;
+  border-color: #b9a8f5 !important;
+  box-shadow: 0 0 0 3px rgba(101, 66, 232, .11) !important;
+}
+
+.network-app-shell .network-main-content > main {
+  background: transparent;
+}
+
+.network-app-shell .post-card {
+  background: var(--nw-card);
+  border: 1px solid var(--nw-line);
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(25, 27, 47, .035);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.network-app-shell .post-card:hover {
+  border-color: #d8d0f5;
+  box-shadow: 0 8px 22px rgba(25, 27, 47, .08);
+  transform: translateY(-1px);
+}
+
+.network-app-shell .community-tag {
+  background: var(--nw-lavender);
+  color: var(--nw-forest);
+  border-radius: 4px;
+  letter-spacing: .025em;
+}
+
+.network-app-shell .stat-pill {
+  color: var(--nw-muted);
+  background: #f1f2f7;
+}
+
+.network-app-shell :where(input, textarea, select) {
+  color: var(--nw-ink);
+}
+
+.network-app-shell :where(input, textarea, select):focus {
+  outline-color: #8062eb;
+}
+
+.network-app-shell :where(button, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.network-app-shell :where(button):focus-visible {
+  outline: 2px solid rgba(101, 66, 232, .58);
+  outline-offset: 2px;
+}
+
+.network-app-shell [class*="bg-indigo-600"],
+.network-app-shell [class*="bg-indigo-700"],
+.network-app-shell [class*="from-indigo-600"],
+.network-app-shell [class*="to-indigo-500"] {
+  background-color: var(--nw-forest) !important;
+  background-image: none !important;
+}
+
+.network-app-shell [class*="hover:bg-indigo-700"]:hover,
+.network-app-shell [class*="hover:bg-indigo-600"]:hover {
+  background-color: var(--nw-forest-deep) !important;
+}
+
+.network-app-shell [class*="text-indigo-600"],
+.network-app-shell [class*="text-indigo-700"],
+.network-app-shell [class*="text-indigo-500"] {
+  color: var(--nw-forest) !important;
+}
+
+.network-app-shell [class*="border-indigo-"] {
+  border-color: var(--nw-lavender-line) !important;
+}
+
+.network-app-shell [class*="border-indigo-500"],
+.network-app-shell [class*="border-indigo-600"],
+.network-app-shell [class*="border-indigo-700"] {
+  border-color: var(--nw-forest) !important;
+}
+
+.network-app-shell [class*="bg-indigo-50"],
+.network-app-shell [class*="bg-indigo-100"] {
+  background-color: var(--nw-lavender) !important;
+}
+
+.network-app-shell [class*="shadow-indigo-"] {
+  --tw-shadow-color: rgba(101, 66, 232, .16) !important;
+}
+
+.network-app-shell .mobile-bottom-nav-container .network-bottom-nav {
+  background: rgba(255, 255, 255, .97);
+  border-color: var(--nw-line);
+  box-shadow: 0 -7px 24px rgba(23, 24, 39, .07);
+  backdrop-filter: blur(16px);
+}
+
+.network-app-shell .mobile-bottom-nav-container button[class*="text-indigo-600"] {
+  color: var(--nw-forest) !important;
+}
+
+.network-app-shell .fab {
+  background-color: var(--nw-forest) !important;
+  box-shadow: 0 12px 26px rgba(101, 66, 232, .24) !important;
+}
+
+.network-app-shell :where([class*="rounded-2xl"][class*="border"], [class*="rounded-xl"][class*="border"]) {
+  border-color: var(--nw-line);
+}
+
+.network-app-shell :where([class~="bg-white"]) {
+  background-color: var(--nw-card);
+}
+
+.network-app-shell :where([class*="bg-slate-50"]) {
+  background-color: #f2f3f8;
+}
+
+.network-app-shell :where([class*="text-slate-900"], [class*="text-slate-800"]) {
+  color: var(--nw-ink);
+}
+
+.network-app-shell :where([class*="text-slate-500"], [class*="text-slate-400"]) {
+  color: var(--nw-muted);
+}
+
+.network-app-shell :where([class*="border-slate-100"], [class*="border-slate-200"]) {
+  border-color: var(--nw-line);
+}
+
+.network-app-shell .network-main-content > main > :first-child {
+  animation: nw-arrive .38s cubic-bezier(.2, .7, .2, 1) both;
+}
+
+@keyframes nw-arrive {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1023px) {
+  .network-app-shell .top-nav {
+    height: 56px;
+    background: rgba(255, 255, 255, .97);
+  }
+
+  .network-app-shell .network-sidebar {
+    display: none;
+  }
+
+  .network-app-shell .network-main-content {
+    background: var(--nw-paper);
+  }
+
+  .network-app-shell .post-card {
+    border-radius: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .network-app-shell *,
+  .network-app-shell *::before,
+  .network-app-shell *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Home / Discover: the feed is the wide column; communities become a useful
+   field guide beside it rather than another row of repeated cards. */
+.network-app-shell .network-home-feed {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-content: start;
+  align-items: start;
+  gap: 20px 24px;
+  padding-top: 24px;
+}
+
+.network-app-shell .community-eyebrow,
+.network-app-shell .connect-eyebrow,
+.network-app-shell .learn-eyebrow,
+.network-app-shell .exam-compete-eyebrow,
+.network-app-shell .admin-section-kicker {
+  margin: 0 0 8px;
+  color: var(--nw-rust);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .17em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.network-app-shell .home-composer {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  padding: 12px !important;
+  border: 1px solid var(--nw-line) !important;
+  border-radius: 13px !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 12px rgba(23, 24, 39, .045) !important;
+}
+
+.network-app-shell .home-composer-prompt {
+  min-height: 48px;
+  border-color: var(--nw-line) !important;
+  border-radius: 11px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.network-app-shell .home-composer-prompt:hover {
+  border-color: #c9b9f8 !important;
+}
+
+.network-app-shell .home-composer-prompt:focus-visible {
+  outline: 2px solid rgba(101, 66, 232, .55);
+  outline-offset: 2px;
+}
+
+.network-app-shell .home-composer > div:last-child > button {
+  min-height: 34px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.network-app-shell .home-composer > div:last-child > button:first-child {
+  border-color: var(--nw-lavender-line) !important;
+  background: var(--nw-lavender) !important;
+  color: var(--nw-forest) !important;
+}
+
+.network-app-shell .home-communities-section {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  position: sticky;
+  top: 92px;
+  padding: 15px 13px;
+  border: 1px solid var(--nw-line);
+  border-radius: 11px;
+  background: #f2f3f8;
+}
+
+.network-app-shell .home-communities-section h2 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 17px !important;
+  line-height: 1.1;
+}
+
+.network-app-shell .home-communities-section > div:first-child p {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (min-width: 1024px) {
+  .network-app-shell .home-communities-section [data-preserve-horizontal-scroll="home-communities"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    overflow: visible;
+    padding: 4px 0 0;
+  }
+
+  .network-app-shell .home-communities-section [data-preserve-horizontal-scroll="home-communities"] > button {
+    width: auto;
+    min-width: 0;
+    min-height: 108px;
+    padding: 10px 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .9);
+    box-shadow: none;
+  }
+
+  .network-app-shell .home-communities-section [data-preserve-horizontal-scroll="home-communities"] > button > span:first-child {
+    width: 31px;
+    height: 31px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .network-app-shell .home-communities-section [data-preserve-horizontal-scroll="home-communities"] > button > span:nth-child(2) {
+    font-size: 9px;
+  }
+}
+
+.network-app-shell .home-post-stream {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.network-app-shell .home-post-stream [role="tablist"] {
+  border-color: var(--nw-line);
+}
+
+.network-app-shell .home-post-stream [role="tab"] {
+  font-size: 11px;
+}
+
+.network-app-shell .home-post-list {
+  padding-top: 8px;
+}
+
+/* Communities: browse by signal first, then compare real spaces. */
+.network-app-shell .community-view {
+  padding-top: 31px;
+}
+
+.network-app-shell .community-view > div:first-child {
+  align-items: flex-end;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .community-view > div:first-child h1,
+.network-app-shell .community-mobile-view h1 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 34px;
+  line-height: .98;
+}
+
+.network-app-shell .community-view > div:first-child p:not(.community-eyebrow) {
+  margin-top: 8px;
+}
+
+.network-app-shell .community-filter-rail {
+  padding: 9px 0 14px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .community-filter-rail button {
+  min-height: 38px;
+  padding-inline: 14px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+
+.network-app-shell .community-view .community-interest-discovery {
+  padding: 15px 17px 13px;
+  border: 1px solid var(--nw-line);
+  border-radius: 10px;
+  background: #f2f3f8;
+}
+
+.network-app-shell .community-popular-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.network-app-shell .community-popular-card {
+  min-height: 210px;
+  padding: 15px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.network-app-shell .community-popular-image {
+  width: 47px;
+  height: 47px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.network-app-shell .community-popular-image img {
+  border-radius: inherit;
+}
+
+.network-app-shell .community-mobile-intro {
+  padding: 18px 0 15px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .community-mobile-view {
+  padding-top: 10px;
+}
+
+.network-app-shell .community-discovery-page {
+  padding-top: 18px;
+  padding-bottom: 112px;
+}
+
+.network-app-shell .community-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.network-app-shell .community-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 5px;
+  color: var(--nw-forest);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.network-app-shell .community-page-heading h1 {
+  margin: 0;
+  color: #1d1a2a;
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: .98;
+  letter-spacing: -.045em;
+}
+
+.network-app-shell .community-page-subtitle {
+  margin: 6px 0 0;
+  color: #6c7182;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.network-app-shell .community-create-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--nw-forest);
+  box-shadow: 0 6px 15px rgba(101, 66, 232, .24);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.network-app-shell .community-create-button:hover {
+  transform: translateY(-1px);
+  background: var(--nw-forest-deep);
+  box-shadow: 0 8px 17px rgba(101, 66, 232, .28);
+}
+
+.network-app-shell .community-search {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 46px;
+  padding: 0 15px;
+  border: 1px solid #d9d4ed;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 11px rgba(58, 40, 105, .06);
+}
+
+.network-app-shell .community-search input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #272536;
+  font-size: 12px;
+}
+
+.network-app-shell .community-search input::placeholder {
+  color: #9293a2;
+}
+
+.network-app-shell .community-search:focus-within {
+  border-color: #9c83ed;
+  box-shadow: 0 0 0 3px rgba(112, 68, 223, .1);
+}
+
+.network-app-shell .community-filter-rail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -2px;
+  padding: 13px 2px 8px;
+  overflow-x: auto;
+  border: 0;
+  scrollbar-width: none;
+}
+
+.network-app-shell .community-filter-rail::-webkit-scrollbar,
+.network-app-shell .community-horizontal-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.network-app-shell .community-category-pill {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 7px 12px;
+  border: 1px solid #e8e6ef;
+  border-radius: 999px;
+  background: #fff;
+  color: #373649;
+  text-align: left;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.network-app-shell .community-category-pill > span {
+  display: grid;
+  gap: 2px;
+}
+
+.network-app-shell .community-category-pill strong {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.network-app-shell .community-category-pill small {
+  color: #888899;
+  font-size: 8px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.network-app-shell .community-category-pill:hover,
+.network-app-shell .community-category-pill.is-active {
+  border-color: var(--nw-forest);
+  background: var(--nw-forest);
+  color: #fff;
+  box-shadow: 0 4px 11px rgba(112, 68, 223, .2);
+}
+
+.network-app-shell .community-category-pill.is-active small {
+  color: #e6ddff;
+}
+
+.network-app-shell .community-discovery-content {
+  display: grid;
+  gap: 21px;
+  margin-top: 11px;
+}
+
+.network-app-shell .community-section {
+  min-width: 0;
+}
+
+.network-app-shell .community-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.network-app-shell .community-section-heading h2 {
+  margin: 0;
+  color: #211f2d;
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: -.025em;
+}
+
+.network-app-shell .community-section-heading p {
+  margin: 4px 0 0;
+  color: #777889;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.network-app-shell .community-view-all {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 0 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--nw-forest);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.network-app-shell .community-view-all:hover {
+  color: var(--nw-forest-deep);
+}
+
+.network-app-shell .community-horizontal-rail {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  margin-right: -16px;
+  padding: 1px 16px 5px 1px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.network-app-shell .community-feature-card {
+  display: flex;
+  flex: 0 0 112px;
+  min-width: 0;
+  min-height: 126px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 9px;
+  border: 1px solid #fff;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(36, 33, 58, .05), inset 0 0 0 1px #e8e6ef;
+}
+
+.network-app-shell .community-feature-card:nth-child(4n + 1) { background: #fff1f4; }
+.network-app-shell .community-feature-card:nth-child(4n + 2) { background: #f0f8ff; }
+.network-app-shell .community-feature-card:nth-child(4n + 3) { background: #effcf6; }
+.network-app-shell .community-feature-card:nth-child(4n) { background: #fff8eb; }
+
+.network-app-shell .community-feature-open {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.network-app-shell .community-mark {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+}
+
+.network-app-shell .community-mark-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.network-app-shell .community-mark-lavender { color: #6844d0; background: #eee6ff; }
+.network-app-shell .community-mark-blue { color: #216da5; background: #deefff; }
+.network-app-shell .community-mark-coral { color: #bd264b; background: #ffe1e9; }
+.network-app-shell .community-mark-mint { color: #08794e; background: #d8f7ea; }
+.network-app-shell .community-mark-amber { color: #bf650b; background: #ffefd5; }
+.network-app-shell .community-mark-college { color: #216da5; background: #deefff; }
+
+.network-app-shell .community-feature-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.network-app-shell .community-feature-title {
+  overflow: hidden;
+  color: #282638;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-app-shell .community-feature-count {
+  color: #737484;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.network-app-shell .community-feature-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.network-app-shell .community-member-stack {
+  display: flex;
+  min-width: 0;
+  padding-left: 2px;
+}
+
+.network-app-shell .community-member-stack button {
+  display: block;
+  margin-left: -3px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+.network-app-shell .community-member-stack button:first-child {
+  margin-left: 0;
+}
+
+.network-app-shell .community-join-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 27px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--nw-forest);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .16s ease, transform .16s ease;
+}
+
+.network-app-shell .community-join-button:hover {
+  transform: translateY(-1px);
+  background: var(--nw-forest-deep);
+}
+
+.network-app-shell .community-join-button.is-joined {
+  border-color: #e0d8f5;
+  background: #f2edff;
+  color: #6342c4;
+}
+
+.network-app-shell .community-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.network-app-shell .community-category-card {
+  display: flex;
+  min-width: 0;
+  min-height: 78px;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  border: 1px solid #fff;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px #e9e7ef;
+  color: #323144;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.network-app-shell .community-category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(50, 36, 72, .08), inset 0 0 0 1px #e9e7ef;
+}
+
+.network-app-shell .community-category-lavender { background: #f5f0ff; }
+.network-app-shell .community-category-mint { background: #effcf6; }
+.network-app-shell .community-category-blue { background: #f0f8ff; }
+.network-app-shell .community-category-amber { background: #fff8eb; }
+
+.network-app-shell .community-category-card-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 37px;
+  height: 37px;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .72);
+  color: #6844d0;
+}
+
+.network-app-shell .community-category-mint .community-category-card-icon { color: #13835c; }
+.network-app-shell .community-category-blue .community-category-card-icon { color: #276da7; }
+.network-app-shell .community-category-amber .community-category-card-icon { color: #c27118; }
+
+.network-app-shell .community-category-card-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.network-app-shell .community-category-card-copy strong {
+  color: #242230;
+  font-size: 10px;
+}
+
+.network-app-shell .community-category-card-copy small,
+.network-app-shell .community-category-card-copy > span {
+  overflow: hidden;
+  color: #727386;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-app-shell .community-category-card-copy > span {
+  color: #7053c1;
+}
+
+.network-app-shell .community-recommended-rail {
+  padding-bottom: 4px;
+}
+
+.network-app-shell .community-recommended-card {
+  position: relative;
+  display: flex;
+  flex: 0 0 238px;
+  min-width: 0;
+  min-height: 120px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid #e9e8ef;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(37, 32, 58, .04);
+}
+
+.network-app-shell .community-recommended-open {
+  display: flex;
+  min-width: 0;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.network-app-shell .community-recommended-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.network-app-shell .community-recommended-copy strong {
+  overflow: hidden;
+  color: #252333;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-app-shell .community-recommended-copy small {
+  color: #8b8b99;
+  font-size: 8px;
+}
+
+.network-app-shell .community-recommended-copy > span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #737484;
+  font-size: 8px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.network-app-shell .community-recommended-bookmark {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.network-app-shell .community-recommended-card > .community-join-button {
+  align-self: flex-end;
+  margin-top: 8px;
+}
+
+.network-app-shell .community-bookmark-button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #868697;
+  cursor: pointer;
+}
+
+.network-app-shell .community-bookmark-button:hover,
+.network-app-shell .community-bookmark-button.is-saved {
+  color: var(--nw-forest);
+  background: #f2edff;
+}
+
+.network-app-shell .community-popular-list {
+  display: grid;
+  gap: 9px;
+}
+
+.network-app-shell .community-popular-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid #e9e8ef;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(40, 32, 57, .04);
+}
+
+.network-app-shell .community-row-open {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.network-app-shell .community-row-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.network-app-shell .community-row-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: #252333;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-app-shell .community-row-description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #737484;
+  font-size: 8px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.network-app-shell .community-row-meta {
+  color: #7b7b8a;
+  font-size: 8px;
+}
+
+.network-app-shell .community-row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+}
+
+.network-app-shell .community-empty-state {
+  display: grid;
+  flex: 1 0 100%;
+  justify-items: center;
+  gap: 7px;
+  padding: 25px 16px;
+  border: 1px dashed #d8d3e6;
+  border-radius: 14px;
+  color: #777386;
+  font-size: 10px;
+  text-align: center;
+}
+
+.network-app-shell .community-empty-state strong {
+  color: #2c293a;
+  font-size: 12px;
+}
+
+.network-app-shell .community-empty-state button {
+  margin-top: 3px;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: var(--nw-forest);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.network-app-shell .community-trending-list {
+  display: grid;
+  gap: 10px;
+}
+
+.network-app-shell .community-trending-card {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e9e8ef;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.network-app-shell .community-vote-control {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #f5f5f9;
+  color: #656679;
+}
+
+.network-app-shell .community-vote-control button,
+.network-app-shell .community-trending-meta button,
+.network-app-shell .community-trending-title,
+.network-app-shell .community-trending-actions button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.network-app-shell .community-vote-control button {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  color: #8b8c9d;
+}
+
+.network-app-shell .community-vote-control button.is-upvoted { color: var(--nw-forest); }
+.network-app-shell .community-vote-control button.is-downvoted { color: #e14e70; }
+.network-app-shell .community-vote-control strong { font-size: 10px; }
+
+.network-app-shell .community-trending-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.network-app-shell .community-trending-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #878897;
+  font-size: 8px;
+}
+
+.network-app-shell .community-trending-meta button {
+  padding: 0;
+  color: var(--nw-forest);
+  font-size: inherit;
+  font-weight: 800;
+}
+
+.network-app-shell .community-trending-title {
+  display: block;
+  margin-top: 5px;
+  padding: 0;
+  color: #272536;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.network-app-shell .community-trending-content > p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 4px 0 8px;
+  color: #737484;
+  font-size: 9px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.network-app-shell .community-trending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.network-app-shell .community-trending-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  color: #6e7081;
+  font-size: 8px;
+}
+
+.network-app-shell .community-trending-actions button:hover {
+  color: var(--nw-forest);
+}
+
+@media (min-width: 768px) {
+  .network-app-shell .community-discovery-page {
+    padding-top: 26px;
+  }
+
+  .network-app-shell .community-page-heading {
+    margin-bottom: 20px;
+  }
+
+  .network-app-shell .community-page-subtitle {
+    font-size: 13px;
+  }
+
+  .network-app-shell .community-search {
+    height: 48px;
+  }
+
+  .network-app-shell .community-category-all {
+    display: flex;
+  }
+
+  .network-app-shell .community-discovery-content {
+    gap: 26px;
+  }
+
+  .network-app-shell .community-section-heading h2 {
+    font-size: 23px;
+  }
+
+  .network-app-shell .community-section-heading p {
+    font-size: 11px;
+  }
+
+  .network-app-shell .community-horizontal-rail {
+    margin-right: 0;
+    padding-right: 1px;
+  }
+
+  .network-app-shell .community-learning-rail {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .network-app-shell .community-feature-card {
+    min-height: 142px;
+    padding: 13px;
+  }
+
+  .network-app-shell .community-feature-title {
+    font-size: 11px;
+  }
+
+  .network-app-shell .community-feature-count {
+    font-size: 9px;
+  }
+
+  .network-app-shell .community-category-grid {
+    gap: 10px;
+  }
+
+  .network-app-shell .community-category-card {
+    min-height: 88px;
+    padding: 13px;
+  }
+
+  .network-app-shell .community-recommended-rail {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .network-app-shell .community-recommended-card {
+    min-height: 132px;
+  }
+
+  .network-app-shell .community-popular-row {
+    gap: 14px;
+    padding: 12px;
+  }
+
+  .network-app-shell .community-row-title {
+    font-size: 12px;
+  }
+
+  .network-app-shell .community-row-description,
+  .network-app-shell .community-row-meta {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .network-app-shell .community-page-heading {
+    align-items: flex-start;
+  }
+
+  .network-app-shell .community-create-button {
+    min-height: 36px;
+    gap: 5px;
+    padding-inline: 10px;
+    font-size: 9px;
+  }
+
+  .network-app-shell .community-page-heading h1 {
+    font-size: 29px;
+  }
+
+  .network-app-shell .community-page-subtitle {
+    max-width: 205px;
+    font-size: 10px;
+  }
+
+  .network-app-shell .community-feature-card {
+    flex-basis: 106px;
+  }
+
+  .network-app-shell .community-category-card {
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .network-app-shell .community-category-card-icon {
+    width: 33px;
+    height: 33px;
+  }
+
+  .network-app-shell .community-row-actions .community-join-button {
+    min-width: 43px;
+    padding-inline: 7px;
+  }
+}
+
+/* A community detail is a small publication: identity above, conversation
+   and useful context below. The community chat full-screen geometry is intact. */
+.network-app-shell .community-detail-root:not(.community-chat-root) {
+  max-width: 1160px;
+  padding-top: 22px;
+}
+
+.network-app-shell .community-detail-banner {
+  min-height: 188px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid rgba(222, 214, 255, .55);
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 88% 12%, rgba(192, 170, 255, .28), transparent 34%),
+    linear-gradient(118deg, #4c32b6 0%, #6542e8 61%, #8158ef 100%) !important;
+  box-shadow: 0 9px 24px rgba(57, 39, 130, .18);
+}
+
+.network-app-shell .community-detail-banner h1 {
+  color: #ffffff !important;
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: clamp(24px, 3vw, 34px) !important;
+  letter-spacing: -.035em !important;
+}
+
+.network-app-shell .community-detail-identity-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px 24px;
+}
+
+.network-app-shell .community-detail-identity {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.network-app-shell .community-detail-title-line {
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.network-app-shell .community-detail-title-line h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.network-app-shell .community-detail-actions {
+  flex: 1 1 440px;
+  min-width: 0;
+  justify-content: flex-end;
+  align-content: flex-start;
+  gap: 8px;
+}
+
+.network-app-shell .community-detail-action-button {
+  min-height: 40px;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.network-app-shell .community-detail-join-button {
+  border-color: rgba(255, 255, 255, .38);
+}
+
+.network-app-shell .community-detail-join-button--joined {
+  background: rgba(255, 255, 255, .16);
+  color: #ffffff;
+}
+
+.network-app-shell .community-detail-join-button--joined:hover {
+  background: rgba(255, 255, 255, .25);
+}
+
+.network-app-shell .community-detail-join-button--available {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #512fcf;
+  box-shadow: 0 3px 10px rgba(33, 24, 75, .18);
+}
+
+.network-app-shell .community-detail-join-button--available:hover {
+  background: #f0ecff;
+  color: #512fcf;
+}
+
+.network-app-shell .community-detail-notification-toggle {
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.network-app-shell .community-detail-handle {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, .74);
+  font-family: ui-monospace, monospace !important;
+  font-size: 10px;
+  letter-spacing: .05em;
+}
+
+.network-app-shell .community-detail-description-toggle {
+  display: none;
+}
+
+.network-app-shell .community-detail-join-label-short {
+  display: none;
+}
+
+.network-app-shell .community-detail-root:not(.community-chat-root) > .grid {
+  gap: 23px;
+}
+
+/* Connect: a people finder, with quieter utility controls and strong
+   profile scanability rather than a stack of identical social cards. */
+.network-app-shell .network-connect-view {
+  padding-top: 29px;
+}
+
+.network-app-shell .connect-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .connect-page-header h1 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 36px !important;
+}
+
+.network-app-shell .connect-page-header > p {
+  max-width: 320px;
+  margin: 0 !important;
+}
+
+.network-app-shell .connect-student-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.network-app-shell .connect-student-card {
+  min-width: 0;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.network-app-shell .connect-student-card > div:first-child {
+  align-items: center;
+}
+
+.network-app-shell .connect-student-card > div:last-child {
+  margin-top: 13px;
+  padding-top: 10px;
+  border-top: 1px solid var(--nw-line);
+}
+
+.network-app-shell .connect-request-card {
+  border-radius: 9px;
+}
+
+/* Chats: correspondence feels like a calm inbox; the message viewport and
+   keyboard-owned mobile sizing continue to be controlled by existing logic. */
+.network-app-shell .network-chats-view {
+  background: var(--nw-paper);
+}
+
+.network-app-shell .chat-conversation-pane {
+  background: #f2f3f8 !important;
+}
+
+.network-app-shell .chat-conversation-pane > div:first-child {
+  padding: 22px 20px 16px;
+  background: #f2f3f8;
+  border-color: var(--nw-line);
+}
+
+.network-app-shell .chat-conversation-pane h1 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 31px !important;
+}
+
+.network-app-shell .chat-conversation-pane > div:nth-child(2) > div {
+  border-color: var(--nw-line);
+}
+
+.network-app-shell .chat-conversation-pane [class*="bg-indigo-50"] {
+  background: var(--nw-lavender) !important;
+}
+
+/* Learning uses a chapter index; resource detail stays the main event. */
+.network-app-shell .network-learn-view {
+  padding-top: 30px;
+}
+
+.network-app-shell .network-learn-view > div:first-child h1 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 35px;
+}
+
+.network-app-shell .learn-section-tabs {
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px;
+  border: 1px solid var(--nw-line);
+  border-radius: 9px;
+  background: #f1f2f7;
+}
+
+.network-app-shell .learn-section-tabs button {
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.network-app-shell .learn-resource-mark {
+  color: var(--nw-forest);
+  background: var(--nw-lavender) !important;
+  border-color: var(--nw-lavender-line) !important;
+}
+
+.network-app-shell .learn-resume-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(270px, .8fr);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--nw-line);
+  border-radius: 16px;
+  background: var(--nw-card);
+  box-shadow: 0 12px 32px rgba(23, 24, 39, .06);
+}
+
+.network-app-shell .learn-resume-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  padding: clamp(22px, 3vw, 40px);
+}
+
+.network-app-shell .learn-resume-label,
+.network-app-shell .learn-resume-actions,
+.network-app-shell .learn-resume-progress-label,
+.network-app-shell .learn-resume-community {
+  display: flex;
+  align-items: center;
+}
+
+.network-app-shell .learn-resume-label {
+  gap: 10px;
+  color: var(--nw-forest);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.network-app-shell .learn-resume-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--nw-lavender-line);
+  border-radius: 9px;
+  background: var(--nw-lavender);
+}
+
+.network-app-shell .learn-resume-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.network-app-shell .learn-resume-heading h2 {
+  margin: 0;
+  font-size: clamp(27px, 3.3vw, 40px);
+  line-height: 1.12;
+}
+
+.network-app-shell .learn-resume-kicker {
+  margin: 0 0 8px;
+  color: var(--nw-rust);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.network-app-shell .learn-resume-summary {
+  margin: 8px 0 0;
+  color: var(--nw-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.network-app-shell .learn-resume-progress {
+  width: min(100%, 520px);
+}
+
+.network-app-shell .learn-resume-progress-label {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: #565a6c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.network-app-shell .learn-resume-progress-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8e9f0;
+}
+
+.network-app-shell .learn-resume-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--nw-forest);
+  transition: width .25s ease;
+}
+
+.network-app-shell .learn-resume-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.network-app-shell .learn-resume-primary,
+.network-app-shell .learn-resume-secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.network-app-shell .learn-resume-primary {
+  border: 1px solid var(--nw-forest);
+  background: var(--nw-forest);
+  color: #ffffff;
+}
+
+.network-app-shell .learn-resume-primary:hover {
+  border-color: var(--nw-forest-deep);
+  background: var(--nw-forest-deep);
+}
+
+.network-app-shell .learn-resume-primary svg {
+  width: 15px;
+  height: 15px;
+}
+
+.network-app-shell .learn-resume-secondary {
+  border: 1px solid var(--nw-line);
+  background: transparent;
+  color: var(--nw-ink);
+}
+
+.network-app-shell .learn-resume-secondary:hover {
+  border-color: var(--nw-lavender-line);
+  background: #f4f1ff;
+}
+
+.network-app-shell .learn-resume-aside {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 22px;
+  padding: clamp(22px, 3vw, 34px);
+  border-left: 1px solid var(--nw-line);
+  background: #f6f7fb;
+}
+
+.network-app-shell .learn-resume-aside-label {
+  margin: 0 0 17px;
+  color: var(--nw-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.network-app-shell .learn-resume-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.network-app-shell .learn-resume-step {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.network-app-shell .learn-resume-step-marker {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: #9a9cac;
+}
+
+.network-app-shell .learn-resume-step-marker svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 1.8;
+}
+
+.network-app-shell .learn-resume-step.is-completed .learn-resume-step-marker {
+  color: var(--nw-forest);
+}
+
+.network-app-shell .learn-resume-step-title {
+  min-width: 0;
+  color: #303245;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.network-app-shell .learn-resume-step.is-locked .learn-resume-step-title {
+  color: #8b8e9d;
+  font-weight: 500;
+}
+
+.network-app-shell .learn-resume-step-status {
+  color: var(--nw-muted);
+  font-size: 9px;
+  text-transform: capitalize;
+}
+
+.network-app-shell .learn-resume-community {
+  width: 100%;
+  gap: 9px;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--nw-line);
+  background: transparent;
+  color: var(--nw-forest);
+  text-align: left;
+  cursor: pointer;
+}
+
+.network-app-shell .learn-resume-community-count {
+  flex: 0 0 auto;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 23px;
+  font-weight: 600;
+}
+
+.network-app-shell .learn-resume-community-copy {
+  min-width: 0;
+  flex: 1;
+  color: var(--nw-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.network-app-shell .learn-resume-community > svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.network-app-shell .learn-roadmap-progress-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px;
+  border: 1px solid var(--nw-line);
+  border-radius: 12px;
+  background: #f5f6fa;
+}
+
+.network-app-shell .learn-roadmap-progress-panel .learn-resume-aside-label {
+  margin-bottom: 0;
+}
+
+.network-app-shell .learn-roadmap-progress-value {
+  margin: 14px 0 4px;
+  color: var(--nw-forest);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(38px, 5vw, 54px);
+  line-height: 1;
+}
+
+.network-app-shell .learn-roadmap-progress-copy {
+  margin: 0;
+  color: var(--nw-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.network-app-shell .learn-roadmap-progress-panel .learn-resume-primary {
+  margin-top: 20px;
+}
+
+/* Compete: a field desk for real listings, not a generic leaderboard home. */
+.network-app-shell .network-compete-view {
+  background: var(--nw-paper) !important;
+}
+
+.network-app-shell .network-compete-view > div {
+  max-width: 1320px;
+}
+
+.network-app-shell .compete-masthead {
+  padding: 22px 0 19px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .compete-masthead h1 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: clamp(30px, 4vw, 46px) !important;
+}
+
+.network-app-shell .compete-masthead > button {
+  border-color: var(--nw-line) !important;
+  border-radius: 9px !important;
+  box-shadow: none !important;
+}
+
+.network-app-shell .compete-masthead > button > div:last-of-type p:last-child {
+  max-width: 140px;
+  overflow-wrap: anywhere;
+}
+
+.network-app-shell .network-exam-compete-view {
+  padding-top: 27px;
+}
+
+.network-app-shell .exam-compete-masthead {
+  max-width: 780px;
+  padding: 0 0 19px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .exam-compete-masthead h1 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: clamp(29px, 3.5vw, 40px) !important;
+}
+
+.network-app-shell .network-exam-compete-view > section {
+  border-color: var(--nw-line) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+/* Anonymous Campus: keep the safety promise visible, without using a
+   high-chroma social-media gradient as the page's identity. */
+.network-app-shell .anonymous-campus-view {
+  padding-top: 24px;
+}
+
+.network-app-shell .anonymous-campus-view > div {
+  align-items: start;
+  gap: 28px;
+}
+
+.network-app-shell .anonymous-campus-banner {
+  min-height: 230px;
+  border: 1px solid rgba(222, 214, 255, .5);
+  border-radius: 12px !important;
+  background:
+    radial-gradient(ellipse at 84% 18%, rgba(192, 170, 255, .3), transparent 30%),
+    linear-gradient(126deg, #4c32b6 0%, #6542e8 61%, #8158ef 100%) !important;
+  box-shadow: 0 10px 24px rgba(57, 39, 130, .18) !important;
+}
+
+.network-app-shell .anonymous-campus-banner h1 {
+  color: #ffffff !important;
+  font-family: 'Fraunces', Georgia, serif !important;
+}
+
+.network-app-shell .anonymous-campus-view form,
+.network-app-shell .anonymous-campus-view article {
+  border-radius: 10px !important;
+}
+
+.network-app-shell .anonymous-campus-view aside > div {
+  border-radius: 10px !important;
+}
+
+/* Admin is an operations desk. Keep the actual controls and role gate intact,
+   while separating system health from the moderation workspace. */
+.network-app-shell .network-admin-page > div > div:first-child {
+  padding: 19px 22px !important;
+  border-color: var(--nw-line) !important;
+  border-left: 3px solid var(--nw-rust) !important;
+  border-radius: 10px !important;
+  background: #f2efff !important;
+}
+
+.network-app-shell .network-admin-page > div > div:first-child h2 {
+  color: var(--nw-rust) !important;
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.025em !important;
+  text-transform: none !important;
+}
+
+.network-app-shell .network-admin-page > div > div:first-child > p {
+  max-width: 510px;
+  color: var(--nw-muted);
+  font-size: 11px;
+}
+
+.network-app-shell .network-admin-page > div > div:first-child svg {
+  color: var(--nw-rust);
+}
+
+.network-app-shell .network-admin-page > div > div:nth-child(2) > div {
+  min-height: 108px;
+  justify-content: space-between;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+}
+
+.network-app-shell .network-admin-page > div > div:nth-child(2) {
+  display: grid;
+}
+
+.network-app-shell .network-admin-page > div > div:nth-child(3) {
+  border-radius: 9px;
+}
+
+.network-app-shell .network-admin-page > div > div:nth-child(2) p:first-of-type {
+  color: var(--nw-ink) !important;
+}
+
+@media (max-width: 1023px) {
+  .network-app-shell .network-home-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-top: 15px;
+  }
+
+  .network-app-shell .home-communities-section {
+    position: static;
+    width: 100%;
+    order: 2;
+  }
+
+  .network-app-shell .home-communities-section [data-preserve-horizontal-scroll="home-communities"] {
+    display: flex !important;
+    flex-flow: row nowrap;
+    grid-template-columns: none;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .network-app-shell .home-communities-section [data-preserve-horizontal-scroll="home-communities"] > button {
+    flex: 0 0 84px;
+    width: 84px;
+    min-width: 84px;
+    scroll-snap-align: start;
+  }
+
+  .network-app-shell .home-composer {
+    width: 100%;
+    order: 1;
+  }
+
+  .network-app-shell .home-post-stream {
+    width: 100%;
+    order: 3;
+  }
+
+  .network-app-shell .community-popular-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .network-app-shell .connect-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .network-app-shell .connect-page-header > p {
+    max-width: none;
+  }
+
+  .network-app-shell .connect-student-list {
+    grid-template-columns: 1fr;
+  }
+
+  .network-app-shell .community-detail-banner {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .network-app-shell .community-detail-root:not(.community-chat-root) {
+    padding-top: 12px;
+  }
+
+  .network-app-shell .community-detail-root:not(.community-chat-root) > * + * {
+    margin-top: 14px !important;
+  }
+
+  .network-app-shell .community-detail-banner {
+    box-sizing: border-box;
+    height: 260px;
+    min-height: 260px;
+    padding: 14px !important;
+    border-radius: 16px;
+  }
+
+  .network-app-shell .community-detail-banner--description-expanded {
+    height: auto;
+    min-height: 260px;
+  }
+
+  .network-app-shell .community-detail-banner > .relative.z-10 {
+    display: flex;
+    height: 100%;
+    min-height: 232px;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .network-app-shell .community-detail-banner > .relative.z-10 > * + * {
+    margin-top: 0 !important;
+  }
+
+  .network-app-shell .community-detail-banner--description-expanded > .relative.z-10 {
+    height: auto;
+    min-height: 232px;
+  }
+
+  .network-app-shell .community-detail-identity-row {
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .network-app-shell .community-detail-identity {
+    width: 100%;
+    flex: 0 0 auto;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .network-app-shell .community-detail-identity > div:first-child {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    font-size: 16px;
+  }
+
+  .network-app-shell .community-detail-title-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .network-app-shell .community-detail-banner h1 {
+    display: -webkit-box;
+    height: 2.4em;
+    overflow: hidden;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: clamp(18px, 4.8vw, 20px) !important;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -.02em !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .network-app-shell .community-detail-title-line > span {
+    min-height: 22px;
+    font-size: 11px;
+  }
+
+  .network-app-shell .community-detail-description-block {
+    min-height: 58px;
+  }
+
+  .network-app-shell .community-detail-description {
+    margin-top: 4px !important;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .network-app-shell .community-detail-description:not(.is-expanded) {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .network-app-shell .community-detail-description-toggle {
+    display: inline-flex;
+    margin-top: 2px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #e2d9ff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .network-app-shell .community-detail-handle {
+    display: none;
+  }
+
+  .network-app-shell .community-detail-actions {
+    width: 100%;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .network-app-shell .community-detail-actions .community-detail-action-button {
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  .network-app-shell .community-detail-actions .community-detail-join-button {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .network-app-shell .community-detail-actions > button:not(.community-detail-join-button) {
+    width: 40px;
+    min-width: 40px;
+    flex: 0 0 40px;
+  }
+
+  .network-app-shell .community-detail-online-status {
+    min-height: 22px;
+    padding-top: 6px;
+  }
+
+  @media (max-width: 360px) {
+    .network-app-shell .community-detail-join-label-full {
+      display: none;
+    }
+
+    .network-app-shell .community-detail-join-label-short {
+      display: inline;
+    }
+  }
+
+  .network-app-shell .network-learn-view {
+    padding: 18px 14px calc(7.5rem + env(safe-area-inset-bottom));
+  }
+
+  .network-app-shell .network-learn-view > div:first-child h1 {
+    font-size: 30px;
+  }
+
+  .network-app-shell .learn-section-tabs {
+    width: 100%;
+  }
+
+  .network-app-shell .learn-section-tabs button {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .network-app-shell .learn-resume-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .network-app-shell .learn-resume-main {
+    gap: 17px;
+    padding: 21px;
+  }
+
+  .network-app-shell .learn-resume-heading h2 {
+    font-size: 29px;
+  }
+
+  .network-app-shell .learn-resume-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .network-app-shell .learn-resume-primary,
+  .network-app-shell .learn-resume-secondary {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .network-app-shell .learn-resume-aside {
+    gap: 19px;
+    padding: 21px;
+    border-top: 1px solid var(--nw-line);
+    border-left: 0;
+  }
+
+  .network-app-shell .learn-resume-step {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 7px;
+  }
+
+  .network-app-shell .learn-resume-step-status {
+    font-size: 8px;
+  }
+
+  .network-app-shell .learn-roadmap-progress-panel {
+    padding: 20px;
+  }
+
+  .network-app-shell .community-popular-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .network-app-shell .community-view {
+    padding-top: 18px;
+  }
+
+}

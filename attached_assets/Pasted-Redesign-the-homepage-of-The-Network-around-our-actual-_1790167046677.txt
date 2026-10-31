@@ -1,0 +1,566 @@
+Redesign the homepage of The Network around our actual vision and founder story.
+
+The Network is NOT only a college networking platform. It is a student network for school students, college students, competitive exam aspirants and students exploring different skills and interests across India.
+
+The core positioning should be:
+
+“Your Network Should Be Bigger Than Your Surroundings.”
+
+The Network helps students connect beyond the boundaries of their own school, college, city or surroundings and discover people across India who share their interests, goals and ambitions.
+
+The homepage should feel like a real student-built startup with a strong mission. It should be clean, modern, youthful and trustworthy. Avoid making it look like a generic social media app or a corporate EdTech website.
+
+IMPORTANT:
+- Do NOT add a Founding Member section.
+- Do NOT make the homepage college-specific.
+- Do NOT position The Network as only a college platform.
+- Do NOT overuse corporate language.
+- Keep the existing brand identity and UI style where possible, but restructure the homepage around the vision below.
+- The homepage should clearly communicate that students can connect with people from their own school/college/city/village AND with students across India.
+- Do not claim features that are not currently available. Clearly distinguish the current product from the long-term vision.
+
+--------------------------------------------------
+1. HERO SECTION
+--------------------------------------------------
+
+Headline:
+
+Your Network Should Be Bigger Than Your Surroundings.
+
+Subheading:
+
+The Network helps students connect beyond the boundaries of their own school, college, city or surroundings and discover people across India who share their interests, goals and ambitions.
+
+Whether you’re preparing for an exam, learning a skill, exploring a new field, building a project or simply looking for people like you, The Network helps you find them.
+
+Primary CTA:
+Join The Network
+
+Secondary CTA:
+Explore Communities
+
+Small text:
+
+Built by students at NIT Trichy • For students across India
+
+--------------------------------------------------
+2. WHAT IS THE NETWORK?
+--------------------------------------------------
+
+Heading:
+
+A Bigger Network for Every Student
+
+Content:
+
+As students, our network is often limited to the people around us.
+
+Our school.
+Our college.
+Our coaching institute.
+Our city.
+Sometimes even our village.
+
+And sometimes, that’s all we know.
+
+But there are students across India who are interested in the same things we are.
+
+Someone learning Python.
+Someone preparing for JEE.
+Someone building a robotics project.
+Someone interested in aerospace.
+Someone exploring AI.
+Someone starting a startup.
+Someone preparing for NEET.
+Someone looking for a project partner.
+
+The Network helps you find them.
+
+Students can connect with people from their own school or college, people from their city or village, and students from completely different parts of India.
+
+--------------------------------------------------
+3. CORE IDEA
+--------------------------------------------------
+
+Heading:
+
+Your Network Can Be Much Bigger.
+
+Show this visually:
+
+Your School
+↓
+Your College
+↓
+Your City / Village
+↓
+Students Across India
+
+Supporting text:
+
+Your school is a network.
+Your college is a network.
+Your city is a network.
+Your village is a network.
+
+But your network doesn’t have to end there.
+
+The Network brings these networks together.
+
+Students can stay connected with the people around them while also discovering and connecting with students from different schools, colleges, cities and communities across India.
+
+--------------------------------------------------
+4. WHO IS THE NETWORK FOR?
+--------------------------------------------------
+
+Heading:
+
+For Every Student
+
+Create four clean cards.
+
+School Students:
+
+Connect with students from your school and other schools across India. Explore JEE, NEET, coding, AI, robotics, aerospace, science and more.
+
+College Students:
+
+Find project teammates, coding partners, hackathon teammates, seniors, mentors and students with similar interests.
+
+Competitive Exam Students:
+
+Connect with students preparing for JEE, NEET and other competitive exams. Find study partners, discuss doubts and share resources.
+
+Students Exploring Skills:
+
+Connect with students learning Coding, DSA, AI, ML, Web Development, App Development, Robotics, Aerospace, Aviation, Startups, Entrepreneurship, Research and more.
+
+--------------------------------------------------
+5. FIND THE RIGHT PEOPLE
+--------------------------------------------------
+
+Heading:
+
+Find People Who Are On A Similar Path
+
+Show feature cards:
+
+Study Partner:
+Prepare together with students working towards the same goals.
+
+Coding Partner:
+Practice coding and DSA with other students.
+
+Project Teammate:
+Find students with complementary skills and build projects together.
+
+Hackathon Teammate:
+Connect with students who want to build and compete together.
+
+Mentors & Seniors:
+Learn from people who have already gone through the journey.
+
+Like-Minded Students:
+Meet students who are interested in the same things you are.
+
+--------------------------------------------------
+6. COMMUNITIES
+--------------------------------------------------
+
+Heading:
+
+Learn With People, Not Alone.
+
+Supporting text:
+
+The Network is building communities around the things students care about.
+
+Show examples:
+
+JEE
+NEET
+CBSE Class 12
+Coding
+DSA
+AI & ML
+Python
+Web Development
+Robotics
+Aerospace
+Aviation
+Startups
+Entrepreneurship
+Research
+YIIC
+
+Supporting text:
+
+Inside communities, students can ask questions, share resources, discuss ideas and learn together.
+
+The goal isn’t just to create another group.
+
+The goal is to create communities that are actually useful.
+
+CTA:
+Explore Communities
+
+--------------------------------------------------
+7. LOCAL + NATIONAL NETWORK
+--------------------------------------------------
+
+Heading:
+
+Your Community. Your Country. One Network.
+
+Text:
+
+You don’t have to choose between your own school or college and students across India.
+
+You can have both.
+
+Connect with your own school.
+Connect with your city.
+Connect with your college.
+Discover students across India.
+
+The Network combines your existing community with a much bigger network of students.
+
+Use a visual showing:
+
+Your School
++
+Your College
++
+Your City / Village
++
+Communities
++
+Students Across India
+
+--------------------------------------------------
+8. WHY WE STARTED THE NETWORK
+--------------------------------------------------
+
+Heading:
+
+I Didn’t Know What Was Possible.
+
+This section should be visually strong and personal.
+
+Founder story:
+
+I come from a small village near Bidasar, Churu, Rajasthan.
+
+I studied Classes 11 and 12 in a government school in my village.
+
+At that time, I didn’t know much about coding, robotics, aerospace, startups or the different skills and career paths students could explore.
+
+I didn’t really know what I could learn or what I could actually do beyond what I was seeing around me.
+
+There weren’t many people around me who could introduce me to these things or guide me towards them.
+
+After Class 11, a friend told me about JEE.
+
+At that time, I couldn’t join a coaching institute or move to another city.
+
+After Class 12, when I got good marks, someone suggested to my father that he should send me to Sikar for further preparation.
+
+That’s when things started changing for me.
+
+Later, I got into NIT Trichy.
+
+But when I first came here, I struggled a lot.
+
+I wasn’t even comfortable with English in the beginning, and my first semester was difficult.
+
+Then I started seeing something I had never really experienced before.
+
+Students around me had already been learning coding since Class 11 or 12.
+
+Some were building projects.
+
+Some already knew about different technologies, competitions, startups, research opportunities and different career paths.
+
+And I kept thinking:
+
+“Why didn’t I know about these things earlier?”
+
+It wasn’t that I didn’t want to learn.
+
+I simply didn’t have the exposure.
+
+I didn’t have people around me who could show me what was possible.
+
+That experience made me realise:
+
+“A student’s potential shouldn’t be limited by their surroundings.”
+
+That’s why we’re building The Network.
+
+--------------------------------------------------
+9. THE PROBLEM WE WANT TO CHANGE
+--------------------------------------------------
+
+Heading:
+
+Sometimes It’s Not an Ability Gap. It’s an Access Gap.
+
+Content:
+
+A student may be curious.
+
+They may want to learn.
+
+They may have the ability.
+
+But they may not know:
+
+- what they can learn
+- what fields exist
+- what other students are doing
+- who they can ask
+- where they can find people with similar interests
+- what opportunities are available
+
+And that’s where we want to help.
+
+A student shouldn’t have to wait until college to discover coding.
+
+A student shouldn’t have to move to another city to discover robotics or aerospace.
+
+A student shouldn’t have to already know the right people to find guidance.
+
+A student should be able to discover possibilities while they are still exploring what they want to do.
+
+--------------------------------------------------
+10. WHAT WE WANT TO CHANGE
+--------------------------------------------------
+
+Heading:
+
+We Want To Make Access Bigger.
+
+Create four cards:
+
+More Exposure:
+Help students discover fields, skills and possibilities they may never encounter around them.
+
+More Connections:
+Help students find people with similar interests, goals and ambitions.
+
+More Learning:
+Make it easier for students to learn from each other, seniors and experienced people.
+
+More Opportunities:
+Help students discover projects, competitions, events, communities and other opportunities.
+
+--------------------------------------------------
+11. HOW THE NETWORK WORKS
+--------------------------------------------------
+
+Heading:
+
+Discover → Connect → Learn → Build → Grow
+
+Discover:
+Find people, communities, resources and opportunities.
+
+Connect:
+Meet students who share your interests and goals.
+
+Learn:
+Ask questions, share knowledge and learn together.
+
+Build:
+Work on projects, ideas, competitions and hackathons.
+
+Grow:
+Build skills, relationships and opportunities beyond your surroundings.
+
+--------------------------------------------------
+12. CURRENT TRACTION
+--------------------------------------------------
+
+Heading:
+
+We’re Just Getting Started.
+
+Show the current verified numbers dynamically if possible:
+
+300+ Students
+50+ Colleges
+10+ Schools
+
+If accurate, mention:
+
+Students from 50+ colleges including IITs and NITs.
+
+Supporting text:
+
+Students from different schools, colleges and communities are already joining The Network.
+
+And we’re building it together with students.
+
+Do not exaggerate or show fake numbers.
+
+--------------------------------------------------
+13. STUDENT COMMUNITY BUILDERS
+--------------------------------------------------
+
+Heading:
+
+Help Build Your Community
+
+Supporting text:
+
+We’re looking for students who want to help build their own school or college community on The Network.
+
+You don’t need thousands of followers.
+You don’t need to be an expert.
+
+You just need to care about making your student community more connected.
+
+Students can help:
+
+- Bring interested students together
+- Start discussions
+- Share useful resources
+- Help students discover relevant communities
+- Give feedback
+- Help us understand what students actually need
+
+CTA:
+
+Become a Community Builder
+
+Do NOT call this a Founding Member section.
+
+--------------------------------------------------
+14. BIGGER VISION
+--------------------------------------------------
+
+Heading:
+
+We’re Building More Than a Student Platform.
+
+Content:
+
+Today, we’re helping students find:
+
+People
+Communities
+Resources
+Guidance
+Opportunities
+
+But the bigger vision is:
+
+A connected network of students across India where every student can find the people, knowledge and opportunities they need to learn, build and grow.
+
+Long-term journey:
+
+Discover → Connect → Learn → Build → Compete → Grow
+
+Clearly label future capabilities as the long-term vision and do not imply they are already available.
+
+--------------------------------------------------
+15. IMPACT
+--------------------------------------------------
+
+Heading:
+
+Imagine What Happens When Every Student Has Access To A Bigger Network.
+
+Show examples:
+
+A student in a village discovers coding.
+
+A school student finds others preparing for JEE.
+
+A student finds a project teammate from another college.
+
+A student interested in aerospace finds others who share the same curiosity.
+
+A student building a startup finds someone with the skills they need.
+
+A student preparing for an exam finds people going through the same journey.
+
+A student discovers a field they didn’t even know existed.
+
+Closing statement:
+
+That’s the impact we want to create.
+
+Not just more connections.
+
+More possibilities.
+
+--------------------------------------------------
+16. FINAL CTA
+--------------------------------------------------
+
+Large headline:
+
+Your Network Can Be Much Bigger Than Your Surroundings.
+
+Text:
+
+Start with your school.
+Start with your college.
+Start with your city.
+Start with your village.
+
+Then discover what’s beyond it.
+
+Primary CTA:
+
+Join The Network
+
+Secondary CTA:
+
+Explore Communities
+
+Final tagline:
+
+The Network
+Connect. Learn. Grow.
+
+--------------------------------------------------
+DESIGN DIRECTION
+--------------------------------------------------
+
+Use a clean, modern, student-focused visual identity.
+
+The homepage should feel:
+- youthful
+- ambitious
+- human
+- trustworthy
+- inclusive
+- India-focused
+- student-built
+
+Avoid:
+- generic corporate stock imagery
+- overly formal EdTech styling
+- excessive gradients
+- unnecessary animations
+- fake testimonials
+- fake statistics
+- “corporate” buzzwords
+- making everything about colleges
+- making the product look like LinkedIn
+
+Use visual storytelling where possible.
+
+The founder story should feel personal and authentic.
+
+The central visual idea throughout the homepage should be:
+
+“Your Network Can Be Much Bigger Than Your Surroundings.”
+
+The website should make it immediately clear that The Network is for students from villages, towns, cities, schools, colleges and different educational backgrounds — and that they can connect both with people around them and with students across India.
+
+The final emotional takeaway should be:
+
+“I don’t have to be limited by the people and opportunities around me. I can build a much bigger network.”

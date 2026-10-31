@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
+@import "tailwindcss";
+@import "./uploaded/index.css";
+@source not "../../.local/**";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-display: "Outfit", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+/* ── Theme surface tokens ──────────────────────────────── */
+:root, html.theme-light {
+  --t-bg: #FAF7F2;
+  --t-card: #FFFEFB;
+  --t-header: rgba(250,247,242,0.92);
+  --t-border: rgba(220,215,205,0.85);
+}
+
+html.theme-dark {
+  --t-bg: #09090C;
+  --t-card: #121217;
+  --t-header: rgba(14,14,18,0.9);
+  --t-border: rgba(255,255,255,0.1);
+}
+
+html.theme-ocean {
+  --t-bg: #06172A;
+  --t-card: #0B2240;
+  --t-header: rgba(6,23,42,0.9);
+  --t-border: rgba(56,189,248,0.14);
+}
+
+html.theme-forest {
+  --t-bg: #061A0B;
+  --t-card: #0A2412;
+  --t-header: rgba(6,26,11,0.9);
+  --t-border: rgba(52,211,153,0.14);
+}
+
+html.theme-sunset {
+  --t-bg: #FDF6EE;
+  --t-card: #FFFFFF;
+  --t-header: rgba(253,246,238,0.95);
+  --t-border: rgba(251,146,60,0.25);
+}
+
+html.theme-midnight {
+  --t-bg: #0E0720;
+  --t-card: #180C30;
+  --t-header: rgba(14,7,32,0.9);
+  --t-border: rgba(168,85,247,0.18);
+}
+
+/* Hide scrollbars for chrome, safari, firefox, edge, opera and webviews */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Custom sleek minimalist scrollbar for normal scrollable panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.4);
+}
+
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); opacity: 0.85; }
+  to   { transform: translateX(0);    opacity: 1;    }
+}
+@keyframes slideInFromLeft {
+  from { transform: translateX(-100%); opacity: 0.85; }
+  to   { transform: translateX(0);     opacity: 1;    }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(-20px) scale(1.2) rotate(-5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-250px) scale(1) rotate(10deg);
+    opacity: 0;
+  }
+}
+
+/* Marquee animations */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes marquee-reverse {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+.animate-marquee-reverse {
+  animation: marquee-reverse 30s linear infinite;
+}
+.animate-marquee:hover,
+.animate-marquee-reverse:hover {
+  animation-play-state: paused;
+}
+
+/* College card interactions */
+@keyframes popIn {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.7) translateY(4px); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1)   translateY(0);   }
+}
+@keyframes livePulse {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(1.5); opacity: 0.6; }
+}
+
+/* Video page overrides — only apply when .video-page class is on body */
+body.video-page {
+  background-color: #09090b;
+  color: #ffffff;
+  overflow: hidden;
+}

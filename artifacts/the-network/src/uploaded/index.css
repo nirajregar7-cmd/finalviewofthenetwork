@@ -1,0 +1,890 @@
+@import "tailwindcss";
+
+:root {
+  --brand: #4F46E5;
+  --bg: #F8FAFC;
+  --text: #0F172A;
+  --sub: #64748B;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+}
+
+/* Keep the product shell level and contained. This also protects against
+   device/browser styles or an accidental transform leaking into the UI. */
+.network-app-shell {
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  overflow-x: clip;
+  transform: none !important;
+  transform-origin: top left;
+  perspective: none !important;
+}
+
+.network-sidebar,
+.network-main-content,
+.network-top-nav,
+.network-bottom-nav {
+  transform: none !important;
+}
+
+.mobile-bottom-nav-container {
+  display: none;
+}
+
+.network-bottom-nav {
+  position: fixed !important;
+  top: auto !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+}
+
+/* Sleek Interface Custom Classes */
+.glass-sidebar {
+  width: 260px;
+  min-width: 260px;
+  border-right: 1px solid #E2E8F0;
+  background: #FFFFFF;
+}
+
+.main-content {
+  flex: 1;
+  background-color: var(--bg);
+  min-width: 0;
+  min-height: 100vh;
+  padding-top: 56px;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.network-main-content {
+  width: 100%;
+  max-width: 100%;
+}
+
+.top-nav {
+  height: 72px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  isolation: isolate;
+}
+
+@media (max-width: 1023px) {
+  .network-app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  .main-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .main-content > main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .main-content > main > * {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .main-content img {
+    max-width: 100%;
+  }
+
+  /* Chats owns the mobile viewport when the app header is hidden. */
+  .main-content.chat-main-content {
+    padding-top: 0;
+    overflow: hidden;
+  }
+
+  /* Community chat owns the mobile viewport while the app shell controls
+     navigation through the chat back button. */
+  .main-content.community-chat-main-content {
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    padding-top: 0 !important;
+    overflow: clip;
+    overscroll-behavior: none;
+  }
+
+  /* Keep chat layout correct even if the parent callback has not committed
+     its chat-screen flag yet. This prevents the app header/nav from stealing
+     the viewport during the first render of a chat room. */
+  .network-main-content:has(.community-chat-root) {
+    height: 100dvh !important;
+    padding-top: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .network-main-content:has(.community-chat-root) .network-top-nav,
+  .network-app-shell:has(.community-chat-root) .mobile-bottom-nav-container {
+    display: none !important;
+  }
+
+  .network-main-content:has(.community-chat-root) > main {
+    height: 100%;
+    min-height: 0;
+    padding-bottom: 0 !important;
+  }
+
+  .top-nav {
+    height: 56px;
+    min-height: 56px;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(14px);
+  }
+
+  .top-nav > div {
+    min-width: 0;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .top-nav .search-bar {
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
+  }
+
+  .top-nav .search-bar input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Community chat is a viewport-owned flex column. The only scroll boundary
+     is the message list; the chat header and composer are fixed flex rows. */
+  .community-chat-root {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    flex: 1 1 auto;
+    height: var(--community-viewport-height, 100%);
+    max-height: var(--community-viewport-height, 100%);
+    min-height: 0;
+    min-width: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 0 env(safe-area-inset-bottom) !important;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .community-chat-main-content > main {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .community-chat-root > * {
+    margin: 0 !important;
+  }
+
+  .community-chat-root .community-detail-back,
+  .community-chat-root .community-detail-banner,
+  .community-chat-root .community-chat-tabs {
+    display: none;
+  }
+
+  .community-chat-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex: 0 0 56px;
+    width: 100%;
+    min-height: 56px;
+    margin: 0;
+    padding: 0.5rem 0.75rem 0.375rem;
+    overflow-x: auto;
+    min-height: 56px;
+    background: rgba(248, 250, 252, 0.96);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 1px 0 rgba(226, 232, 240, 0.85);
+  }
+
+  .community-chat-section {
+    display: flex;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .community-chat-section > * {
+    margin: 0 !important;
+  }
+
+  .community-chat-section > .grid {
+    display: flex;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .community-chat-panel {
+    min-height: 0;
+    flex: 1 1 auto;
+    border-radius: 0;
+    border-color: transparent;
+    background: #f8fafc;
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  .community-chat-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex: 0 0 auto;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 1px 0 rgba(226, 232, 240, 0.9);
+  }
+
+  .community-chat-messages {
+    flex: 1 1 0%;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    background: #f8fafc;
+    padding-bottom: 8rem !important;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .community-chat-composer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100vw;
+    z-index: 70;
+    flex: 0 0 auto !important;
+    min-height: 0;
+    border-top-color: rgba(226, 232, 240, 0.9);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .community-chat-root.community-keyboard-open .community-chat-composer {
+    bottom: var(--community-keyboard-inset, 0px);
+  }
+
+  .community-chat-root.community-keyboard-open {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  .community-chat-bottom-nav-hidden {
+    display: none !important;
+  }
+
+  .mobile-chat-shell {
+    min-height: 0;
+    max-height: calc(100dvh - 4.5rem);
+  }
+
+  .mobile-chat-shell > div {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .mobile-chat-messages {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .mobile-chat-composer {
+    position: relative;
+    z-index: 20;
+    flex: 0 0 auto !important;
+  }
+
+  .network-bottom-nav {
+    width: 100%;
+    max-width: 100vw;
+    z-index: 60;
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+  }
+
+  .mobile-bottom-nav-container {
+    display: block !important;
+    position: relative;
+    z-index: 60;
+  }
+
+  /* A community chat owns the whole phone viewport, including the bottom
+     edge. Keep the global nav from taking space away from the composer. */
+  .mobile-bottom-nav-container.community-chat-bottom-nav-hidden {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobile-bottom-nav-container {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main-content {
+    padding-top: 72px;
+  }
+
+  .top-nav {
+    left: 260px;
+  }
+}
+
+.search-bar {
+  background: #F1F5F9;
+  border-radius: 12px;
+}
+
+.verified-badge {
+  color: var(--brand);
+  font-size: 14px;
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.post-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease-in-out;
+}
+
+.post-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.community-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: #EEF2FF;
+  color: var(--brand);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-pill {
+  font-size: 12px;
+  background: #F1F5F9;
+  padding: 2px 10px;
+  border-radius: 20px;
+  color: var(--sub);
+  font-weight: 600;
+}
+
+.nav-item {
+  padding: 10px 16px;
+  border-radius: 12px;
+  margin: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--sub);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.nav-item:hover {
+  background: #F8FAFC;
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.fab {
+  box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Connect is intentionally viewport-contained. Long study rails can scroll
+   inside their own row, while the rest of the page never creates sideways
+   drift on phones. */
+.connect-view {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.connect-view > * {
+  min-width: 0;
+}
+
+.connect-request-card {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+
+.connect-study-rail {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  body {
+    background: #eef0f2;
+  }
+
+  .network-app-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .network-top-nav {
+    height: 60px !important;
+    min-height: 60px !important;
+    padding-left: 0.625rem !important;
+    padding-right: 0.625rem !important;
+  }
+
+  .main-content {
+    height: 100dvh !important;
+    padding-top: 60px;
+    padding-bottom: 0 !important;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Keep directory/feed views scrollable inside the fixed mobile shell.
+     The active view must contribute its full content height instead of
+     shrinking to the remaining flex space below the fixed header. */
+  .main-content:not(.chat-main-content):not(.community-chat-main-content) {
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    touch-action: pan-y;
+  }
+
+  .network-main-content:not(.chat-main-content):not(.community-chat-main-content) > main {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: max-content !important;
+  }
+
+  .network-main-content > main:has(.mobile-home-feed-shell) {
+    padding-bottom: 0 !important;
+  }
+
+  .mobile-home-feed-shell {
+    /* Tune the mobile feed rhythm in one place when the card/tab relationship changes. */
+    --mobile-community-tabs-gap: 0rem;
+    --mobile-tabs-post-gap: 0rem;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 0 calc(7.25rem + env(safe-area-inset-bottom)) !important;
+    gap: 0 !important;
+    background: #eef0f2;
+  }
+
+  .mobile-home-feed-shell > * + * {
+    margin-top: 0 !important;
+  }
+
+  .mobile-home-feed-shell .home-composer {
+    width: calc(100% - 1.75rem) !important;
+    margin: 0.875rem 0.875rem 0 !important;
+    border: 1px solid #d8d8f4 !important;
+    border-radius: 1.125rem !important;
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.1) !important;
+    padding: 1rem !important;
+  }
+
+  .mobile-home-feed-shell .home-composer > div:first-child p:first-child {
+    font-size: 1rem;
+  }
+
+  .mobile-home-feed-shell .home-composer > div:first-child p:last-child {
+    font-size: 0.75rem;
+  }
+
+  .mobile-home-feed-shell .home-composer > button {
+    min-height: 2rem;
+    border-radius: 0.875rem;
+    font-size: 0.75rem;
+  }
+
+  .mobile-home-feed-shell .home-composer .no-scrollbar > button {
+    min-height: 1.75rem;
+    border-radius: 0.625rem;
+    font-size: 0.625rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .mobile-home-feed-shell .home-composer .no-scrollbar > button > span:first-child {
+    font-size: 0.75rem;
+  }
+
+  .mobile-home-feed-shell .home-communities-section {
+    width: 100%;
+    margin-top: 1rem !important;
+    border: 0 !important;
+    border-radius: 0;
+    background: transparent;
+    padding: 0 1rem 0.25rem;
+  }
+
+  .mobile-home-feed-shell .home-communities-section > div:first-child h2 {
+    font-size: 0.875rem;
+  }
+
+  .mobile-home-feed-shell .home-communities-section > div:first-child p {
+    font-size: 0.625rem;
+  }
+
+  .mobile-home-feed-shell .home-communities-section > div:last-child > button {
+    width: 5.25rem;
+    min-height: 6.5rem;
+    border-radius: 1rem;
+    padding: 0.5rem 0.375rem;
+  }
+
+  .mobile-home-feed-shell .home-communities-section > div:last-child > button > span:first-child {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+  }
+
+  .mobile-home-feed-shell .home-communities-section > div:last-child > button > span:nth-child(2) {
+    margin-top: 0.5rem;
+    font-size: 0.625rem;
+  }
+
+  .mobile-home-feed-shell .home-communities-section > div:last-child > button > span:nth-child(3) {
+    margin-top: 0.25rem;
+    font-size: 0.5625rem;
+  }
+
+  .mobile-home-feed-shell .home-post-stream {
+    width: 100%;
+    margin-top: var(--mobile-community-tabs-gap) !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .mobile-home-feed-shell .home-post-stream > *,
+  .mobile-home-feed-shell .home-post-list > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .mobile-home-feed-shell .home-post-stream > .home-feature-card,
+  .mobile-home-feed-shell .home-post-stream > .home-post-list {
+    margin-top: var(--mobile-tabs-post-gap) !important;
+  }
+
+  .mobile-home-feed-shell .home-post-stream > .home-feature-card + .home-feature-card {
+    margin-top: var(--mobile-tabs-post-gap) !important;
+  }
+
+  .mobile-home-feed-shell .home-post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .mobile-home-feed-shell .home-post-list > * + * {
+    margin-top: 0 !important;
+  }
+
+  .mobile-home-feed-shell .home-post-list > article,
+  .mobile-home-feed-shell .home-post-list > section {
+    border: 1px solid #e0e5eb !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.035) !important;
+  }
+
+  .mobile-home-feed-shell .home-post-card {
+    padding: 0.875rem 1rem !important;
+  }
+
+  .mobile-home-feed-shell .home-post-card h3 {
+    font-size: 1rem;
+    line-height: 1.32;
+  }
+
+  .mobile-home-feed-shell .home-post-card p {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .mobile-home-feed-shell .home-post-card .post-type-pill {
+    display: none;
+  }
+
+  .mobile-home-feed-shell .home-post-card .post-actions {
+    margin-top: 0.25rem;
+    padding-top: 0.625rem;
+  }
+
+  .mobile-home-feed-shell .home-post-card .post-actions > div {
+    gap: 0.25rem;
+  }
+
+  .mobile-home-feed-shell .home-post-card .post-actions > div > button {
+    min-height: 2rem;
+    border-radius: 9999px;
+    padding: 0.375rem 0.625rem;
+    background: #f5f6f7;
+  }
+
+  .mobile-home-feed-shell .home-post-card .post-actions > div > button:hover {
+    background: #e9ebed;
+  }
+
+  .network-bottom-nav {
+    min-height: calc(3.75rem + env(safe-area-inset-bottom));
+    padding-top: 0.375rem;
+    padding-bottom: max(0.375rem, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.98) !important;
+    box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.08), 0 -8px 24px rgba(15, 23, 42, 0.04);
+    backdrop-filter: blur(18px);
+  }
+
+  .network-header-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 44px;
+    align-items: center;
+    column-gap: 0.5rem;
+  }
+
+  .network-header-brand {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .network-header-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    max-width: none;
+    align-items: center;
+  }
+
+  .network-top-nav:not(.search-open) .network-header-search {
+    display: none !important;
+  }
+
+  .network-header-search.mobile-search-closed {
+    display: none !important;
+  }
+
+  .network-header-search.mobile-search-open {
+    display: flex !important;
+  }
+
+  .network-top-nav.search-open {
+    height: 104px !important;
+    min-height: 104px !important;
+  }
+
+  .main-content:has(.network-top-nav.search-open) {
+    padding-top: 104px;
+  }
+
+  .network-top-nav.search-open .network-header-inner {
+    grid-template-rows: 44px 44px;
+    row-gap: 0.25rem;
+  }
+
+  .network-filter-button {
+    display: flex !important;
+  }
+
+  .network-header-actions {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 0.25rem;
+  }
+
+  .connect-view {
+    padding-top: 1rem;
+    padding-bottom: 7.5rem;
+  }
+
+  .connect-page-header h1 {
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .connect-request-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .connect-request-actions {
+    box-sizing: border-box;
+    min-width: 0;
+    width: calc(100% - 3.5rem);
+    justify-content: flex-end;
+    margin-left: 3.5rem;
+  }
+
+  .connect-study-card {
+    min-width: min(275px, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
+  }
+
+  .connect-filter-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .connect-filter-toolbar > div:first-child {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .connect-filter-toolbar select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .connect-student-card {
+    min-width: 0;
+  }
+
+  .connect-community-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 379px) {
+  .network-top-nav .search-bar {
+    padding-left: 0.625rem;
+    padding-right: 0.625rem;
+  }
+
+  .network-top-nav .search-bar input {
+    font-size: 0.75rem;
+  }
+
+  .connect-filter-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .connect-filter-toolbar > div:first-child {
+    grid-column: auto;
+  }
+}

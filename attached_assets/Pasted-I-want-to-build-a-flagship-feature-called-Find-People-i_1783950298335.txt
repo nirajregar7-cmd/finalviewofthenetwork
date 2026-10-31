@@ -1,0 +1,391 @@
+I want to build a flagship feature called "Find People" inside The Network.
+
+The goal is to help students find the right people on their own campus.
+
+This is NOT a dating feature.
+
+It is designed for friendship mentorship studying networking and collaboration.
+
+--------------------------------------------------
+
+HOW IT WORKS
+
+A student clicks on "Find People"
+
+Then chooses what they are looking for.
+
+Options
+
+☕ Coffee Chat
+
+📚 Study Partner
+
+🎓 Senior Guidance
+
+🤝 Make New Friends
+
+💻 Project Partner
+
+🚀 Hackathon Teammates
+
+🏸 Sports Buddy
+
+💼 Internship Preparation Partner
+
+💻 Coding Partner
+
+✈️ Travel Buddy
+
+--------------------------------------------------
+
+CREATE A REQUEST
+
+Example
+
+Coffee Chat
+
+Title
+
+Coffee this Saturday
+
+Description
+
+Hi I'm Sneha
+
+I'm a 3rd year CSE student at NIT Trichy
+
+I enjoy meeting new people and talking about college life career goals and technology
+
+Looking for someone to grab coffee with this Saturday afternoon
+
+--------------------------------------------------
+
+Eligibility
+
+College
+
+Only my college
+
+Nearby colleges
+
+All colleges
+
+Year
+
+1st Year
+
+2nd Year
+
+3rd Year
+
+4th Year
+
+Any
+
+Branch
+
+Any
+
+Or specific branches
+
+Gender Preference
+
+Anyone
+
+Male
+
+Female
+
+Maximum Applicants
+
+1
+
+2
+
+5
+
+10
+
+Preferred Time
+
+Morning
+
+Afternoon
+
+Evening
+
+Weekend
+
+Meeting Location
+
+Campus Cafe
+
+Library
+
+Student Activity Centre
+
+Food Court
+
+Custom
+
+--------------------------------------------------
+
+Another example
+
+Study Partner
+
+Title
+
+Looking for a DSA Study Partner
+
+Description
+
+Preparing DSA consistently for the next six months
+
+Planning to solve LeetCode every evening from 7 PM to 9 PM
+
+Looking for someone serious who wants to stay consistent together
+
+--------------------------------------------------
+
+Another example
+
+Coding Partner
+
+Preparing for software placements
+
+Need someone to practice coding interviews with every day
+
+--------------------------------------------------
+
+Another example
+
+Senior Guidance
+
+Looking for seniors who can guide me about internships and placements
+
+--------------------------------------------------
+
+Another example
+
+Project Partner
+
+Looking for teammates to build a web development project
+
+--------------------------------------------------
+
+HOW STUDENTS DISCOVER REQUESTS
+
+Instead of random matching
+
+Students browse requests
+
+Search
+
+Filter
+
+Apply
+
+Filters
+
+Purpose
+
+College
+
+Branch
+
+Year
+
+Availability
+
+Interests
+
+Most Recent
+
+Most Popular
+
+--------------------------------------------------
+
+REQUEST CARD
+
+Coffee Chat
+
+Sneha
+
+3rd Year CSE
+
+NIT Trichy
+
+Saturday
+
+Campus Cafe
+
+12 applicants
+
+View Details
+
+Apply
+
+--------------------------------------------------
+
+DETAIL PAGE
+
+Shows
+
+Profile
+
+Bio
+
+Interests
+
+Purpose
+
+Description
+
+Meeting Place
+
+Meeting Time
+
+Eligibility
+
+Applicants Count
+
+Button
+
+Apply
+
+--------------------------------------------------
+
+APPLICATION
+
+When a student applies
+
+They write
+
+Short Introduction
+
+Example
+
+Hi I'm Rahul
+
+I'm a 2nd year EEE student
+
+Interested in AI and coding
+
+Would love to join
+
+--------------------------------------------------
+
+HOST DASHBOARD
+
+Sneha receives applications.
+
+Each application shows
+
+Profile Picture
+
+Name
+
+College
+
+Branch
+
+Year
+
+Interests
+
+Short Introduction
+
+Mutual Connections
+
+Reputation
+
+Buttons
+
+Accept
+
+Reject
+
+View Profile
+
+--------------------------------------------------
+
+AFTER ACCEPTANCE
+
+Only accepted students receive
+
+Congratulations
+
+Sneha accepted your request
+
+Now both students can chat privately
+
+Share notes
+
+Schedule meeting
+
+Share location manually if they want
+
+--------------------------------------------------
+
+REPUTATION
+
+After meeting
+
+Students can leave feedback.
+
+Helpful
+
+Friendly
+
+Professional
+
+Reliable
+
+Respectful
+
+Students build reputation over time.
+
+--------------------------------------------------
+
+SAFETY
+
+Verified student accounts only
+
+Block
+
+Report
+
+No phone numbers shared automatically
+
+No exact location sharing
+
+Recommend only public campus locations
+
+--------------------------------------------------
+
+UI STYLE
+
+Modern
+
+Minimal
+
+Apple inspired
+
+Rounded cards
+
+Soft shadows
+
+Premium animations
+
+Clean typography
+
+Mobile first
+
+--------------------------------------------------
+
+GOAL
+
+The feature should become the easiest way for students to find the right people on campus for studying mentorship friendship projects coding internships sports and meaningful connections.
+
+It should feel like LinkedIn meets Meetup but designed exclusively for college students.

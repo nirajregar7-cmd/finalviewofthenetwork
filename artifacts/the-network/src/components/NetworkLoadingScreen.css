@@ -1,0 +1,25 @@
+.network-loading-screen__dot {
+  animation: network-loading-screen__dot-pulse 1s linear infinite;
+}
+
+@keyframes network-loading-screen__dot-pulse {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .network-loading-screen__dot {
+    animation: none;
+    opacity: 0.68;
+  }
+
+  .network-loading-screen__dot:first-child {
+    opacity: 1;
+  }
+}

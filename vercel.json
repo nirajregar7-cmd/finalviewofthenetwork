@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "PORT=4173 BASE_PATH=/ pnpm --filter @workspace/the-network run build && pnpm --filter @workspace/api-server run build",
+  "outputDirectory": "artifacts/the-network/dist/public",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "artifacts/api-server/dist/**",
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    { "src": "/api(?:/.*)?", "dest": "/api/index" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

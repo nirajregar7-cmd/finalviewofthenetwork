@@ -1,0 +1,565 @@
+THE CORE IDEA:
+
+The Network is for ALL students, not only engineering students.
+
+A student should NOT be forced into one "stream".
+
+We need to separate:
+
+1. Degree / Program
+2. Field / Specialization
+3. Interests
+4. Goals
+5. Communities
+
+These should be stored separately and used together to personalize the student's experience.
+
+
+--------------------------------------------------
+1. ONBOARDING — EDUCATIONAL BACKGROUND
+--------------------------------------------------
+
+After signup, ask:
+
+"What are you studying?"
+
+Allow ONE primary program and optional additional programs.
+
+UNDERGRADUATE:
+- BA
+- BSc
+- BCom
+- BBA
+- BCA
+- BTech / BE
+- MBBS
+- BDS
+- BPharm
+- BPT
+- BSc Nursing
+- LLB
+- BArch
+- BDes
+- BFA
+- BEd
+- BSW
+- BHM / Hotel Management
+- BVSc
+- Agriculture
+- Fisheries
+- Journalism / Mass Communication
+- Library Science
+- Polytechnic
+- Diploma
+- ITI
+- Other
+
+POSTGRADUATE:
+- MA
+- MSc
+- MCom
+- MBA
+- MCA
+- MTech / ME
+- MPharm
+- MD / MS
+- MDS
+- LLM
+- MArch
+- MDes
+- MEd
+- MPH
+- MSW
+- MPlan
+- Other
+
+PROFESSIONAL:
+- CA
+- CS
+- CMA
+- CFA
+- ACCA
+- Actuarial Science
+- Other
+
+RESEARCH:
+- PhD
+- Research Scholar
+- Postdoctoral
+- Other
+
+COMPETITIVE EXAM / PREPARATION:
+- JEE
+- NEET
+- GATE
+- CAT
+- UPSC
+- CUET
+- GRE / GMAT
+- Other
+
+Also collect:
+
+- College
+- Course / Program
+- Branch / Specialization
+- Year / Semester
+- Graduation Year
+
+College verification must remain part of the system.
+
+
+--------------------------------------------------
+2. FIELD / SPECIALIZATION
+--------------------------------------------------
+
+After degree selection, ask:
+
+"What field are you studying or working in?"
+
+Allow multiple fields where appropriate.
+
+SCIENCE:
+- Physics
+- Chemistry
+- Mathematics
+- Biology
+- Statistics
+- Biotechnology
+- Microbiology
+- Biochemistry
+- Environmental Science
+- Geology
+- Astronomy
+- Life Sciences
+
+ENGINEERING:
+- Computer Science
+- Electrical
+- Electronics
+- Mechanical
+- Civil
+- Chemical
+- Aerospace
+- Automobile
+- Biomedical
+- Biotechnology
+- Industrial
+- Instrumentation
+- Mechatronics
+- Materials
+- Mining
+- Petroleum
+- Marine
+- Production
+- Environmental
+
+COMPUTING & TECHNOLOGY:
+- AI / ML
+- Data Science
+- Software Development
+- Web Development
+- App Development
+- Cybersecurity
+- Cloud / DevOps
+- Robotics
+- IoT
+- Blockchain
+- Game Development
+- AR / VR
+- Quantum Computing
+
+BUSINESS / COMMERCE / MANAGEMENT:
+- Commerce
+- Accounting
+- Finance
+- Economics
+- Business
+- Management
+- Marketing
+- Sales
+- HR
+- Operations
+- Consulting
+- Entrepreneurship
+- Product Management
+- Supply Chain
+- FinTech
+
+ARTS & HUMANITIES:
+- English
+- Hindi
+- Indian Languages
+- Literature
+- History
+- Philosophy
+- Geography
+- Sociology
+- Psychology
+- Political Science
+- Cultural Studies
+- Linguistics
+- Anthropology
+
+MEDICINE & HEALTH:
+- Medicine
+- Dentistry
+- Pharmacy
+- Nursing
+- Physiotherapy
+- Public Health
+- Nutrition
+- Veterinary
+- Occupational Therapy
+- Medical Research
+
+LAW & PUBLIC AFFAIRS:
+- Law
+- Public Policy
+- International Relations
+- Governance
+- Civil Services
+- Diplomacy
+- Human Rights
+
+DESIGN / ART / MEDIA:
+- Fine Arts
+- Graphic Design
+- UI/UX
+- Product Design
+- Fashion
+- Architecture
+- Interior Design
+- Photography
+- Film
+- Animation
+- Music
+- Theatre
+- Journalism
+- Content Creation
+
+AGRICULTURE / ENVIRONMENT:
+- Agriculture
+- Agritech
+- Food Technology
+- Forestry
+- Fisheries
+- Animal Sciences
+- Horticulture
+- Climate
+- Sustainability
+- Renewable Energy
+
+EDUCATION:
+- Teaching
+- Education
+- Special Education
+- Educational Psychology
+- EdTech
+
+SPORTS / RECREATION:
+- Sports
+- Fitness
+- Cricket
+- Football
+- Basketball
+- Badminton
+- Athletics
+- Gaming
+- Esports
+- Yoga
+
+OTHER:
+- Travel
+- Food
+- Volunteering
+- Social Impact
+- Literature
+- Other
+
+Do NOT force users to select from every category.
+
+Use progressive selection and search so onboarding doesn't become overwhelming.
+
+
+--------------------------------------------------
+3. INTERESTS
+--------------------------------------------------
+
+Ask:
+
+"What are you interested in?"
+
+Allow users to select up to 8 initially.
+
+Examples:
+
+- AI / ML
+- Coding
+- Startups
+- Entrepreneurship
+- Finance
+- Investing
+- Marketing
+- Design
+- Photography
+- Music
+- Writing
+- Film
+- Research
+- Robotics
+- Cybersecurity
+- Public Speaking
+- Sports
+- Gaming
+- Social Impact
+- Travel
+- etc.
+
+IMPORTANT:
+
+Interests are NOT the same as the student's degree.
+
+Example:
+
+A BTech Electrical student can select:
+AI/ML + Startups + Photography + Finance
+
+A BA Psychology student can select:
+Psychology + Writing + Startups
+
+An MBA Finance student can select:
+Finance + Entrepreneurship + Product
+
+
+--------------------------------------------------
+4. GOALS
+--------------------------------------------------
+
+Ask:
+
+"What are you looking to do on The Network?"
+
+Allow multiple selections.
+
+- Learn something new
+- Find study partners
+- Find like-minded people
+- Find mentors
+- Build projects
+- Find teammates
+- Join hackathons
+- Find internships
+- Prepare for placements
+- Find jobs
+- Find research opportunities
+- Build a startup
+- Find co-founders
+- Join competitions
+- Showcase my work
+- Attend events
+- Join college clubs
+- Make friends
+- Network
+
+These goals should heavily influence the Discover feed and recommendations.
+
+
+--------------------------------------------------
+5. PROFILE SETUP EXPERIENCE
+--------------------------------------------------
+
+Do not make onboarding feel like a long form.
+
+Use a simple progressive 4-step setup:
+
+STEP 1 — EDUCATION
+
+"What are you studying?"
+
+College
+Degree / Program
+Field / Specialization
+Year / Semester
+
+STEP 2 — INTERESTS
+
+"What are you interested in?"
+
+Select up to 8 interests.
+
+STEP 3 — GOALS
+
+"What are you looking to do?"
+
+Select multiple goals.
+
+STEP 4 — COMMUNITIES
+
+"Find your communities"
+
+Recommend communities based on:
+
+- College
+- Degree
+- Field
+- Interests
+- Goals
+
+Examples:
+
+/nit-trichy
+/ai-ml
+/startups
+/dsa
+/hackathons
+/research
+
+Allow users to join communities immediately.
+
+Also provide:
+
+"Skip for now"
+
+so users can complete their profile later.
+
+
+--------------------------------------------------
+6. PERSONALIZATION
+--------------------------------------------------
+
+Use the student's:
+
+- College
+- Degree
+- Field
+- Year
+- Interests
+- Goals
+- Communities
+- Activity
+
+to personalize:
+
+- Discover feed
+- Recommended communities
+- Recommended students
+- Learning content
+- Mentors
+- Opportunities
+- Collaboration requests
+- Events
+
+Example:
+
+Student:
+
+BTech Electrical
+NIT Trichy
+Interests: AI/ML + Startups
+Goals: Projects + Hackathons
+
+Recommended:
+
+/electrical
+/ai-ml
+/startups
+/hackathons
+
+AI/ML resources
+AI hackathons
+Students interested in AI
+Startup communities
+Relevant projects
+Potential teammates
+
+Another student:
+
+BA Psychology
+Interests: Psychology + Writing
+Goals: Research + Internship
+
+Recommended:
+
+/psychology
+/research
+/writing
+/internships
+
+Psychology resources
+Research opportunities
+Writing communities
+Relevant students
+Research mentors
+
+
+--------------------------------------------------
+7. IMPORTANT PRODUCT PRINCIPLE
+--------------------------------------------------
+
+Do not define a student only by their degree.
+
+A student's identity on The Network should be:
+
+Education
++
+Field
++
+Interests
++
+Goals
++
+Communities
++
+Activity
+
+This information should work together to create a personalized student network.
+
+The goal is to make The Network useful for ALL students:
+
+Engineering
+Arts
+Science
+Commerce
+Business
+Management
+Medicine
+Law
+Design
+Agriculture
+Education
+Media
+Sports
+Research
+Professional courses
+Diploma / ITI
+and more.
+
+
+--------------------------------------------------
+FINAL EXPERIENCE
+--------------------------------------------------
+
+The student joins The Network.
+
+They tell us:
+
+"Who are you?"
+→ Education
+
+"What are you interested in?"
+→ Interests
+
+"What do you want to achieve?"
+→ Goals
+
+"Where do you want to belong?"
+→ Communities
+
+Then The Network responds:
+
+"Here are the people, communities, resources and opportunities relevant to you."
+
+The goal is:
+
+DISCOVER → LEARN → CONNECT → BUILD → GROW

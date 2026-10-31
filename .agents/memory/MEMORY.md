@@ -1,0 +1,19 @@
+- [PWA install and launch behavior](pwa-install-behavior.md) — Keep the installable PWA; avoid re-downloading its app shell on every launch.
+- [Signed-in app scope](signed-in-app-scope.md) — Keep the public landing and signup/login unchanged; redesign only authenticated screens.
+- [Neon user data](neon-user-data.md) — Use the database the user explicitly selected; public stats count non-suspended accounts, not all user rows.
+- [Learning progress ownership](learning-progress-ownership.md) — Show progress and learner counts from the current student's checklist and real community records, not shared sample values.
+- [Compete access by student group](compete-student-access.md) — Keep Compete available to school students; hide it from college students.
+- [Loading screens](loading-state-branding.md) — Use only the animated-dot loader and “Loading...” text; omit the logo and extra copy.
+- [Cloudflare Pages uploads](cloudflare-pages-upload.md) — Use the artifact-root `--cwd` for Pages Functions; local Workerd TLS can differ from deployed Workers.
+- [Email provider routing](email-provider-routing.md) — Send OTP emails through Brevo and activity emails through Gmail SMTP.
+- [Chat realtime hosting](chat-realtime-hosting.md) — Point chat REST and Socket.IO at the same persistent API service; serverless endpoints cannot keep sockets open.
+- [Stable chat timestamps](chat-timestamp-grouping.md) — Group and format bubbles from immutable server-created timestamps, never from relative display labels.
+- [Password length policy](password-length-policy.md) — Use an 8-character minimum for signup and password resets; keep client and server rules aligned.
+- [Firebase hosting boundary](firebase-hosting-boundary.md) — Firebase serves only the frontend; Replit hosts the API and Neon remains the primary database.
+- [Firebase custom-domain cache headers](firebase-domain-cache-headers.md) — Cloudflare-proxied custom domains may cache service workers longer than the Firebase origin.
+- [Protected post images](protected-post-images.md) — Keep post-image access authenticated; browser image tags need an authenticated fetch when the API requires bearer tokens.
+- [Avatar cache freshness](avatar-cache-freshness.md) — Stable avatar URLs must revalidate when a user's photo changes; do not cache them as immutable.
+- [Firebase Hosting and Admin health](firebase-hosting-admin-health.md) — Hosting, browser Firebase, API CORS, and Firebase Admin projects may differ and need separate checks.
+- [Group creation scope](group-creation-scope.md) — Community-linked groups are admin-only; students can create separate standalone groups.
+- [Founding members page](founding-members-page.md) — Keep one complete public member page current whenever the user requests founding-member updates.
+- [Reshared post engagement](reshared-post-engagement.md) — Keep poll votes and the full comment thread shared with the original post across every reshare.

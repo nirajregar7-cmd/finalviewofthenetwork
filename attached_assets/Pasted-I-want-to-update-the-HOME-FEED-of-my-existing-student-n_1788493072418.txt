@@ -1,0 +1,554 @@
+I want to update the HOME FEED of my existing student networking app “The Network”.
+
+IMPORTANT:
+Do NOT redesign the entire app.
+Do NOT change the existing branding, bottom navigation, communities page, connect page, or overall UI unless required for this feed implementation.
+
+Keep the current visual language:
+- White background
+- Purple as the primary accent
+- Rounded cards
+- Clean modern student-focused UI
+- Soft shadows
+- Mobile-first responsive design
+
+The goal is to make the Home feed genuinely useful and personalized while keeping it simple.
+
+==================================================
+HOME FEED STRUCTURE
+==================================================
+
+At the top of the Home page, keep the existing post composer:
+
+“What are you looking for?”
+
+The user should be able to create different types of posts.
+
+Below the composer, create these 4 feed tabs:
+
+1. Latest
+2. Popular
+3. My College
+4. Communities
+
+Do NOT create a separate “Anonymous” feed.
+
+Do NOT create separate feeds for DSA, Cybersecurity, AI/ML, etc.
+
+Anonymous is a posting/privacy option, not a feed.
+
+==================================================
+1. LATEST FEED
+==================================================
+
+Latest should show newly created posts across The Network.
+
+Prioritize useful student activity instead of random social-media-style content.
+
+Post types can include:
+
+- Questions
+- Looking for someone
+- Study partner requests
+- Project partner requests
+- Hackathon/team requests
+- Opportunities
+- Resources
+- Discussions
+- Events
+- Community activity
+
+Sort primarily by recency.
+
+Example:
+
+“Looking for a study partner for tomorrow’s exam”
+
+“Anyone interested in building a project together?”
+
+“Does anyone know how to prepare for placements from 3rd year?”
+
+“Looking for 2 teammates for a hackathon”
+
+“Found a useful resource for learning Python”
+
+Do not make random campus photos or generic posts dominate this feed.
+
+==================================================
+2. POPULAR FEED
+==================================================
+
+Popular should show posts that are currently getting meaningful engagement.
+
+Do NOT simply sort by likes.
+
+Consider:
+
+- Comments
+- Replies
+- Connections generated
+- Saves
+- Shares
+- Recent engagement
+- Recency
+
+Use a reasonable ranking formula so old viral posts don't stay at the top forever.
+
+Example:
+
+🔥 “How should I start preparing for placements?”
+
+32 replies
+
+🔥 “Looking for teammates for a project”
+
+18 interested
+
+🔥 “Best resources for learning cybersecurity?”
+
+24 replies
+
+Popular should feel like:
+
+“What is everyone talking about right now?”
+
+==================================================
+3. MY COLLEGE FEED
+==================================================
+
+This feed should only show content relevant to the user's college.
+
+Use the college stored in the user's profile.
+
+For example:
+
+If the user belongs to MNNIT Allahabad:
+
+Show:
+- MNNIT student posts
+- MNNIT communities
+- MNNIT events
+- MNNIT discussions
+- Students looking for teammates
+- Study groups
+- Campus-related opportunities
+- Anonymous posts from MNNIT students
+
+Do NOT show unrelated posts from other colleges in this feed.
+
+If the user has not selected a college:
+
+Show a prompt:
+
+“Add your college to see what’s happening around you.”
+
+[Add College]
+
+==================================================
+4. COMMUNITIES FEED
+==================================================
+
+This feed should show activity ONLY from communities the user has joined.
+
+For example, if a user has joined:
+
+- DSA
+- Cybersecurity
+- AI/ML
+- NITT
+- SIH Preparation
+
+then this feed should show posts/activity from those communities.
+
+Examples:
+
+“New discussion in DSA”
+
+“Someone posted a new question in Cybersecurity”
+
+“New resource shared in AI/ML”
+
+“New announcement in NITT”
+
+“Someone replied to your community discussion”
+
+If the user hasn't joined any communities:
+
+Show:
+
+“You haven't joined any communities yet.”
+
+“Find communities that match your interests.”
+
+[Explore Communities]
+
+==================================================
+ANONYMOUS POSTS
+==================================================
+
+Anonymous should NOT be a separate feed.
+
+Anonymous is simply a privacy option when creating a post.
+
+When creating a post, allow:
+
+Post as:
+[ My Profile ] [ Anonymous ]
+
+If Anonymous is selected:
+
+Show the post as:
+
+👤 Anonymous
+
+Do not expose:
+- Name
+- Profile photo
+- Profile link
+- College identity if that could reveal the user
+
+However, the backend must still store the actual author securely for moderation/admin purposes.
+
+Anonymous posts should still appear normally in:
+
+Latest
+Popular
+My College
+Communities
+
+depending on the post's content and context.
+
+==================================================
+POST TYPES
+==================================================
+
+Create a clean post creation flow.
+
+When the user taps:
+
+“What are you looking for?”
+
+show options such as:
+
+🤝 Find a friend
+📚 Find a study partner
+💻 Find a project partner
+🏆 Find a teammate
+☕ Find someone to hang out with
+🧠 Find someone to learn with
+🎯 Prepare together
+✨ Something else
+
+Also allow normal posts such as:
+
+Question
+Discussion
+Resource
+Opportunity
+Event
+
+Do not force every post into a “looking for” category.
+
+==================================================
+LOOKING FOR POSTS
+==================================================
+
+These should be one of the most important post types on The Network.
+
+Example:
+
+👤 Rahul
+NIT Trichy · 2nd year
+
+LOOKING FOR
+
+📚 Study partner
+
+“Preparing for my upcoming exams and looking for someone who wants to study together.”
+
+[Connect]
+
+Another:
+
+👤 Anonymous
+
+LOOKING FOR
+
+🏆 Hackathon teammate
+
+“Looking for someone interested in frontend and UI/UX.”
+
+[I'm interested]
+
+Another:
+
+👤 Ananya
+MNNIT · 3rd year
+
+LOOKING FOR
+
+💻 Project partner
+
+“Building a small AI project and looking for someone interested in working together.”
+
+[Connect]
+
+==================================================
+PERSONALIZATION
+==================================================
+
+The feed should become personalized using:
+
+- College
+- Year
+- Branch
+- Interests
+- Communities joined
+- People followed
+- Looking-for preferences
+- Previous interactions
+
+But DO NOT over-personalize immediately.
+
+For new users, use:
+
+College + selected interests + latest/popular content.
+
+As the user interacts with content, gradually improve recommendations.
+
+==================================================
+HOME FEED CARD DESIGN
+==================================================
+
+Every post should clearly show:
+
+Profile/avatar or Anonymous
+Name
+College
+Year if available
+Post type
+Post content
+Relevant tags
+Time
+Engagement
+Action button
+
+For example:
+
+--------------------------------
+
+👤 Midhun ✓
+NIT Trichy · 2nd year
+
+📚 LOOKING FOR
+
+Study Partner
+
+“Anyone preparing for the same exam and
+wants to study together?”
+
+DSA · Placements
+
+💬 8 replies     ♡ 12
+
+[Connect]
+
+--------------------------------
+
+For anonymous:
+
+--------------------------------
+
+👤 Anonymous
+
+💬 DISCUSSION
+
+“What is the best way to start preparing
+for placements?”
+
+💬 14 replies     ♡ 21
+
+--------------------------------
+
+==================================================
+FEED FILTER BEHAVIOUR
+==================================================
+
+Tabs should work instantly without full page reload.
+
+Latest:
+Newest useful posts
+
+Popular:
+Trending/high-engagement posts
+
+My College:
+Only user's college
+
+Communities:
+Only joined communities
+
+Keep the selected tab visually highlighted.
+
+Use horizontal scrolling only if necessary on small screens.
+
+==================================================
+EMPTY STATES
+==================================================
+
+Create useful empty states.
+
+Latest:
+“There’s nothing new yet.”
+
+Popular:
+“Nothing is trending yet.”
+
+My College:
+“Be the first to start something at your college.”
+
+Communities:
+“Join a community to see its activity here.”
+
+Do not make empty states look like errors.
+
+==================================================
+IMPORTANT PRODUCT PRINCIPLE
+==================================================
+
+The Network is NOT supposed to become another Instagram or LinkedIn.
+
+Do not optimize the Home feed for random entertainment content.
+
+The feed should help students:
+
+- Find people
+- Find teammates
+- Find study partners
+- Discover opportunities
+- Ask questions
+- Learn
+- Join relevant communities
+- Discover useful student activity
+
+Every post should have some reason to exist.
+
+==================================================
+DAILY USAGE
+==================================================
+
+The feed should still give users a reason to open The Network every day.
+
+Include fresh activity such as:
+
+- New people looking for partners
+- New questions
+- New opportunities
+- Community activity
+- Trending discussions
+- College activity
+- New project/team requests
+- Replies to the user's posts
+- Relevant recommendations
+
+Do NOT simply show the same content every day.
+
+==================================================
+BOTTOM NAVIGATION
+==================================================
+
+Keep the existing bottom navigation unchanged.
+
+Home
+Communities
+Connect
+Learn
+Chats
+
+Home should remain the default selected tab.
+
+==================================================
+TECHNICAL REQUIREMENTS
+==================================================
+
+Implement this in the existing codebase.
+
+Do NOT create a separate demo page.
+
+Use the existing database/backend if available.
+
+Posts must be fetched dynamically.
+
+Tabs must use real data.
+
+College filtering must use the user's actual college.
+
+Communities filtering must use the communities the user has actually joined.
+
+Anonymous posting must preserve privacy on the frontend while retaining the real author securely in the backend for moderation.
+
+Add loading states.
+
+Add error states.
+
+Prevent duplicate posts.
+
+Use pagination/infinite scroll for large feeds.
+
+Do not load hundreds of posts at once.
+
+Make the feed fast on mobile networks.
+
+Make sure there is no horizontal overflow.
+
+==================================================
+FINAL HOME EXPERIENCE
+==================================================
+
+The final Home screen should feel like:
+
+THE NETWORK
+
+[ What are you looking for? ]
+
+[ Latest ] [ Popular ] [ My College ] [ Communities ]
+
+--------------------------------
+
+Relevant student activity
+
+↓
+
+People looking for people
+
+↓
+
+Useful discussions
+
+↓
+
+Opportunities
+
+↓
+
+Community activity
+
+↓
+
+Questions and resources
+
+--------------------------------
+
+Bottom navigation
+
+Home | Communities | Connect | Learn | Chats
+
+The most important goal:
+
+When a student opens The Network, they should immediately see something that is relevant enough to make them think:
+
+“Oh, this is useful for me.”
+
+Not:
+
+“It's just another social media feed.”

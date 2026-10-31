@@ -1,0 +1,503 @@
+REDESIGN THE NETWORK HOME FEED
+
+Keep the existing overall UI, header, posting composer, “Communities you need” section, floating + button, and bottom navigation. Do NOT redesign the entire Home page.
+
+The main change is to replace the existing feed filters:
+“Latest / Popular / My College / Communities”
+
+with ONE horizontal feed selector:
+
+[ 🤝 Looking For ] [ 🌎 Beyond Campus ] [ 🏫 My College ] [ 📚 Learn ]
+
+The four options must be horizontally scrollable/tappable and must switch the content shown BELOW them.
+
+IMPORTANT:
+- The feed must remain a single vertical scrolling feed.
+- Do NOT create four separate pages.
+- Do NOT create nested tabs inside these tabs.
+- Do NOT add “Latest” or “Popular” anywhere.
+- Do NOT duplicate the posting system.
+- The existing “Post what you're looking for?” composer remains above this selector and is always available.
+- Posts are universal and can appear in different feeds depending on their type, relevance, college and community.
+- Each tab is a different DISCOVERY VIEW of the same Network, not a different posting system.
+
+PAGE ORDER:
+
+1. HEADER
+Keep the existing The Network header:
+- Logo
+- The Network
+- Connect. Learn. Grow.
+- Search
+- Notifications
+- Profile
+
+2. POSTING COMPOSER
+Keep the current composer almost exactly as it is:
+“Post what you're looking for?”
+“Post a request and find the right people.”
+
+Keep:
+- text input
+- Anonymous option
+- quick suggestion chips
+- edit/create icon
+- floating + button if already present
+
+This composer should NOT disappear when switching between the four feed tabs.
+
+3. COMMUNITIES YOU NEED
+Keep this section immediately below the composer.
+
+Title:
+“Communities you need”
+
+Show horizontally scrollable community cards based on the student's interests and activity.
+
+Examples:
+- DSA Corner
+- Cybersecurity
+- Web Developer
+- AI/ML
+- relevant college/community
+
+Keep “See all”.
+
+This section is COMMON and should remain above the four feed tabs.
+
+4. HORIZONTAL FEED SELECTOR
+
+Immediately below “Communities you need”, add:
+
+🤝 Looking For
+🌎 Beyond Campus
+🏫 My College
+📚 Learn
+
+Use compact rounded horizontal buttons.
+
+Only ONE should be active at a time.
+
+The selected tab gets the purple active state.
+
+Do NOT use four large cards.
+Do NOT use a second row of tabs.
+Do NOT show “Latest”, “Popular”, “My College”, “Communities”.
+
+The selector should stay compact so it doesn't consume too much screen space.
+
+--------------------------------------------------
+TAB 1 — LOOKING FOR
+--------------------------------------------------
+
+Purpose:
+This is The Network's primary action/discovery feed.
+
+Header:
+“Looking For”
+Subtext:
+“Find the right people for what you need.”
+
+Show posts/requests where students are actively looking for something.
+
+Examples:
+
+“Looking for a DSA study partner”
+“Looking for a project teammate”
+“Looking for a hackathon team”
+“Looking for a mentor”
+“Looking for a study group”
+“Looking for someone interested in AI/ML”
+“Looking for a friend / someone to talk to”
+
+Each card should show:
+
+- Student profile/avatar
+- Name
+- College
+- Time
+- Looking-for label
+- Short description
+- Relevant interests/tags
+- Optional match percentage if the matching system actually supports it
+- Mutual communities/interests when available
+- Primary CTA: “Connect”
+- Like/comment/share/save actions
+
+Example:
+
+Aman Verma
+IIT Delhi
+
+LOOKING FOR:
+DSA Study Partner
+
+“Want to practice DSA daily and discuss problems together.”
+
+DSA • Problem Solving • Competitive Programming
+
+[ Connect ]
+
+Also show a small social-proof/highlight card:
+
+“12 students are looking for a DSA partner right now →”
+
+This tab should feel ACTION-FIRST.
+
+Do not fill it with generic campus announcements.
+
+--------------------------------------------------
+TAB 2 — BEYOND CAMPUS
+--------------------------------------------------
+
+Purpose:
+Show the student what exists OUTSIDE their own college.
+
+This is the core cross-college discovery experience.
+
+Header:
+“Beyond Campus”
+Subtext:
+“Discover students, communities and opportunities across India.”
+
+Show content from OTHER colleges first.
+
+Examples:
+
+- IIT Delhi student project
+- BITS Pilani resource
+- NIT student looking for teammates
+- VIT community discussion
+- IIIT event
+- students from different colleges
+- inter-college discussions
+- national hackathons
+- open competitions
+- India-wide opportunities
+
+Possible post examples:
+
+“Built an open-source RAG study assistant”
+IIT Delhi
+
+“Looking for teammates for an AI project”
+BITS Pilani
+
+“Anyone participating in SIH?”
+NIT Surathkal
+
+“National-level hackathon registrations open”
+
+Also show:
+
+NEW COLLEGE:
+“IIIT Trichy just joined The Network 🎉”
+
+And occasionally:
+
+SUCCESS STORY:
+“A student from X found a mentor from Y through The Network.”
+
+Important:
+Do NOT make this just an opportunity feed.
+
+It should contain:
+- Students
+- Posts
+- Communities
+- Discussions
+- Projects
+- Opportunities
+- New colleges
+- Cross-campus activity
+
+The main feeling should be:
+
+“I can now see what's happening beyond my college.”
+
+--------------------------------------------------
+TAB 3 — MY COLLEGE
+--------------------------------------------------
+
+Purpose:
+Bring the student back to their own college ecosystem.
+
+Header:
+“My College”
+Subtext:
+“Your college. Your people. Your communities.”
+
+Show content ONLY or primarily related to the student's own college.
+
+For example, for an NIT Trichy student:
+
+NIT Trichy
+
+Posts:
+- Campus updates
+- Student discussions
+- College events
+- Club activities
+- Project discussions
+- Placement discussions
+- Seniors helping juniors
+- Study groups
+- Local opportunities
+- Students looking for in-person partners
+
+Also show:
+
+“135 students on The Network”
+
+“6 communities”
+
+“4 upcoming events”
+
+Show the student's college communities.
+
+Example:
+- DSA Corner
+- EEE
+- Cybersecurity
+- Web Development
+
+Also show relevant looking-for posts from their own college first.
+
+Example:
+
+“Looking for an EEE study group for midsems.”
+
+“Anyone going to the library tonight?”
+
+“Need 2 teammates for college hackathon.”
+
+This feed should feel PERSONAL and LOCAL.
+
+--------------------------------------------------
+TAB 4 — LEARN
+--------------------------------------------------
+
+Purpose:
+Learning, practice and long-term retention.
+
+Header:
+“Learn”
+Subtext:
+“Practice, learn and grow with other students.”
+
+Show learning-related posts and activities.
+
+Examples:
+
+- DSA problems
+- AI/ML resources
+- Cybersecurity resources
+- Web Development tutorials
+- doubts/questions
+- roadmaps
+- notes
+- study resources
+- placement preparation
+- exam preparation
+- community discussions related to learning
+
+Include useful learning modules such as:
+
+DAILY PROBLEM
+
+“Two Sum Variant”
+Difficulty: Medium
+“523 students solved this”
+
+[ Solve ]
+
+Also show:
+
+TRENDING LEARNING COMMUNITIES
+
+1. DSA Corner
+2. Web Development
+3. AI/ML
+
+And optionally:
+
+YOUR PROGRESS
+5-day streak
+weekly activity
+problems solved
+
+IMPORTANT:
+Learn is still a FEED.
+
+Learning posts should appear as normal Network post cards.
+
+Do not make Learn look like a completely separate LMS/product.
+
+--------------------------------------------------
+UNIVERSAL POST SYSTEM
+--------------------------------------------------
+
+There is ONLY ONE “Create/Post” system.
+
+A student creates a post once.
+
+The system determines where it should appear based on:
+
+- Post type
+- Looking-for category
+- Community
+- College
+- Topic/domain
+- Opportunity/resource/event classification
+- Relevance
+
+Example:
+
+Post:
+“Looking for 2 teammates for SIH.”
+
+This can appear in:
+- Looking For
+- My College if the author is from the student's college
+- Beyond Campus if it is relevant cross-college
+
+Another post:
+
+“Best resources for Graph Algorithms.”
+
+This can appear in:
+- Learn
+- Beyond Campus if it is from another college
+
+Another post:
+
+“Pragyan volunteers needed.”
+
+This can appear in:
+- My College
+- potentially Beyond Campus if publicly relevant
+
+Therefore:
+DO NOT force a post to belong to only one feed.
+
+The four tabs are DISCOVERY FILTERS, not separate content databases.
+
+--------------------------------------------------
+FEED RANKING
+--------------------------------------------------
+
+Do NOT simply sort everything chronologically.
+
+Each tab should have its own ranking logic.
+
+LOOKING FOR:
+Prioritize:
+1. Active/current requests
+2. Relevance to user's interests
+3. Strong match
+4. Recent activity
+5. Students nearby/own college where relevant
+
+BEYOND CAMPUS:
+Prioritize:
+1. Relevant cross-college content
+2. High-quality engagement
+3. Interesting projects/discussions
+4. New colleges/communities
+5. National opportunities
+6. Freshness
+
+MY COLLEGE:
+Prioritize:
+1. Relevant college content
+2. Recent posts
+3. College events
+4. Students the user may know
+5. Joined communities
+6. College-specific opportunities
+
+LEARN:
+Prioritize:
+1. Learning relevance
+2. Active questions/doubts
+3. Daily/weekly challenges
+4. Useful resources
+5. Community discussions
+6. Progress/practice activities
+
+--------------------------------------------------
+UX RULES
+--------------------------------------------------
+
+The Home page should feel like ONE app, not four different apps.
+
+Keep:
+- Same post-card design
+- Same typography
+- Same actions
+- Same header
+- Same composer
+- Same bottom navigation
+
+Only the CONTENT changes when the user switches the horizontal selector.
+
+The vertical feed should scroll normally.
+
+The horizontal selector should remain compact and easy to tap.
+
+When switching tabs:
+- Do not reload the entire page visually
+- Keep the selector position
+- Smoothly replace the feed content
+- Preserve the user's scroll position where possible
+- Highlight the selected tab clearly
+
+BOTTOM NAVIGATION:
+
+Home
+Communities
+Connect
+Learn
+Chats
+
+Do not remove the bottom navigation.
+
+Important:
+“Learn” exists both as a Home feed category and as a bottom navigation destination.
+
+Home → Learn is a preview/discovery feed.
+
+Bottom-nav Learn → full learning destination.
+
+Similarly:
+Home → Looking For is a preview of matching activity.
+
+Bottom-nav Connect → full people discovery/matching experience.
+
+FINAL HOME STRUCTURE:
+
+HEADER
+↓
+POST WHAT YOU'RE LOOKING FOR?
+↓
+COMMUNITIES YOU NEED
+↓
+[ Looking For | Beyond Campus | My College | Learn ]
+↓
+SELECTED FEED
+↓
+MORE POSTS
+↓
+FLOATING +
+↓
+BOTTOM NAVIGATION
+
+The main goal is to make The Network immediately understandable:
+
+Looking For = WHO DO I NEED?
+Beyond Campus = WHAT'S HAPPENING OUTSIDE MY COLLEGE?
+My College = WHAT'S HAPPENING AROUND ME?
+Learn = HOW CAN I GROW?
+
+Do not make the interface feel like Instagram/LinkedIn.
+The Network should feel like a place where students discover people, communities, useful activity and opportunities based on what they actually need.

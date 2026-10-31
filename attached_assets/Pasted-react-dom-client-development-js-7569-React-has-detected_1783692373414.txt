@@ -1,0 +1,66 @@
+react-dom-client.development.js:7569
+ React has detected a change in the order of Hooks called by App. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://react.dev/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useState                   useState
+2. useState                   useState
+3. useState                   useState
+4. useState                   useState
+5. useState                   useState
+6. useState                   useState
+7. useState                   useState
+8. useState                   useState
+9. useState                   useState
+10. useState                  useState
+11. useState                  useState
+12. useState                  useState
+13. useState                  useState
+14. useState                  useState
+15. useState                  useState
+16. useRef                    useRef
+17. useState                  useState
+18. useState                  useState
+19. useState                  useState
+20. useState                  useState
+21. useState                  useState
+22. useState                  useState
+23. useState                  useState
+24. useState                  useState
+25. useState                  useState
+26. useRef                    useRef
+27. useRef                    useRef
+28. useRef                    useRef
+29. useState                  useState
+30. useState                  useState
+31. useState                  useState
+32. useState                  useState
+33. useState                  useState
+34. useState                  useState
+35. useState                  useState
+36. useEffect                 useEffect
+37. useEffect                 useEffect
+38. useEffect                 useEffect
+39. useEffect                 useEffect
+40. useEffect                 useEffect
+41. useEffect                 useEffect
+42. useEffect                 useEffect
+43. useEffect                 useEffect
+44. useCallback               useCallback
+45. useEffect                 useEffect
+46. useCallback               useCallback
+47. useCallback               useCallback
+48. useCallback               useCallback
+49. undefined                 useState
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+updateHookTypesDev	@	react-dom-client.development.js:7569
+react-dom-client.development.js:7848
+ Uncaught Error: Rendered more hooks than during the previous render.
+    at App (MainApp.tsx:803:57)
+react-dom-client.development.js:9362
+ An error occurred in the <App> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+﻿
+

@@ -1,0 +1,37 @@
+i posted this on the post as comment anonymosly right as you can see in the second post and after refreshing in 3rd post id and all are showing in forth post in other id its aslo showing same make it correct and redeply
+
+Free
+23 minutes ago
+I see the bug in the screenshots: the optimistic comment is anonymous immediately, but after a refresh the same saved comment is rendered as the real profile. I’ll trace the server’s post/comment response mapping and the client refresh mapping, then fix persistence and verify that anonymous comments don’t reveal the author or leak across posts.
+
+
+
+9 actions
+The server code preserves isAnonymous, so the refresh mismatch likely comes from the Firebase frontend calling a stale backend deployment rather than this Neon-backed server. I’m comparing the local API and the backend URL embedded in the Firebase build, including the specific comment’s saved anonymity flag, before changing the routing.
+
+
+
+10 actions
+Confirmed the root cause: Firebase is calling an older Replit backend that omits the isAnonymous field entirely. The current local Neon-backed API returns that field correctly. I’m checking the project’s configured Replit backend endpoint now, then I’ll point Firebase to that current backend and redeploy.
+
+
+
+Downloaded a file
+Use a more capable model when needed for this request?
+Got it, staying on Free.
+
+Worked for 1 minute
+
+14 actions
+The comparison confirms the live Firebase API target is the stale deployment; its comment response has no anonymity field, which is why refresh reveals the profile. I’m fixing two parts: use the project’s configured current backend URL instead of the stale hardcoded host, and bust bootstrap data after comment creation. Then the current Replit backend must be published once so Firebase can reach this corrected server.
+
+
+
+2 actions
+The routing and cache fixes are applied. I’m rebuilding now to confirm the Firebase bundle points at the current configured backend and includes the corrected anonymous behavior, then I’ll publish the Firebase static site again.
+
+
+
+2 actions
+The new Firebase bundle is correct, but I found one deployment dependency that must be handled honestly: this workspace’s corrected Replit backend is not currently published, while the old backend is the one still live and is exactly what loses isAnonymous. I’m prompting the project publish step so Firebase can use the corrected Neon-backed server instead of redeploying a frontend that points at a dead endpoint.
+

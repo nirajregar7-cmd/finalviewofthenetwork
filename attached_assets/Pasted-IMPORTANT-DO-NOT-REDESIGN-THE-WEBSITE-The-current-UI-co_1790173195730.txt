@@ -1,0 +1,241 @@
+IMPORTANT: DO NOT REDESIGN THE WEBSITE.
+
+The current UI, colors, typography, spacing, cards, animations, layout, gradients, navbar and overall visual style already look good. Keep the existing design exactly as it is.
+
+I only want you to update the CONTENT and messaging so that schools are represented as strongly as colleges.
+
+The Network is NOT only a college network. It is a student network for:
+- School students
+- College students
+- Competitive exam aspirants
+- Students learning skills and exploring different fields
+
+So update the website wherever the current wording makes The Network look college-only.
+
+1. HERO SECTION
+
+Current:
+"One Network.
+Every Campus.
+Every Opportunity.
+Every Student."
+
+Keep the visual design and structure, but make sure the supporting text clearly includes schools as well as colleges.
+
+For example:
+
+"One Network.
+Every School.
+Every Campus.
+Every Opportunity.
+Every Student."
+
+Supporting text:
+
+"We connect students across schools, colleges, communities and cities in India — helping them discover people, opportunities, communities and possibilities beyond their surroundings."
+
+Do not make the hero look crowded. Keep the existing typography and layout.
+
+2. NETWORK VISUAL / CONNECTION GRAPH
+
+Keep the existing visual exactly the same.
+
+However, don't make all the examples colleges.
+
+Mix schools + colleges + communities in the connected nodes.
+
+For example:
+- IIT Bombay
+- NIT Trichy
+- IIT Delhi
+- NIT Warangal
+- AIIMS Delhi
+- A school community
+- JEE Community
+- Coding Community
+- Robotics Community
+
+The purpose is to visually show that The Network connects the entire student ecosystem, not just colleges.
+
+3. COMMUNITIES SECTION
+
+Current heading:
+"Communities from every campus."
+
+Change it to something broader:
+
+"Communities from every school and campus."
+
+Supporting messaging should communicate that students can join communities based on interests, skills, exams and goals — regardless of whether they are in school or college.
+
+Keep the existing community cards/design.
+
+4. COLLEGES ON THE NETWORK SECTION
+
+Do NOT remove this section.
+
+Keep the college section because college presence is important.
+
+But make the overall page clearly show that schools are also part of The Network.
+
+Add a similar section for schools immediately after or near the college section:
+
+Label:
+"SCHOOLS ON THE NETWORK"
+
+Heading:
+"Students from these schools are already here."
+
+Supporting text:
+"Students are joining from schools across India and building connections beyond their classrooms."
+
+Show school communities/cards using the exact same visual style as the existing college cards.
+
+If actual school data is available in the database, use real data.
+
+DO NOT INVENT school names, student counts, or traction numbers.
+
+5. ADD A CLEAR SCHOOL + COLLEGE MESSAGE
+
+Somewhere naturally between the existing sections, add a small section/message:
+
+"Your network starts at school.
+It continues through college.
+But it doesn't have to end there."
+
+Supporting text:
+
+"The Network helps students connect with people beyond their own school, college, city or surroundings — so they can discover new skills, communities, opportunities and people across India."
+
+Keep this visually minimal and consistent with the existing design.
+
+6. ABOUT / FOUNDER SECTION
+
+The current founder section is good. DO NOT change the image, colors, layout or card design.
+
+However, update the messaging so the mission is not only about colleges.
+
+The founder story should clearly communicate that students can be limited by their surroundings from a very young age — including school.
+
+The core idea should be:
+
+"I realized that a student's opportunities can be limited not because of their ability, but because of the people, exposure and opportunities around them."
+
+Then connect it to both school and college students.
+
+Keep the founder section authentic and personal.
+
+7. CHANGE THE "READ STORY" BUTTON
+
+Replace the current "Read Story" button with:
+
+"Why I Started The Network"
+
+OR, if the button is short:
+
+"My Story"
+
+When clicked, it should take the user to the full founder story.
+
+Do not redesign the button. Only change the text and keep the existing button styling.
+
+8. FOUNDING MEMBER SECTION
+
+KEEP THE FOUNDING MEMBER SECTION.
+
+Do NOT remove it.
+
+The current Founding Member card should remain visible.
+
+Keep the existing design, styling and layout.
+
+If the section currently says:
+
+"FOUNDING MEMBER"
+
+keep that recognition.
+
+The purpose is to show early students/contributors who are helping build The Network.
+
+Do not turn this into a generic testimonial section.
+
+9. IMPORTANT: MAKE SCHOOLS FEEL LIKE A FIRST-CLASS PART OF THE NETWORK
+
+Do not simply add the word "school" once or twice.
+
+Throughout the website, wherever the current copy says things like:
+
+"every college"
+"every campus"
+"students from colleges"
+"college network"
+
+review the wording and update it where necessary so the platform clearly represents BOTH schools and colleges.
+
+Use language such as:
+
+"schools and colleges"
+"students across India"
+"school communities and college communities"
+"beyond your school or college"
+
+But don't unnecessarily change sections where "college" specifically makes sense.
+
+10. KEEP THE CORE BRAND MESSAGE
+
+The main message should remain:
+
+"Your Network Should Be Bigger Than Your Surroundings."
+
+And the idea:
+
+"Your school is a network.
+Your college is a network.
+Your city is a network.
+Your village is a network.
+
+But your network doesn't have to end there."
+
+The website should communicate that The Network brings these networks together.
+
+11. DO NOT CHANGE
+
+Do NOT change:
+- Colors
+- Fonts
+- Typography hierarchy
+- Existing animations
+- Navbar design
+- Buttons
+- Card design
+- Spacing
+- Hero illustration
+- Existing images
+- Backgrounds
+- Gradients
+- Overall page structure
+- Responsive behavior
+
+Only make the minimum UI/content additions necessary to properly represent SCHOOL + COLLEGE students.
+
+12. VERY IMPORTANT
+
+Do not add fake statistics.
+
+Do not create fake school names.
+
+Do not create fake student counts.
+
+If school data exists in the database, use it.
+
+If it doesn't exist, create the section using the existing component structure but use only verified/available data.
+
+The final website should visually feel almost identical to the current website — just with a much clearer message that The Network is for BOTH SCHOOL AND COLLEGE STUDENTS.
+
+The goal is:
+
+NOT:
+"College network that also allows schools."
+
+Instead:
+"India's student network — connecting students from schools, colleges and communities across India."

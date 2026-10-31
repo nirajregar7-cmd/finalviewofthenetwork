@@ -1,0 +1,38 @@
+I need you to fix a recurring Brevo API 401 error in my production registration flow.
+
+Error:
+"WE HAVE DETECTED YOU ARE USING AN UNRECOGNISED IP ADDRESS"
+
+Brevo IP Security is enabled and my Brevo dashboard already has 100+ authorized IP addresses, mostly Google LLC IPs. New IP addresses keep appearing because the app is deployed on Replit/cloud infrastructure.
+
+IMPORTANT:
+Do NOT solve this by simply adding another IP address to Brevo. I need a permanent production solution.
+
+Please inspect my entire registration/authentication flow and determine:
+1. Where the Brevo API is being called.
+2. Whether the Brevo API key is exposed or being used in frontend/client-side code.
+3. Whether the Brevo API request is coming from Replit's backend/server-side environment.
+4. Whether the current Replit deployment can have changing outbound IPs.
+
+Then implement the correct architecture:
+
+Frontend → Replit backend/server → Brevo API
+
+The Brevo API key must ONLY exist in Replit Secrets/environment variables and must NEVER be exposed to the browser.
+
+Move any Brevo API calls that are currently happening client-side into a secure backend/server-side endpoint if necessary.
+
+The registration flow should NOT fail just because Replit's outbound IP changes.
+
+Please also make the Brevo integration robust:
+- Handle Brevo 401/IP-security errors properly.
+- Do not expose the Brevo API key in logs or error messages.
+- Do not expose sensitive Brevo responses to users.
+- Keep registration working even if the email/marketing contact creation in Brevo temporarily fails, unless Brevo is absolutely required for authentication.
+- Log a safe server-side error so I can debug it.
+- Do not hardcode any IP address.
+- Do not add random IPs to Brevo automatically.
+
+First inspect the existing code and explain exactly what is causing the problem in my current implementation. Then make the required code changes.
+
+After making the changes, test the registration flow and tell me exactly what files/code you changed and why.

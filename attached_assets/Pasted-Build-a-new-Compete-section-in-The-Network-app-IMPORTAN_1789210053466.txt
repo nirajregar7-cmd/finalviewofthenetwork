@@ -1,0 +1,351 @@
+Build a new "Compete" section in The Network app.
+
+IMPORTANT:
+Do not redesign the whole app.
+Keep the existing The Network visual language, header, typography, spacing, purple accent color, rounded cards, icons, bottom navigation and overall UI exactly consistent with the current Home screen.
+
+Add "Compete" as a new main tab in the bottom navigation.
+
+The purpose of Compete:
+Students should be able to discover competitions, hackathons and challenges, participate individually or in teams, find teammates from other colleges, represent their college and see college rankings.
+
+MAIN SCREEN
+
+At the top keep the existing The Network header:
+- Logo
+- The Network
+- Connect. Learn. Grow.
+- Search
+- Add/connect icon
+- Notifications
+- Profile
+
+Below the header:
+
+Title:
+"Compete"
+
+Subtitle:
+"Show your skills. Represent your college. Compete with India."
+
+On the right:
+"My Participations"
+
+Then add a horizontal secondary navigation:
+
+Overview
+Competitions
+Hackathons
+Leaderboards
+My Teams
+
+"Overview" should be selected by default.
+
+SECTION 1 — FEATURED COMPETITION
+
+Create a large featured competition card.
+
+Example:
+"Tri-NIT Hackathon"
+
+Text:
+"Build • Collaborate • Compete"
+
+Show:
+- Date
+- Location / Online
+- Eligibility
+- Participating colleges
+
+Button:
+"Register Now"
+
+IMPORTANT:
+This should be dynamic data.
+Do not hardcode Tri-NIT Hackathon permanently.
+Create a competitions data structure so admin can add/change featured competitions later.
+
+SECTION 2 — COMPETITION CATEGORIES
+
+Create horizontal cards for:
+
+All Competitions
+Hackathons
+Coding Contests
+Project Challenges
+Case Competitions
+Quizzes & More
+
+Each category should be clickable and filter the competition list.
+
+SECTION 3 — LIVE & UPCOMING
+
+Heading:
+"Live & Upcoming"
+
+Subtext:
+"Competitions happening across colleges."
+
+Add "See all".
+
+Create competition cards.
+
+Each card should show:
+
+Status:
+LIVE / UPCOMING
+
+Time information:
+"10 days left"
+or
+"Starts in 12 days"
+
+Competition name
+
+Short description
+
+Eligibility:
+"All Colleges"
+
+Participation type:
+"Individual" or "Teams (2–6)"
+
+Start/end date
+
+Relevant tags:
+DSA
+AI/ML
+Innovation
+Hardware
+Software
+etc.
+
+CTA:
+"Register"
+or
+"Participate"
+
+Do NOT make fake competitions functional.
+For now use sample/mock data, but structure the code so real backend data can replace it later.
+
+SECTION 4 — COLLEGE LEADERBOARD
+
+Heading:
+"College Leaderboard"
+
+Button:
+"See all"
+
+Show rankings such as:
+
+1  IIT Bombay
+2  NIT Trichy
+3  IIT Delhi
+4  IIIT Hyderabad
+5  NIT Surathkal
+
+Each college should have:
+- Rank
+- College name
+- Points
+
+The leaderboard should eventually be calculated from student participation and competition results.
+
+Do not hardcode the ranking logic.
+Create a leaderboard data structure/function that can later connect to the backend.
+
+SECTION 5 — FIND TEAMMATES
+
+Heading:
+"Find Teammates"
+
+Subtext:
+"Build your team with students from other colleges."
+
+Show student cards.
+
+Each student card:
+- Profile photo/avatar
+- Name
+- College
+- Year
+- Skills
+- Connect button
+
+Example:
+
+Aarav Sharma
+IIT Delhi · 3rd year
+C++ · Machine Learning
+
+Connect
+
+Another:
+
+Riya Mehta
+NIT Trichy · 2nd year
+UI/UX · Figma · Product
+
+Connect
+
+The key feature is CROSS-COLLEGE team formation.
+
+A student from NIT Trichy should be able to find a teammate from IIT Delhi, NIT Rourkela, IIIT Hyderabad, etc.
+
+Add a small card:
+
+"Looking for a team?"
+
+"Post a team request and find the right teammates."
+
+Button:
+"Create Team Request"
+
+This button should eventually connect to the existing "Looking For" system.
+
+Example team request:
+
+"Looking for a frontend developer for a hackathon"
+
+Skills needed:
+React
+Frontend
+
+College:
+Any college
+
+SECTION 6 — REPRESENT YOUR COLLEGE
+
+At the bottom add a prominent banner:
+
+"Represent your college. Make it count."
+
+Subtext:
+"Compete. Collaborate. Bring glory to your campus."
+
+Button:
+"Create Team Request"
+
+This should make the college-representation concept clear.
+
+BOTTOM NAVIGATION
+
+Update the existing bottom navigation to:
+
+Home
+Communities
+Connect
+Compete
+Learn
+Chats
+
+Compete should be highlighted when the user is on this page.
+
+FUNCTIONALITY
+
+Build the UI components in a reusable way.
+
+Create data models for:
+
+Competition:
+- id
+- title
+- description
+- category
+- status
+- startDate
+- endDate
+- location
+- eligibility
+- participationType
+- teamSize
+- skills
+- organizer
+- bannerImage
+- registrationLink
+
+Team:
+- id
+- name
+- competitionId
+- captain
+- members
+- requiredSkills
+- college
+- status
+
+Leaderboard:
+- collegeId
+- collegeName
+- points
+- rank
+
+Participation:
+- userId
+- competitionId
+- teamId
+- status
+- result
+- points
+
+For now, use mock data if backend APIs do not exist.
+
+IMPORTANT UX RULES:
+
+1. The Compete page should NOT feel like a generic event-listing website.
+
+2. The unique value of The Network is:
+   DISCOVER competition
+   →
+   FIND TEAMMATES
+   →
+   PARTICIPATE
+   →
+   REPRESENT YOUR COLLEGE
+   →
+   EARN POINTS
+   →
+   CLIMB COLLEGE LEADERBOARD
+
+3. Cross-college discovery must be visible throughout the page.
+
+4. Keep the UI clean and mobile-first.
+
+5. Don't overcrowd the screen.
+
+6. Reuse existing components/styles from the Home page wherever possible.
+
+7. Do not introduce a completely different color palette.
+
+8. Use purple as the primary brand accent with the existing pastel card style.
+
+9. Keep buttons and cards consistent with the current app.
+
+10. Make the design responsive.
+
+11. Do not remove any existing Home, Communities, Connect, Learn or Chats functionality.
+
+12. If a feature requires backend functionality that doesn't exist yet, create the UI and mock state cleanly without breaking the existing app.
+
+13. Do not create fake registration confirmations or fake competition results.
+
+14. Add proper empty states, loading states and error states.
+
+15. Make the code modular so competitions, teams and leaderboards can later be connected to Firebase/backend APIs.
+
+MOST IMPORTANT:
+
+The Compete tab is NOT just for viewing competitions.
+
+It should become the place where students:
+- discover competitions
+- find teammates
+- create teams
+- compete with students from other colleges
+- represent their college
+- earn points
+- climb the college leaderboard
+
+The overall product flow should feel like:
+
+DISCOVER → CONNECT → COMPETE → GROW

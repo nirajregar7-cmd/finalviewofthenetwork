@@ -1,0 +1,218 @@
+The Network — Signup Flow
+1. What are you currently studying?
+
+🏫 School Student
+🎓 College / University Student
+📚 Competitive Exam Aspirant
+Other
+
+If School Student
+2. Which class are you in?
+
+9th
+10th
+11th
+12th
+
+If 11th or 12th
+3. What is your stream?
+
+🔬 Science
+→ PCM
+→ PCB
+→ PCMB
+
+💼 Commerce
+
+🎨 Arts / Humanities
+
+Other
+
+4. Are you preparing for any exam?
+
+Select all that apply
+
+JEE
+NEET
+CUET
+CLAT
+NDA
+CA Foundation
+Olympiads
+Boards
+Other
+
+You can also select:
+
+Not preparing for any specific exam
+
+5. Which school are you from?
+
+Search your school
+
+If College / University Student
+2. What are you studying?
+
+BTech / BE
+BSc
+BCom
+BA
+BBA
+BCA
+MBBS
+BDS
+LLB
+MBA
+MCA
+MTech / ME
+MSc
+MA
+PhD
+Other
+
+3. Which college / university are you from?
+
+Search institution
+
+For example:
+
+IIT Bombay
+NIT Trichy
+LPU
+Delhi University
+
+4. What's your branch / specialization?
+
+This should change according to the degree.
+
+For BTech/BE:
+
+CSE
+ECE
+EEE
+Mechanical
+Civil
+Chemical
+Biotechnology
+Production
+Metallurgy
+Architecture
+Other
+
+For BCom:
+
+Accounting
+Finance
+Economics
+Business
+Other
+
+For BSc:
+
+Physics
+Chemistry
+Mathematics
+Computer Science
+Biology
+Other
+
+And similarly for other degrees.
+
+5. Which year are you in?
+
+1st Year
+2nd Year
+3rd Year
+4th Year
+5th Year
+Postgraduate
+PhD
+Other
+
+6. Are you preparing for anything?
+
+Optional
+
+GATE
+CAT
+UPSC
+SSC CGL
+Banking
+JEE
+NEET
+CA
+GRE
+GMAT
+Other
+
+If Competitive Exam Aspirant
+
+Instead of asking college first, ask:
+
+What are you preparing for?
+
+JEE
+NEET
+GATE
+UPSC
+SSC CGL
+CAT
+CA
+CLAT
+NDA
+CUET
+Other
+
+Then:
+
+What's your current level?
+
+School — 11th
+School — 12th
+Dropper
+College Student
+Graduate
+Working Professional
+Other
+
+Then:
+
+What are you looking for?
+
+Study Partner
+Doubt Discussion
+Study Group
+Mentor
+Resources
+Test/Practice
+Motivation
+Other
+
+Then everyone gets the same final questions
+What are you interested in?
+
+Coding
+AI & ML
+Startups
+Research
+Design
+Finance
+Sports
+Music
+Gaming
+Business
+etc.
+
+What are you looking for?
+
+Study Partner
+DSA Partner
+Project Teammate
+Hackathon Team
+Mentor / Senior
+Friends
+Resources
+Internships
+Opportunities
+Like-minded People
+Other

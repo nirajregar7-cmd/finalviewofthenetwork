@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
+
+:root,
+html.theme-light {
+  --t-bg: #faf7f2;
+  --t-card: #fffefb;
+  --t-header: rgba(250, 247, 242, 0.92);
+  --t-border: rgba(220, 215, 205, 0.85);
+}
+
+.network-poll-color-preview {
+  font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}

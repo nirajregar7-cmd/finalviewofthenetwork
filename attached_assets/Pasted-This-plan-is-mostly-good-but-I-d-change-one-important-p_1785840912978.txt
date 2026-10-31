@@ -1,0 +1,167 @@
+This plan is mostly good, but I'd change one important part.
+
+✅ Do this
+Pre-render these static pages:
+/
+
+About
+
+Communities
+
+Opportunities
+
+Events
+
+Blog
+
+Campus Ambassador
+
+Colleges
+
+Privacy
+
+Terms
+
+Contact
+
+These are perfect for prerendering.
+
+❌ Don't stop at that
+
+Your plan says:
+
+Dynamic routes (/college/:slug, /community/:slug) still server-rendered via Express API
+
+For The Network, that's not enough.
+
+Your biggest SEO traffic will come from pages like:
+
+/college/nit-trichy
+
+/college/iit-delhi
+
+/college/iit-bombay
+
+/college/vit-vellore
+
+/community/web-development
+
+/community/artificial-intelligence
+
+/community/startups
+
+/community/placements
+
+/student/niraj
+
+/event/sih-2027
+
+/opportunity/google-step-internship
+
+/blog/top-ai-communities
+
+These pages should also return SEO-friendly HTML.
+
+I'd tell the AI agent this:
+In addition to prerendering the static pages, implement dynamic SEO rendering for:
+
+/college/:slug
+/community/:slug
+/opportunity/:slug
+/event/:slug
+/student/:username
+/blog/:slug
+
+Each page should generate:
+
+- Dynamic <title>
+- Meta description
+- Canonical URL
+- Open Graph tags
+- Twitter Card tags
+- JSON-LD Schema
+
+Generate the HTML from Firestore/Express data so Google receives fully rendered HTML instead of an empty React shell.
+
+Automatically include these pages in sitemap.xml.
+
+Add Breadcrumb schema.
+
+Optimize Core Web Vitals.
+
+Ensure all pages are indexable.
+I would also add these tasks
+✅ Generate sitemap automatically
+sitemap.xml
+
+Automatically update whenever a new:
+
+College
+
+Community
+
+Opportunity
+
+Student
+
+Event
+
+Blog
+
+is created.
+robots.txt
+Allow: /
+
+Disallow: /admin
+
+Disallow: /chat
+
+Disallow: /settings
+Open Graph
+
+Every page should have
+
+og:title
+
+og:description
+
+og:image
+
+og:url
+
+When shared on WhatsApp or LinkedIn, it should display a rich preview.
+
+JSON-LD
+
+Every page gets schema.
+
+College
+
+EducationalOrganization
+
+Student
+
+Person
+
+Event
+
+Event
+
+Opportunity
+
+JobPosting
+
+Blog
+
+Article
+
+Community
+
+Organization
+⭐ One thing I'd change
+
+Your current plan says dynamic routes will be server-rendered via Express. That's good only if Google actually receives the fully rendered HTML on the first request. If your Express server is still sending an empty React shell and expecting the browser to render everything, you won't get the SEO benefit.
+
+If you're using Vite + React + Firebase Hosting, I'd aim for SSR (Server-Side Rendering) or prerendering for your highest-traffic dynamic pages, plus dynamic metadata generation for the rest.
+
+For a platform like The Network, your college pages, community pages, and opportunity pages are likely to become your biggest source of organic traffic, so make those a first-class priority.

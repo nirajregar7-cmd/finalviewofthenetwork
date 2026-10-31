@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --brand: #4f46e5;
+  --bg: #f8fafc;
+  --text: #0f172a;
+  --sub: #64748b;
+  --t-bg: #faf7f2;
+  --t-card: #fffefb;
+  --t-border: rgba(220, 215, 205, 0.85);
+}
+
+.network-loading-preview {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+.network-loading-dot {
+  animation: network-loading-dot-pulse 1s linear infinite;
+}
+
+@keyframes network-loading-dot-pulse {
+  0%, 100% { opacity: 0.22; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .network-loading-dot {
+    animation: none;
+    opacity: 0.68;
+  }
+
+  .network-loading-dot:first-child {
+    opacity: 1;
+  }
+}

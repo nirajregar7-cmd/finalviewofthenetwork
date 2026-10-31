@@ -1,0 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --brand: #4f46e5;
+  --bg: #f8fafc;
+  --text: #0f172a;
+  --sub: #64748b;
+  --t-bg: #faf7f2;
+  --t-card: #fffefb;
+  --t-border: rgba(220, 215, 205, 0.85);
+}
+
+.network-poll-preview {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}

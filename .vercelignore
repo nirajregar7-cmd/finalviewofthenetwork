@@ -1,0 +1,13 @@
+.git
+.migration-backup
+.local
+.agents
+attached_assets
+.env
+.env.*
+.npmrc
+node_modules
+**/node_modules
+**/dist
+.cache
+*.log

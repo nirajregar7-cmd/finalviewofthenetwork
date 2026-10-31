@@ -1,0 +1,96 @@
+{
+  "hosting": {
+    "public": "dist/public",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          },
+          {
+            "key": "CDN-Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Cloudflare-CDN-Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          },
+          {
+            "key": "CDN-Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Cloudflare-CDN-Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          },
+          {
+            "key": "CDN-Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Cloudflare-CDN-Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/firebase-messaging-sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          },
+          {
+            "key": "CDN-Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Cloudflare-CDN-Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/student/**",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      }
+    ]
+  }
+}

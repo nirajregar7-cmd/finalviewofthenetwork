@@ -1,0 +1,55 @@
+You're thinking about the right problem. A social app without reliable notifications loses users very quickly.
+
+Apps like WhatsApp, LinkedIn, Instagram, Discord keep people coming back because they send push notifications, not just store messages in the database.
+
+For The Network, every important event should trigger a push notification.
+
+For example:
+
+Event	Notification
+New message	"Rahul: Hey, are you free for a coffee chat?"
+Someone applied to your request	"Ananya applied to your Hackathon Team."
+Someone accepted your request	"Your Study Partner request was accepted."
+New connection request	"Rohan wants to connect with you."
+Mention in a community	"You were mentioned in NIT Trichy Community."
+New reply	"Someone replied to your post."
+
+If the app is closed, the user should still see these notifications on their phone's lock screen.
+
+How to build this
+Firebase Cloud Messaging (FCM) for Android, web, and PWA.
+Every user gets an FCM token when they log in.
+Save that token in your database.
+Whenever an important event happens (new message, request, etc.), your backend sends a push notification through Firebase.
+When the user taps the notification, open the correct chat or page.
+
+The flow looks like this:
+
+User A sends a message
+        ↓
+Backend saves message
+        ↓
+Backend finds User B's FCM token
+        ↓
+Firebase Cloud Messaging
+        ↓
+Phone receives notification
+        ↓
+User taps notification
+        ↓
+Opens that chat inside The Network
+If you don't implement this
+
+Imagine:
+
+User A sends a message.
+User B closes the app.
+User B never knows someone messaged them.
+
+That conversation dies, and both users slowly stop opening the app.
+
+My recommendation
+
+This should be one of your highest-priority features—more important than adding new UI screens. A messaging product without push notifications has much lower engagement because users aren't reminded to return when something important happens.
+
+If you're using React + Node.js + Capacitor (Android) or a PWA, I can walk you through implementing Firebase Cloud Messaging end to end, including the backend, Android app, and web support.

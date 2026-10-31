@@ -1,0 +1,44 @@
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+VAPID_PUBLIC_KEY = "BMFhS7bR4UacelWJY8tepeccTdJW-FXMCDnFsNwzpWuyRS3n_-ayeRde3XSIvLt83L5WssZXn44RMcL5zPzQxhQ"
+VAPID_EMAIL = "mailto:admin@thenetwork.app"
+BREVO_SMTP_HOST = "smtp-relay.brevo.com"
+BREVO_SMTP_PORT = "587"
+BREVO_SMTP_USER = "af6711001@smtp-brevo.com"
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "587"
+SMTP_USER = "nirajregar8@gmail.com"
+EMAIL_FROM = "nirajregar8@gmail.com"
+VITE_API_URL = "https://the-network-12-5--thenetwork9587.replit.app"
+VITE_FCM_VAPID_KEY = "BPvVZsc4642kXGi3o5VEjXVhVv06dMQwT8K8hZKBATyTszfqZqie9_dgERcIZV_mk0GDqUTKmh7-rMMh_fj6Kl8"
+SMTP_SECURE = "false"
+BREVO_EMAIL_FROM = "thenetwork761@gmail.com"
+VERCEL_PROJECT_ID = "prj_n3lYvmOYqJlj7IGwgop6BPXXGWHu"
+VERCEL_TEAM_ID = "team_jIiwDft2zuxRr9pIrFUnzDVU"
+VERCEL_TARGET_PROJECT_ID = "prj_re6H2FJPwp3A8YiCLnq8AAj3kwfO"
+VERCEL_TARGET_SCOPE = "personal"
+
+[nix]
+channel = "stable-25_05"

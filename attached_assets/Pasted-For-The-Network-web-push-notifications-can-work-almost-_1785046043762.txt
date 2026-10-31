@@ -1,0 +1,109 @@
+For The Network, web push notifications can work almost like LinkedIn or WhatsApp (for notifications, not full background messaging). Since you're building a PWA (Progressive Web App), users who install it can receive notifications even when the app isn't open.
+
+How it will look
+
+When someone installs The Network and allows notifications, they'll see notifications like these:
+
+📱 New Message
+
+The Network
+💬 Rahul Sharma sent you a message
+
+"Hey, are you joining the hackathon?"
+
+[Reply]   [Open]
+
+📱 Connection Request
+
+The Network
+🎉 A student from IIT Delhi wants to connect.
+
+Open profile →
+
+📱 Campus Community
+
+The Network
+🚀 23 students joined NIT Trichy Builders today.
+
+Join the discussion →
+
+📱 Hackathon Alert
+
+The Network
+⚡ Registration closes tonight.
+
+Google Hackathon • 11:59 PM
+
+📱 Study Partner
+
+The Network
+📚 Someone is looking for a DSA study partner.
+
+View request →
+
+📱 Startup Match
+
+The Network
+🔥 A UI/UX Designer matched your startup requirements.
+
+Connect now →
+How it works
+User opens The Network.
+
+The app asks:
+
+Allow notifications?
+
+User taps Allow.
+The browser gives your app a unique notification token.
+You save that token in your database.
+Whenever something happens, your server sends a notification through Firebase Cloud Messaging (FCM).
+Google delivers it instantly to the user's device.
+
+Even if Chrome is closed, the notification can still appear on Android as long as the browser's background services are available and the user hasn't disabled notifications.
+
+Notifications your app should send
+💬 New messages
+🤝 Connection requests
+✅ Connection accepted
+❤️ Someone liked your post
+💬 Someone commented
+👥 Someone joined your campus community
+🎓 New ambassador application
+📅 Event reminders
+🏆 Hackathon deadlines
+📢 Announcements from your college
+🎯 Recommended students to connect with
+Best practices
+
+Don't send notifications for every small event. Prioritize notifications that bring users back because they involve people or deadlines.
+
+For example:
+
+Someone messaged you.
+Someone accepted your request.
+A student from another college wants to connect.
+Your hackathon team is waiting for you.
+A campus event starts in 30 minutes.
+
+Avoid sending notifications like:
+
+"Welcome back!"
+"Open the app today!"
+Random marketing messages every day.
+Architecture
+User A
+   │
+   │ Sends message
+   ▼
+The Network Backend
+   │
+   │ Finds User B's FCM Token
+   ▼
+Firebase Cloud Messaging
+   │
+   ▼
+📱 User B's Phone
+
+"The Network
+Rahul sent you a message."

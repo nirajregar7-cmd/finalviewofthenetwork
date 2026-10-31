@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "The Network"
+description = "Student community app with messaging, profiles, groups, and events."
+version = "1.0.0"
+id = "artifacts/the-network"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23837
+
+[services.development]
+run = "pnpm --filter @workspace/the-network run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/the-network", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/the-network/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23837"
+BASE_PATH = "/"

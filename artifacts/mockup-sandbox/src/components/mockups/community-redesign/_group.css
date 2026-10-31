@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+
+.network-app-shell {
+  --nw-paper: #f7f8fc;
+  --nw-paper-deep: #eff0f7;
+  --nw-card: #ffffff;
+  --nw-ink: #171827;
+  --nw-muted: #6c7182;
+  --nw-line: #e6e8f0;
+  --nw-forest: #6542e8;
+  --nw-forest-deep: #512fcf;
+  --nw-rust: #6542e8;
+  --nw-sun: #a78bfa;
+  --nw-lavender: #f0ecff;
+  --nw-lavender-line: #ded6ff;
+  min-height: 100vh;
+  background: var(--nw-paper);
+  color: var(--nw-ink);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.network-app-shell :where(*) {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.network-app-shell :where(h1, h2) {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 600;
+}
+
+.network-app-shell .community-view {
+  padding-top: 31px;
+}
+
+.network-app-shell .community-view > div:first-child {
+  align-items: flex-end;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .community-view > div:first-child h1,
+.network-app-shell .community-mobile-view h1 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-size: 34px;
+  line-height: .98;
+}
+
+.network-app-shell .community-view > div:first-child p:not(.community-eyebrow) {
+  margin-top: 8px;
+}
+
+.network-app-shell .community-filter-rail {
+  padding: 9px 0 14px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .community-filter-rail button {
+  min-height: 38px;
+  padding-inline: 14px;
+  border-radius: 7px;
+  font-size: 11px;
+}
+
+.network-app-shell .community-view .community-interest-discovery {
+  padding: 15px 17px 13px;
+  border: 1px solid var(--nw-line);
+  border-radius: 10px;
+  background: #f2f3f8;
+}
+
+.network-app-shell .community-popular-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.network-app-shell .community-popular-card {
+  min-height: 210px;
+  padding: 15px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.network-app-shell .community-popular-image {
+  width: 47px;
+  height: 47px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.network-app-shell .community-popular-image img {
+  border-radius: inherit;
+}
+
+.network-app-shell .community-mobile-intro {
+  padding: 18px 0 15px;
+  border-bottom: 1px solid var(--nw-line);
+}
+
+.network-app-shell .community-mobile-view {
+  padding-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .network-app-shell .community-popular-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .network-app-shell .community-view {
+    padding-top: 18px;
+  }
+}

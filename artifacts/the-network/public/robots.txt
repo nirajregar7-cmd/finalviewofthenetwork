@@ -1,0 +1,82 @@
+User-agent: *
+Allow: /
+
+# SEO public pages
+Allow: /college/
+Allow: /colleges
+Allow: /community/
+Allow: /communities
+Allow: /student/
+Allow: /students
+Allow: /about
+Allow: /founding-members
+Allow: /story
+Allow: /study-partners
+Allow: /project-teammates
+Allow: /looking-for/
+Allow: /jee
+Allow: /neet
+Allow: /gate
+Allow: /opportunity/
+Allow: /opportunities
+Allow: /events
+Allow: /blog/
+Allow: /blog
+Allow: /campus-ambassador
+Allow: /resources
+
+# Block private / admin routes
+Disallow: /admin
+Disallow: /chat
+Disallow: /messages
+Disallow: /settings
+Disallow: /notifications
+Disallow: /login
+Disallow: /signup
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /chat
+Disallow: /messages
+Disallow: /settings
+Disallow: /notifications
+Disallow: /login
+Disallow: /signup
+Disallow: /api/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /chat
+Disallow: /messages
+Disallow: /settings
+Disallow: /notifications
+Disallow: /login
+Disallow: /signup
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+Disallow: /chat
+Disallow: /messages
+Disallow: /settings
+Disallow: /notifications
+Disallow: /login
+Disallow: /signup
+Disallow: /api/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /admin
+Disallow: /chat
+Disallow: /messages
+Disallow: /settings
+Disallow: /notifications
+Disallow: /login
+Disallow: /signup
+Disallow: /api/
+
+Sitemap: https://the-network.co.in/sitemap.xml

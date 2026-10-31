@@ -1,0 +1,99 @@
+Fix the mobile chat screen keyboard behavior completely.
+
+The current problem is that when the user taps the message input and the Android keyboard opens, the app does NOT resize correctly. The bottom navigation remains visible above the keyboard and the message composer is positioned incorrectly.
+
+I want the chat screen to behave like WhatsApp on mobile.
+
+### Required behavior
+
+1. When the keyboard is CLOSED:
+
+   * Show the normal chat screen.
+   * Show the bottom navigation normally.
+   * Show the message composer at the bottom of the chat screen.
+
+2. When the keyboard OPENS:
+
+   * Automatically detect that the mobile keyboard is visible.
+   * Hide the main bottom navigation completely.
+   * The chat/message area must resize to the remaining visible viewport.
+   * The message composer must stay immediately above the keyboard.
+   * The composer must NOT be hidden behind the keyboard.
+   * Do NOT leave a large blank area above the keyboard.
+   * The chat messages should remain scrollable.
+   * Automatically scroll to the latest message when appropriate.
+   * The keyboard must occupy only its normal system area.
+
+3. Do NOT use a permanently fixed bottom navigation over the keyboard.
+
+4. Do NOT simply add large bottom padding to solve the issue. The layout must actually respond to the changing mobile viewport.
+
+5. Use the browser's Visual Viewport API where appropriate:
+
+   * window.visualViewport
+   * visualViewport.height
+   * visualViewport.resize
+   * visualViewport.scroll
+
+6. If this application is running as a PWA/WebView/Capacitor Android app, make sure the Android keyboard behavior uses resize rather than overlay/pan behavior where possible.
+
+7. If using Capacitor/native Android configuration, configure the keyboard/window behavior so the WebView receives the resized viewport when the keyboard opens.
+
+8. The chat layout should use a structure similar to:
+
+   Chat Header
+   ↓
+   Scrollable Messages Area
+   ↓
+   Message Composer
+   ↓
+   Android Keyboard
+
+   The bottom navigation should NOT appear while the keyboard is open.
+
+9. The composer should contain:
+
+   * Attachment button
+   * Message input
+   * Send button / microphone button
+   * Proper safe-area handling
+
+10. Handle Android devices with different screen sizes and keyboard heights.
+
+11. Make sure the solution works in:
+
+* Chrome Android
+* Installed PWA
+* Android WebView/Capacitor if applicable
+
+12. Do not break existing chat functionality, messaging, attachments, voice messages, navigation, authentication, or database functionality.
+
+### Important
+
+Do not just visually move the elements.
+
+Fix the underlying responsive viewport/keyboard handling so that when the Android keyboard opens, the application behaves like a real native messaging app.
+
+The final result should look like:
+
+Keyboard CLOSED:
+[Chat]
+[Messages]
+[Message composer]
+[Bottom navigation]
+
+Keyboard OPEN:
+[Chat]
+[Messages]
+[Message composer]
+[Android keyboard]
+
+NOT:
+
+[Chat]
+[Messages]
+[Message composer]
+[Bottom navigation]
+[Android keyboard]
+
+Also test the behavior by focusing the message input, opening the keyboard, typing several messages, scrolling the conversation, closing the keyboard, and opening it again.
