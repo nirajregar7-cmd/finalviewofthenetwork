@@ -1,0 +1,153 @@
+# Base44 development stack for "The Network" (pnpm monorepo).
+#
+#   web  → Vite dev server for artifacts/the-network, published on host port 3000
+#   api  → Express API for artifacts/api-server (port 3001, reached through the
+#          Vite dev server's /api and /socket.io proxy, i.e. single origin)
+#   db   → PostgreSQL 16 with TLS enabled (api-server connects with
+#          rejectUnauthorized: true, so it needs a trusted certificate)
+#   deps → one-shot install from pnpm-lock.yaml before the app services start
+#
+# Start with: docker compose -f docker-compose.base44.yml up -d --build
+name: the-network
+
+volumes:
+  pgdata:
+  dbcerts:
+  pnpm-store:
+
+services:
+  # Generates a throwaway dev CA + server certificate for PostgreSQL TLS into the
+  # dbcerts volume. Committed nowhere; lives only inside the compose stack.
+  db-certs:
+    image: postgres:16
+    user: "0:0"
+    restart: "no"
+    volumes:
+      - dbcerts:/certs
+    command:
+      - sh
+      - -ec
+      - |
+        if [ -s /certs/server.crt ] && [ -s /certs/ca.crt ]; then exit 0; fi
+        cd /certs
+        openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+          -keyout ca.key -out ca.crt -subj "/CN=the-network-dev-ca"
+        openssl req -newkey rsa:2048 -nodes \
+          -keyout server.key -out server.csr -subj "/CN=db"
+        printf 'subjectAltName=DNS:db,DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=serverAuth\n' > ext.cnf
+        openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+          -out server.crt -days 3650 -extfile ext.cnf
+        chown 999:999 server.key ca.key server.crt ca.crt
+        chmod 600 server.key ca.key
+        chmod 644 server.crt ca.crt
+
+  db:
+    image: postgres:16
+    restart: on-failure
+    environment:
+      POSTGRES_USER: the_network
+      POSTGRES_PASSWORD: the_network_dev
+      POSTGRES_DB: the_network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - dbcerts:/certs:ro
+    command:
+      - sh
+      - -ec
+      - exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/certs/server.crt -c ssl_key_file=/certs/server.key
+    depends_on:
+      db-certs:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U the_network -d the_network"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Installs the workspace once from the committed lockfile, into the bind-mounted
+  # repository, so api and web never run two package managers at the same time.
+  deps:
+    build:
+      context: .
+      dockerfile: docker/base44-node.Dockerfile
+    working_dir: /app
+    restart: "no"
+    environment:
+      - BASE44_PREVIEW_MODE
+    volumes:
+      - .:/app
+      - pnpm-store:/pnpm-store
+    command: ["sh", "-ec", "exec pnpm install --frozen-lockfile"]
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/base44-node.Dockerfile
+    working_dir: /app
+    restart: on-failure
+    labels:
+      base44.project: The Network API
+      base44.kind: api
+    # Platform-delivered secrets (e.g. BREVO_API_KEY) come in here and always win
+    # over the values below unless a key is also set under `environment:`.
+    env_file:
+      - /run/base44/app.env
+    environment:
+      - BASE44_PREVIEW_MODE
+      - NODE_ENV=development
+      - PORT=3001
+      - LOG_LEVEL=info
+      # Local Postgres; the dev CA generated above is trusted for TLS verification.
+      - NODE_EXTRA_CA_CERTS=/certs/ca.crt
+      - NEON_DATABASE_URL=postgresql://the_network:the_network_dev@db:5432/the_network
+      - DATABASE_URL=postgresql://the_network:the_network_dev@db:5432/the_network
+    volumes:
+      - .:/app
+      - dbcerts:/certs:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      deps:
+        condition: service_completed_successfully
+    command: ["sh", "-ec", "exec pnpm --filter @workspace/api-server run dev"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3001/api/healthz >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 90s
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/base44-node.Dockerfile
+    working_dir: /app
+    restart: on-failure
+    labels:
+      base44.project: The Network
+      base44.kind: web
+      base44.port: "3000"
+    ports:
+      - "3000:3000"
+    environment:
+      - BASE44_PREVIEW_MODE
+      - NODE_ENV=development
+      - PORT=3000
+      - BASE_PATH=/
+      # Same-origin wiring: Vite proxies /api and /socket.io to the API service.
+      - API_PROXY_TARGET=http://api:3001
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+    volumes:
+      - .:/app
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+    command: ["sh", "-ec", "exec pnpm --filter @workspace/the-network run dev"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/ >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
