@@ -1,6 +1,6 @@
-const CACHE_NAME = 'the-network-v50';
+const CACHE_NAME = 'the-network-v51';
 const STATIC_ASSETS = ['/', '/manifest.json', '/favicon.png'];
-const EXTERNAL_API_ORIGIN = 'https://the-network-12-5--nirajfulwariya9.replit.app';
+const EXTERNAL_API_ORIGIN = 'https://the-network-api.onrender.com';
 const FIREBASE_HOSTS = new Set([
   'the-network-72bba.web.app',
   'the-network-72bba.firebaseapp.com',

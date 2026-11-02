@@ -3,7 +3,7 @@ export function registerServiceWorker() {
   if (import.meta.env.DEV) return;
 
   // Keep the worker URL versioned so a CDN cannot reuse a cached worker body.
-  const serviceWorkerUrl = '/sw.js?app-shell=v50';
+  const serviceWorkerUrl = '/sw.js?app-shell=v51';
 
   window.addEventListener('load', async () => {
     try {

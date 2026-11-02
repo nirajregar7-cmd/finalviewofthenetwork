@@ -1,5 +1,5 @@
 import type { Community } from './types';
-import { REPLIT_API_ORIGIN } from './apiOrigin';
+import { API_SERVER_ORIGIN } from './apiOrigin';
 
 // Replit Preview serves the API on the same origin by default. External static
 // builds can set VITE_API_URL to the persistent API host so REST and Socket.IO
@@ -35,15 +35,15 @@ const _isReplitPreviewHost = typeof window !== 'undefined' && (
   _hostname.endsWith('.replit.dev') ||
   _hostname.endsWith('.replit.app')
 );
-const FIREBASE_BACKEND = (import.meta.env.VITE_API_URL || REPLIT_API_ORIGIN).replace(/\/$/, '');
-export const REPLIT_BACKEND = FIREBASE_BACKEND;
+const DEFAULT_API_ORIGIN = (import.meta.env.VITE_API_URL || API_SERVER_ORIGIN).replace(/\/$/, '');
+export const API_BACKEND = DEFAULT_API_ORIGIN;
 export const PUBLIC_APP_URL = 'https://www.the-network.co.in';
 // API_ORIGIN: the root of the backend (no /api suffix). Use for image URLs.
 const _configuredApiOrigin = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, '');
 export const API_ORIGIN = _isCloudflarePagesHost
-  ? FIREBASE_BACKEND
+  ? DEFAULT_API_ORIGIN
   : (!_isReplitPreviewHost && _configuredApiOrigin)
-    || (_isFirebase ? REPLIT_BACKEND : '');
+    || (_isFirebase ? API_BACKEND : '');
 
 const REMOVED_COMMUNITY_ID = 'college-k-ramakrishnan-college-of-engineering';
 const REMOVED_COMMUNITY_NAME = 'k ramakrishnan college of engineering';
@@ -93,7 +93,7 @@ export function resolveAssetUrl(value: string | null | undefined): string | unde
 
   try {
     const assetUrl = new URL(value);
-    const currentApiUrl = new URL(API_ORIGIN || REPLIT_BACKEND);
+    const currentApiUrl = new URL(API_ORIGIN || API_BACKEND);
     if (
       assetUrl.pathname.startsWith('/api/') &&
       assetUrl.hostname.endsWith('.replit.app') &&

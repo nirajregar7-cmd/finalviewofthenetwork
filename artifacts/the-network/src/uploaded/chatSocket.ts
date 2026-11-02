@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import { REPLIT_API_ORIGIN } from '../apiOrigin';
+import { API_SERVER_ORIGIN } from '../apiOrigin';
 
 let chatSocket: Socket | null = null;
 
@@ -21,7 +21,7 @@ function resolveSocketOrigin(): string {
   }
 
   const configuredApiOrigin = import.meta.env.VITE_API_URL?.trim();
-  return normalizedOrigin(configuredApiOrigin || REPLIT_API_ORIGIN);
+  return normalizedOrigin(configuredApiOrigin || API_SERVER_ORIGIN);
 }
 
 export function getChatSocket(): Socket {
