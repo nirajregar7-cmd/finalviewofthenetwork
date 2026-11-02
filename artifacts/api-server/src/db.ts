@@ -29,6 +29,9 @@ if (!neonUrl) {
 }
 
 const activePool = createPool(neonUrl);
+activePool.on('error', (error) => {
+  console.error(`[DB] Idle PostgreSQL client error: ${error.message}`);
+});
 try {
   await activePool.query('SELECT 1');
   console.log('[DB] Using Neon PostgreSQL');

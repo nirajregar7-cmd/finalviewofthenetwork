@@ -938,6 +938,8 @@ app.use(cors({
       'https://the-network-72bba.firebaseapp.com',
       'https://the-network-d1d4c.web.app',
       'https://the-network-d1d4c.firebaseapp.com',
+      'https://the-network-44912.web.app',
+      'https://the-network-44912.firebaseapp.com',
       'https://the-network.co.in',
       'https://www.the-network.co.in',
       'http://localhost:5000',

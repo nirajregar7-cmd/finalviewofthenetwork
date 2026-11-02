@@ -11,6 +11,10 @@ const _firebaseHosts = [
   'the-network-72bba.firebaseapp.com',
   'the-network-d1d4c.web.app',
   'the-network-d1d4c.firebaseapp.com',
+  'the-network-a1188.web.app',
+  'the-network-a1188.firebaseapp.com',
+  'the-network-44912.web.app',
+  'the-network-44912.firebaseapp.com',
 ];
 const _hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 export const IS_FIREBASE_HOST = _firebaseHosts.includes(_hostname);

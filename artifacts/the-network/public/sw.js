@@ -1,4 +1,4 @@
-const CACHE_NAME = 'the-network-v48';
+const CACHE_NAME = 'the-network-v49';
 const STATIC_ASSETS = ['/', '/manifest.json', '/favicon.png'];
 const EXTERNAL_API_ORIGIN = 'https://the-network-12-5--thenetwork9587.replit.app';
 const FIREBASE_HOSTS = new Set([
@@ -6,6 +6,10 @@ const FIREBASE_HOSTS = new Set([
   'the-network-72bba.firebaseapp.com',
   'the-network-d1d4c.web.app',
   'the-network-d1d4c.firebaseapp.com',
+  'the-network-a1188.web.app',
+  'the-network-a1188.firebaseapp.com',
+  'the-network-44912.web.app',
+  'the-network-44912.firebaseapp.com',
 ]);
 const CLOUDFLARE_API_HOSTS = new Set([
   'the-network.co.in',
