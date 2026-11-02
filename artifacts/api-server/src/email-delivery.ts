@@ -123,7 +123,7 @@ export function createEmailDelivery({
     }
 
     await sendBrevoApiEmail({ to, subject, html });
-    console.info('[email] authentication/security message accepted by Brevo API');
+    console.info('[email] message accepted by Brevo API');
   }
 
   async function sendSmtpEmail({ to, subject, html }: { to: string; subject: string; html: string }) {

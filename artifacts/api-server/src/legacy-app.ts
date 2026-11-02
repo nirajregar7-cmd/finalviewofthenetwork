@@ -327,9 +327,10 @@ function canonicalizeCollegeName(value: string | null | undefined): string | nul
 }
 
 // ── Email delivery ─────────────────────────────────────────────────────────────
-// Authentication and security mail use Brevo (API when configured, otherwise SMTP).
-// Activity notifications, admin mail, and other general mail use Gmail SMTP.
+// Authentication/security and activity mail use Brevo when configured, with
+// the generic SMTP transport retained as a fallback for existing deployments.
 // Credentials stay server-only and are never returned to clients.
+const PRIMARY_ADMIN_EMAIL = (process.env.PRIMARY_ADMIN_EMAIL || 'admin@thenetwork.app').trim().toLowerCase();
 const EMAIL_FROM_ADDRESS = (process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@thenetwork.app').trim();
 const BREVO_EMAIL_FROM_ADDRESS = (process.env.BREVO_EMAIL_FROM || EMAIL_FROM_ADDRESS).trim();
 const SMTP_HOST = (process.env.SMTP_HOST || '').trim();
@@ -377,21 +378,23 @@ const { sendBrevoEmail, sendSmtpEmail, sendSmtpBulkEmail, sendBrevoBulkEmail } =
   preferBrevoApi: IS_VERCEL_RUNTIME || Boolean(BREVO_API_KEY),
   apiTimeoutMs: IS_VERCEL_RUNTIME ? 4_000 : 8_000,
 });
+const hasBrevoDelivery = Boolean(BREVO_API_KEY || brevoSmtpTransporter);
 if (BREVO_API_KEY) {
-  console.info('[email] Brevo API preferred for authentication/security mail');
+  console.info('[email] Brevo API preferred for transactional mail');
 }
 
 if (brevoSmtpTransporter) {
-  console.log(`[email] Brevo SMTP configured for authentication/security mail host=${BREVO_SMTP_HOST} port=${BREVO_SMTP_PORT} secure=${BREVO_SMTP_SECURE}`);
+  console.log(`[email] Brevo SMTP configured for transactional mail host=${BREVO_SMTP_HOST} port=${BREVO_SMTP_PORT} secure=${BREVO_SMTP_SECURE}`);
 } else if (BREVO_API_KEY) {
-  console.log('[email] Brevo API fallback configured for authentication/security mail');
+  console.log('[email] Brevo API configured for transactional mail');
 } else {
-  console.warn('[email] Brevo SMTP/API is not configured; authentication/security mail is disabled');
+  console.warn('[email] Brevo SMTP/API is not configured; authentication/security mail uses generic SMTP if available');
 }
 if (smtpTransporter) {
-  console.log(`[email] SMTP configured for activity mail host=${SMTP_HOST} port=${SMTP_PORT} secure=${SMTP_SECURE}`);
-} else {
-  console.warn('[email] SMTP is not configured; activity/admin mail is disabled');
+  console.log(`[email] SMTP fallback configured host=${SMTP_HOST} port=${SMTP_PORT} secure=${SMTP_SECURE}`);
+}
+if (!hasBrevoDelivery && !smtpTransporter) {
+  console.warn('[email] No Brevo or SMTP sender is configured; activity/admin mail is disabled');
 }
 
 function logEmailFailure(context: string, error: unknown) {
@@ -527,12 +530,16 @@ async function sendActivityEmail({
     ctaUrl: notificationEmailUrl(view, params),
   });
   try {
-    await sendSmtpEmail({ to: email, subject, html });
-    console.log(`[email] ${context} delivered provider=smtp`);
+    if (hasBrevoDelivery) {
+      await sendBrevoEmail({ to: email, subject, html });
+      console.log(`[email] ${context} delivered provider=brevo`);
+    } else {
+      await sendSmtpEmail({ to: email, subject, html });
+      console.log(`[email] ${context} delivered provider=smtp`);
+    }
   } catch (error) {
-    // Activity email is SMTP-only; authentication/security mail stays on Brevo.
     // Delivery failure must not prevent the in-app notification or saved message.
-    logEmailFailure(`${context} smtp`, error);
+    logEmailFailure(`${context} ${hasBrevoDelivery ? 'brevo' : 'smtp'}`, error);
   }
 }
 
@@ -659,16 +666,27 @@ async function sendCommunityPostActivityEmail({
   const sendBatch = async (bcc: string[], batchNumber: number) => {
     const batchLabel = `${context} batch ${batchNumber}`;
     try {
-      await sendSmtpBulkEmail({
-        to: EMAIL_FROM_ADDRESS,
-        bcc,
-        subject,
-        html,
-      });
-      console.log(`[email] ${batchLabel} delivered provider=smtp count=${bcc.length}`);
+      if (hasBrevoDelivery) {
+        await sendBrevoBulkEmail({
+          to: EMAIL_FROM_ADDRESS,
+          bcc,
+          subject,
+          html,
+        });
+        console.log(`[email] ${batchLabel} delivered provider=brevo count=${bcc.length}`);
+      } else {
+        await sendSmtpBulkEmail({
+          to: EMAIL_FROM_ADDRESS,
+          bcc,
+          subject,
+          html,
+        });
+        console.log(`[email] ${batchLabel} delivered provider=smtp count=${bcc.length}`);
+      }
     } catch (error) {
-      logEmailFailure(`${batchLabel} smtp`, error);
-      console.error(`[email] ${batchLabel} smtp delivery incomplete failed=${bcc.length}`);
+      const provider = hasBrevoDelivery ? 'brevo' : 'smtp';
+      logEmailFailure(`${batchLabel} ${provider}`, error);
+      console.error(`[email] ${batchLabel} ${provider} delivery incomplete failed=${bcc.length}`);
     }
   };
 
@@ -2000,6 +2018,15 @@ app.post('/api/auth/login', async (req, res) => {
     if (user.isSuspended) {
       return res.status(403).json({ error: SUSPENSION_NOTICE, code: 'ACCOUNT_SUSPENDED' });
     }
+    let authenticatedUser = user;
+    if (user.isVerified && user.email.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL && user.role !== 'admin') {
+      const [promotedUser] = await db.update(users)
+        .set({ role: 'admin' })
+        .where(eq(users.id, user.id))
+        .returning();
+      if (!promotedUser) throw new Error('Unable to grant the primary administrator role');
+      authenticatedUser = promotedUser;
+    }
     if (passwordCheck.needsUpgrade) {
       await db.update(users).set({ passwordHash: await hashPassword(password) }).where(eq(users.id, user.id));
     }
@@ -2007,7 +2034,7 @@ app.post('/api/auth/login', async (req, res) => {
     // A successful password login does not prove institutional identity.
     // Keep the stored verification state unchanged; it is set only by the
     // account verification flow or an explicit administrative action.
-    return res.json({ ...session, user: toUserProfile(user) });
+    return res.json({ ...session, user: toUserProfile(authenticatedUser) });
   } catch (err: any) {
     console.error('login error');
     return res.status(500).json({ error: 'Unable to sign in right now.' });
@@ -6096,7 +6123,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
       lookingFor: [],
       isVerified: true,
       isSuspended: false,
-      role: 'student',
+      role: key === PRIMARY_ADMIN_EMAIL ? 'admin' : 'student',
       privacySettings: { showEmail: true, onlyAllowVerifiedConnections: false, hideProfileFromSearch: false, directMessages: 'connections' },
     }).returning();
     const session = await createAuthSession(newUserId);
