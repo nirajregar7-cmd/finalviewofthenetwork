@@ -1588,12 +1588,22 @@ async function createAuthSession(userId: string): Promise<{ token: string; expir
   return { token, expiresAt: expiresAt.toISOString() };
 }
 
+function isUserAvatarEndpointReference(userId: string, avatar: string) {
+  try {
+    const path = new URL(avatar, 'https://avatar.invalid').pathname;
+    return path === `/api/users/${encodeURIComponent(userId)}/avatar`;
+  } catch {
+    return false;
+  }
+}
+
 function userAvatarReference(userId: string, avatar: string | null | undefined) {
   if (!avatar) return avatar;
   // Large/data-url avatars are served on demand so user and analytics lists
   // never carry megabytes of image data in every response.
   if (
     avatar.startsWith('data:') ||
+    isUserAvatarEndpointReference(userId, avatar) ||
     (!/^https?:\/\//i.test(avatar) && avatar.length > 200_000)
   ) {
     return `/api/users/${encodeURIComponent(userId)}/avatar`;
@@ -1618,6 +1628,7 @@ const userProfileSelection = {
   avatar: sql<string>`CASE
     WHEN ${users.avatar} LIKE 'data:%'
       OR (${users.avatar} NOT LIKE 'http%' AND length(${users.avatar}) > 200000)
+      OR ${users.avatar} LIKE '%' || '/api/users/' || ${users.id} || '/avatar%'
     THEN '/api/users/' || ${users.id} || '/avatar'
     ELSE ${users.avatar}
   END`,
@@ -2252,14 +2263,7 @@ app.get('/api/users/:id/avatar', async (req, res) => {
     const found = await db.select({ avatar: users.avatar }).from(users).where(eq(users.id, req.params.id));
     const raw = found[0]?.avatar;
     if (!raw) return res.status(404).send('Not found');
-    const avatarEndpoint = `/api/users/${encodeURIComponent(req.params.id)}/avatar`;
-    let avatarPath: string | null = null;
-    try {
-      avatarPath = new URL(raw, 'https://avatar.invalid').pathname;
-    } catch {
-      // Invalid legacy URLs are handled by the normal unsupported-avatar path.
-    }
-    if (avatarPath === avatarEndpoint) {
+    if (isUserAvatarEndpointReference(req.params.id, raw)) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(404).send('Avatar not available');
     }
