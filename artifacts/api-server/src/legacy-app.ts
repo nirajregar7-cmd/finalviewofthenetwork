@@ -4590,9 +4590,11 @@ app.post('/api/aptitude/exam/submit', async (req, res) => {
 
 app.get('/api/communities', async (_req, res) => {
   try {
-    await ensureAptitudeCommunity();
-    await syncAllOfficialCollegeMembership();
-    await syncJeeAspirantsMembership();
+    await Promise.all([
+      ensureAptitudeCommunity(),
+      syncAllOfficialCollegeMembership(),
+      syncJeeAspirantsMembership(),
+    ]);
     const all = await db.select().from(communities).orderBy(communities.createdAt);
     const normalized = await Promise.all(all.map(ensureCommunityHeadAdmin));
     return res.json(normalized.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })));
