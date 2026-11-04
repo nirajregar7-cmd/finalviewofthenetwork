@@ -2760,7 +2760,8 @@ app.post('/api/posts', async (req, res) => {
       pollVotes: normalizedPollOptions.length >= 2 ? {} : null,
     }).returning();
 
-    // Push notification to all accepted connections of the author
+    const notificationTask = (async () => {
+    // Notify accepted connections and members of the post's community.
     const author = await db.select().from(users).where(eq(users.id, authorId));
     if (author.length) {
        const authorName = author[0].fullName;
@@ -2937,8 +2938,12 @@ app.post('/api/posts', async (req, res) => {
 
       }
     }
+    })();
 
     bust('bootstrap');
+    void notificationTask.catch((error: unknown) => {
+      console.error('[post notifications] Background delivery failed.', error);
+    });
     return res.json(toPost(newPost[0], []));
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -3331,14 +3336,13 @@ app.post('/api/posts/:id/comments', async (req, res) => {
       return res.status(404).json({ error: 'Post not found' });
     }
     const targetPost = await resolveOriginalPost(displayPost);
-    const currentEngagement = (await loadPostEngagement([targetPost.id])).get(targetPost.id);
     let parentComment: typeof comments.$inferSelect | undefined;
     if (replyToId) {
       const replyId = String(replyToId);
-      if (!currentEngagement?.comments.some((comment) => comment.id === replyId)) {
-        return res.status(400).json({ error: 'Reply target not found on this post' });
-      }
-      const [parent] = await db.select().from(comments).where(eq(comments.id, replyId));
+      const [parent] = await db.select().from(comments).where(and(
+        eq(comments.id, replyId),
+        eq(comments.postId, targetPost.id),
+      ));
       if (!parent) {
         return res.status(400).json({ error: 'Reply target not found on this post' });
       }
@@ -3353,7 +3357,8 @@ app.post('/api/posts/:id/comments', async (req, res) => {
       content: normalizedContent,
     }).returning();
     bust('bootstrap');
-    // Notify post author + all previous commenters on this post
+    const notificationTask = (async () => {
+    // Notify the post author, mentioned users, and previous commenters.
     const [commenter, mentionCandidates] = await Promise.all([
       db.select().from(users).where(eq(users.id, authorId)),
        db.select({
@@ -3364,9 +3369,10 @@ app.post('/api/posts/:id/comments', async (req, res) => {
        }).from(users),
     ]);
     const post = [targetPost];
-    const existingComments = (
-      (await loadPostEngagement([targetPost.id])).get(targetPost.id)?.comments || []
-    ) as typeof comments.$inferSelect[];
+    const existingComments = await db.select({ authorId: comments.authorId })
+      .from(comments)
+      .where(eq(comments.postId, targetPost.id))
+      .groupBy(comments.authorId);
     if (commenter.length) {
       const commenterName = anonymous ? anonymousAlias(authorId) : commenter[0].fullName;
        const community = post[0].communityId
@@ -3500,6 +3506,10 @@ app.post('/api/posts/:id/comments', async (req, res) => {
         });
       }
     }
+    })();
+    void notificationTask.catch((error: unknown) => {
+      console.error('[comment notifications] Background delivery failed.', error);
+    });
     return res.json({ ...newComment[0], createdAt: newComment[0].createdAt.toISOString() });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
