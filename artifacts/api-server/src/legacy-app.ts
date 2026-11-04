@@ -4354,6 +4354,27 @@ function isJeeAspirantProfile(user: {
   return isJeeCoachingStudent || explicitlyPreparingForJee;
 }
 
+async function syncJeeAspirantMembership(user: {
+  id: string;
+  college?: string | null;
+  branch?: string | null;
+  aboutMe?: string | null;
+  interests?: unknown;
+  lookingFor?: unknown;
+  isSuspended?: boolean | null;
+}) {
+  if (!isJeeAspirantProfile(user)) return;
+  const communityRows = await db.select().from(communities).where(eq(communities.id, JEE_COMMUNITY_ID));
+  const community = communityRows[0];
+  if (!community) return;
+
+  const existingIds = Array.isArray(community.memberIds) ? community.memberIds as string[] : [];
+  if (existingIds.includes(user.id)) return;
+  await db.update(communities)
+    .set({ memberIds: [...existingIds, user.id] })
+    .where(eq(communities.id, JEE_COMMUNITY_ID));
+}
+
 async function syncJeeAspirantsMembership() {
   const [communityRows, profileRows] = await Promise.all([
     db.select().from(communities).where(eq(communities.id, JEE_COMMUNITY_ID)),
@@ -4603,11 +4624,7 @@ app.post('/api/aptitude/exam/submit', async (req, res) => {
 
 app.get('/api/communities', async (_req, res) => {
   try {
-    await Promise.all([
-      ensureAptitudeCommunity(),
-      syncAllOfficialCollegeMembership(),
-      syncJeeAspirantsMembership(),
-    ]);
+    await ensureAptitudeCommunity();
     const all = await db.select().from(communities).orderBy(communities.createdAt);
     const normalized = await Promise.all(all.map(ensureCommunityHeadAdmin));
     return res.json(normalized.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })));
@@ -4892,6 +4909,12 @@ app.post('/api/communities', async (req, res) => {
       adminIds: creatorId ? [creatorId] : [],
       blockedMemberIds: [],
     }).returning();
+    if (normalizedCategory === 'College Community' && canonicalCollege) {
+      await syncAllOfficialCollegeMembership();
+      const refreshed = await db.select().from(communities).where(eq(communities.id, newComm[0].id));
+      if (!refreshed[0]) throw new Error('Created college community was not found after membership sync.');
+      return res.json({ ...refreshed[0], createdAt: refreshed[0].createdAt.toISOString() });
+    }
     return res.json({ ...newComm[0], createdAt: newComm[0].createdAt.toISOString() });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -6159,6 +6182,8 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     const welcomeTitle = `Welcome to The Network, ${newUser[0].fullName}`;
     const welcomeBody = 'Your account is verified and ready. Start by exploring your campus feed and finding people to learn with.';
     await Promise.all([
+      syncOfficialCollegeMembership(newUserId, newUser[0].college),
+      syncJeeAspirantMembership(newUser[0]),
       createNotification(newUserId, newUserId, 'welcome', welcomeTitle, welcomeBody, true),
       dispatchPush(newUserId, {
         title: '🎉 Welcome to The Network',
@@ -9973,6 +9998,14 @@ if (!IS_SERVERLESS_RUNTIME) {
     console.log(`Server running on port ${PORT}`);
     autoSeedDomainCommunities();
   });
+  setTimeout(() => {
+    void Promise.all([
+      syncAllOfficialCollegeMembership(),
+      syncJeeAspirantsMembership(),
+    ]).catch((error: unknown) => {
+      console.error('[startup community membership sync]', error);
+    });
+  }, 30_000);
 
   // ── Engagement Push Notification Jobs ──────────────────────────────────────
   // Only run on long-lived servers (Replit / VPS).
