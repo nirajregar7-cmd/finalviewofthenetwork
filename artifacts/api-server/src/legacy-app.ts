@@ -2253,7 +2253,16 @@ app.get('/api/users/:id/avatar', async (req, res) => {
     const raw = found[0]?.avatar;
     if (!raw) return res.status(404).send('Not found');
     const avatarEndpoint = `/api/users/${encodeURIComponent(req.params.id)}/avatar`;
-    if (raw === avatarEndpoint) return res.redirect(302, '/favicon.png');
+    let avatarPath: string | null = null;
+    try {
+      avatarPath = new URL(raw, 'https://avatar.invalid').pathname;
+    } catch {
+      // Invalid legacy URLs are handled by the normal unsupported-avatar path.
+    }
+    if (avatarPath === avatarEndpoint) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(404).send('Avatar not available');
+    }
 
     // Avatars have existed in a few formats over the lifetime of the app:
     // standard data URLs, URL-encoded SVG/data URLs, and a legacy value with
