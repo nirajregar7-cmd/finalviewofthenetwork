@@ -48,6 +48,6 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_THE_NETWORK_A1188 }}
-          projectId: the-network-44912
+          projectId: the-network-a1188
           entryPoint: artifacts/the-network
           channelId: live
