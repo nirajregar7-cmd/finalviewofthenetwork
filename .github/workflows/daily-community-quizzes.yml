@@ -4,6 +4,18 @@ on:
   schedule:
     - cron: '30 0 * * *'
   workflow_dispatch:
+    inputs:
+      community_count:
+        description: Number of communities to run (test with 1 before selecting 20)
+        type: choice
+        options:
+          - '1'
+          - '20'
+        default: '1'
+      suppress_notifications:
+        description: Suppress email, push, and in-app notifications during verification
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -20,12 +32,15 @@ jobs:
       - name: Generate and publish today's quizzes
         env:
           QUIZ_CRON_SECRET: ${{ secrets.QUIZ_CRON_SECRET }}
+          QUIZ_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.community_count || '20' }}
+          SUPPRESS_NOTIFICATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.suppress_notifications || false }}
         run: |
           set -euo pipefail
           if [ -z "$QUIZ_CRON_SECRET" ]; then
             echo "Configure the QUIZ_CRON_SECRET repository secret before running this workflow."
             exit 1
           fi
+          payload=$(printf '{"limit":%s,"suppressNotifications":%s}' "$QUIZ_LIMIT" "$SUPPRESS_NOTIFICATIONS")
           curl --fail-with-body --silent --show-error \
             --connect-timeout 30 \
             --max-time 900 \
@@ -33,5 +48,7 @@ jobs:
             --retry-delay 30 \
             --retry-all-errors \
             -X POST \
+            -H "Content-Type: application/json" \
+            --data "$payload" \
             -H "Authorization: Bearer ${QUIZ_CRON_SECRET}" \
             https://the-network-api.onrender.com/api/internal/community-quizzes/run

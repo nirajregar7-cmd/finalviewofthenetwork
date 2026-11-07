@@ -129,7 +129,7 @@ export function DailyCommunityQuizPanel({ communityId, currentUserId }: DailyCom
         </div>
         <h2 className="mt-4 text-base font-black text-slate-900">Today’s quiz is being prepared</h2>
         <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-500">
-          A fresh five-question quiz is scheduled for 6:00 AM IST every day. Check back soon.
+          A fresh ten-question quiz is scheduled for 6:00 AM IST every day. Check back soon.
         </p>
         {error && <p className="mt-3 text-xs font-semibold text-rose-600" role="alert">{error}</p>}
         <button type="button" onClick={() => void loadQuiz()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">
@@ -150,7 +150,7 @@ export function DailyCommunityQuizPanel({ communityId, currentUserId }: DailyCom
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-100">
             <Award className="h-3.5 w-3.5" /> Daily quiz · {data.quiz.date}
           </div>
-          <span className="text-[10px] font-bold text-indigo-100">5 questions · 1 point each</span>
+          <span className="text-[10px] font-bold text-indigo-100">10 questions · 1 point each</span>
         </div>
         <h2 className="mt-3 text-xl font-black tracking-tight">{data.quiz.title}</h2>
         <p className="mt-2 max-w-2xl text-xs leading-5 text-indigo-100">{data.quiz.description}</p>
@@ -228,7 +228,7 @@ export function DailyCommunityQuizPanel({ communityId, currentUserId }: DailyCom
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             Submit daily quiz
           </button>
-          {!allAnswered && <p className="text-[11px] text-slate-500">Choose one answer for all five questions to submit.</p>}
+          {!allAnswered && <p className="text-[11px] text-slate-500">Choose one answer for all ten questions to submit.</p>}
         </div>
       )}
 

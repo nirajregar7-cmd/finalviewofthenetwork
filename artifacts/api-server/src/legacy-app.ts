@@ -348,6 +348,7 @@ const BREVO_SMTP_PASS = (process.env.BREVO_SMTP_PASS || '').replace(/\s+/g, '');
 const BREVO_SMTP_SECURE = process.env.BREVO_SMTP_SECURE === 'true' || BREVO_SMTP_PORT === 465;
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').trim();
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim();
+const GEMINI_MODEL = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
 const QUIZ_CRON_SECRET = (process.env.QUIZ_CRON_SECRET || '').trim();
 const smtpTransporter = SMTP_HOST && SMTP_USER && SMTP_PASS
   ? nodemailer.createTransport({
@@ -1059,7 +1060,7 @@ app.use((req, res, next) => {
 
   const originalJson = res.json.bind(res);
   (res as any).json = (body: any) => {
-    if (res.statusCode >= 500) {
+    if (res.statusCode >= 500 && req.path !== '/api/internal/community-quizzes/run') {
       return originalJson({ error: 'Internal server error' });
     }
 
@@ -4452,39 +4453,61 @@ function isLearningCommunity(community: typeof communities.$inferSelect): boolea
   return /\b(learn(?:er|ers|ing)?|study|student|academic|education|class(?:es)?|school|college|university|exam|prepar(?:e|ation)|aspirant|jee|neet|gate|upsc|math(?:s|ematics)?|physics|chemistry|biology|science|engineering|coding|programming|computer science|dsa|aptitude|revision|notes)\b/i.test(subject);
 }
 
+type DailyQuizFailureStage = 'database' | 'gemini' | 'validation' | 'notification';
+
+class DailyQuizFailure extends Error {
+  constructor(
+    readonly stage: DailyQuizFailureStage,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = 'DailyQuizFailure';
+  }
+}
+
+function safeQuizErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED]')
+    .replace(/(?:postgres(?:ql)?:\/\/)[^\s"'<>]+/gi, '[REDACTED_DATABASE_URL]')
+    .replace(/(x-goog-api-key\s*[:=]\s*)[^\s,;]+/gi, '$1[REDACTED]')
+    .slice(0, 500);
+}
+
 function validateDailyQuiz(value: unknown): {
   title: string;
   description: string;
   questions: DailyCommunityQuizQuestion[];
 } {
-  if (!value || typeof value !== 'object') throw new Error('Gemini returned an invalid quiz object.');
+  if (!value || typeof value !== 'object') throw new DailyQuizFailure('validation', 'Gemini returned an invalid quiz object.');
   const quiz = value as Record<string, unknown>;
   if (typeof quiz.title !== 'string' || !quiz.title.trim() || quiz.title.length > 120) {
-    throw new Error('Gemini returned an invalid quiz title.');
+    throw new DailyQuizFailure('validation', 'Gemini returned an invalid quiz title.');
   }
   if (typeof quiz.description !== 'string' || !quiz.description.trim() || quiz.description.length > 300) {
-    throw new Error('Gemini returned an invalid quiz description.');
+    throw new DailyQuizFailure('validation', 'Gemini returned an invalid quiz description.');
   }
-  if (!Array.isArray(quiz.questions) || quiz.questions.length !== 5) {
-    throw new Error('Gemini must return exactly five quiz questions.');
+  if (!Array.isArray(quiz.questions) || quiz.questions.length !== 10) {
+    throw new DailyQuizFailure('validation', 'Gemini must return exactly ten quiz questions.');
   }
 
   const questions = quiz.questions.map((item, index): DailyCommunityQuizQuestion => {
-    if (!item || typeof item !== 'object') throw new Error(`Gemini returned an invalid question at position ${index + 1}.`);
+    if (!item || typeof item !== 'object') throw new DailyQuizFailure('validation', `Gemini returned an invalid question at position ${index + 1}.`);
     const question = item as Record<string, unknown>;
     if (typeof question.prompt !== 'string' || !question.prompt.trim() || question.prompt.length > 500) {
-      throw new Error(`Gemini returned an invalid question prompt at position ${index + 1}.`);
+      throw new DailyQuizFailure('validation', `Gemini returned an invalid question prompt at position ${index + 1}.`);
     }
     if (!Array.isArray(question.options) || question.options.length !== 4 ||
       question.options.some((option) => typeof option !== 'string' || !option.trim() || option.length > 240) ||
       new Set(question.options.map((option) => (option as string).trim().toLowerCase())).size !== 4) {
-      throw new Error(`Gemini returned invalid answer options at position ${index + 1}.`);
+      throw new DailyQuizFailure('validation', `Gemini returned invalid answer options at position ${index + 1}.`);
     }
     if (!Number.isInteger(question.answerIndex) || Number(question.answerIndex) < 0 || Number(question.answerIndex) > 3) {
-      throw new Error(`Gemini returned an invalid correct answer at position ${index + 1}.`);
+      throw new DailyQuizFailure('validation', `Gemini returned an invalid correct answer at position ${index + 1}.`);
     }
     if (typeof question.explanation !== 'string' || !question.explanation.trim() || question.explanation.length > 700) {
-      throw new Error(`Gemini returned an invalid explanation at position ${index + 1}.`);
+      throw new DailyQuizFailure('validation', `Gemini returned an invalid explanation at position ${index + 1}.`);
     }
     return {
       id: `q${index + 1}`,
@@ -4494,6 +4517,9 @@ function validateDailyQuiz(value: unknown): {
       explanation: question.explanation.trim(),
     };
   });
+  if (new Set(questions.map((question) => question.prompt.trim().toLowerCase())).size !== 10) {
+    throw new DailyQuizFailure('validation', 'Gemini returned duplicate quiz questions.');
+  }
   return { title: quiz.title.trim(), description: quiz.description.trim(), questions };
 }
 
@@ -4501,57 +4527,83 @@ async function generateDailyCommunityQuiz(
   community: typeof communities.$inferSelect,
   quizDate: string,
 ): Promise<ReturnType<typeof validateDailyQuiz>> {
-  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not configured.');
+  if (!GEMINI_API_KEY) throw new DailyQuizFailure('gemini', 'GEMINI_API_KEY is not configured.');
   const tags = Array.isArray(community.tags) ? community.tags.join(', ') : '';
-  const response = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY,
-      },
-      signal: AbortSignal.timeout(45_000),
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: [
-              'Create a short, accurate, original daily learning quiz for a student community.',
-              `Community: ${community.name}`,
-              `Description: ${community.description}`,
-              `Category: ${community.category}`,
-              `Topics/tags: ${tags || 'infer from the community name and description'}`,
-              `Quiz date in India: ${quizDate}`,
-              'Return exactly five distinct, student-level multiple-choice questions in English.',
-              'Each question must have exactly four concise options, one unambiguous correct answer, and a short explanation.',
-              'Vary the questions from recent days; do not make up current facts or cite sources you cannot verify.',
-              'Return only a JSON object with title, description, and questions. Each question must have prompt, options, answerIndex (0-3), and explanation.',
-            ].join('\n'),
-          }],
-        }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
+  let response: globalThis.Response;
+  try {
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': GEMINI_API_KEY,
         },
-      }),
-    },
-  );
-  if (!response.ok) {
-    throw new Error(`Gemini quiz generation failed with HTTP ${response.status}.`);
+        signal: AbortSignal.timeout(30_000),
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: [
+                'Create a short, accurate, original daily learning quiz for a student community.',
+                `Community: ${community.name}`,
+                `Description: ${community.description}`,
+                `Category: ${community.category}`,
+                `Topics/tags: ${tags || 'infer from the community name and description'}`,
+                `Quiz date in India: ${quizDate}`,
+                'Return exactly ten distinct, student-level multiple-choice questions in English.',
+                'Each question must have exactly four concise options, one unambiguous correct answer, and a short explanation.',
+                'Vary the questions from recent days; do not make up current facts or cite sources you cannot verify.',
+                'Return only a JSON object with title, description, and questions. Each question must have prompt, options, answerIndex (0-3), and explanation.',
+              ].join('\n'),
+            }],
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+          },
+        }),
+      },
+    );
+  } catch (error) {
+    const message = error instanceof Error && error.name === 'TimeoutError'
+      ? 'Gemini request timed out after 30 seconds.'
+      : `Gemini request failed: ${safeQuizErrorMessage(error)}`;
+    throw new DailyQuizFailure('gemini', message, { cause: error });
   }
-  const payload = await response.json() as {
+  const responseText = await response.text();
+  if (!response.ok) {
+    let providerMessage = '';
+    try {
+      const errorPayload = JSON.parse(responseText) as { error?: { message?: unknown; status?: unknown } };
+      providerMessage = typeof errorPayload.error?.message === 'string'
+        ? errorPayload.error.message
+        : typeof errorPayload.error?.status === 'string' ? errorPayload.error.status : '';
+    } catch {
+      providerMessage = responseText.slice(0, 240);
+    }
+    throw new DailyQuizFailure(
+      'gemini',
+      `Gemini model "${GEMINI_MODEL}" returned HTTP ${response.status}${providerMessage ? `: ${safeQuizErrorMessage(providerMessage)}` : ''}.`,
+    );
+  }
+  let payload: {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
+  try {
+    payload = JSON.parse(responseText) as typeof payload;
+  } catch (error) {
+    throw new DailyQuizFailure('gemini', 'Gemini returned a malformed API response.', { cause: error });
+  }
   const generatedText = payload.candidates?.[0]?.content?.parts
     ?.map((part) => part.text || '')
     .join('')
     .trim();
-  if (!generatedText) throw new Error('Gemini returned no quiz content.');
+  if (!generatedText) throw new DailyQuizFailure('gemini', 'Gemini returned no quiz content.');
   let generated: unknown;
   try {
     generated = JSON.parse(generatedText);
-  } catch {
-    throw new Error('Gemini returned malformed quiz JSON.');
+  } catch (error) {
+    throw new DailyQuizFailure('validation', 'Gemini returned malformed quiz JSON.', { cause: error });
   }
   return validateDailyQuiz(generated);
 }
@@ -4603,7 +4655,7 @@ async function notifyDailyQuizMembers(
       .where(inArray(pushSubscriptions.userId, memberIds))).map((row) => row.userId))
     : new Set<string>();
   const notificationTitle = `🧠 Daily quiz: ${community.name}`;
-  const body = `${title} is ready for ${quizDate}. Take today's 5-question community quiz. [[community:${community.id}]] [[quiz:${quizId}]]`;
+  const body = `${title} is ready for ${quizDate}. Take today's 10-question community quiz. [[community:${community.id}]] [[quiz:${quizId}]]`;
 
   for (let offset = 0; offset < recipients.length; offset += 20) {
     await Promise.all(recipients.slice(offset, offset + 20).map(async (recipient) => {
@@ -4618,7 +4670,7 @@ async function notifyDailyQuizMembers(
       if (notification && pushUsers.has(recipient.id)) {
         await dispatchPush(recipient.id, {
           title: notificationTitle,
-          body: `${community.name}: ${title} is ready. Take today's five-question quiz.`,
+          body: `${community.name}: ${title} is ready. Take today's ten-question quiz.`,
           icon: '/icons/icon-192x192.png',
           badge: '/icons/icon-72x72.png',
           tag: `community-quiz-${quizId}`,
@@ -4634,7 +4686,7 @@ async function notifyDailyQuizMembers(
     recipientEmails: recipients.map((recipient) => recipient.email),
     subject: `Today's quiz is ready in ${community.name}`,
     title: `Your ${community.name} daily quiz is ready`,
-    body: `${title}\n\nTake today's five-question quiz and compare your score with the community leaderboard.`,
+    body: `${title}\n\nTake today's ten-question quiz and compare your score with the community leaderboard.`,
     view: 'communities',
     params: { communityId: community.id, tab: 'quizzes' },
     context: 'daily community quiz email',
@@ -4644,30 +4696,83 @@ async function notifyDailyQuizMembers(
 async function createDailyQuizForCommunity(
   community: typeof communities.$inferSelect,
   quizDate: string,
+  sendNotifications: boolean,
 ): Promise<'created' | 'already_exists'> {
-  const existing = await db.select({ id: dailyCommunityQuizzes.id })
-    .from(dailyCommunityQuizzes)
-    .where(and(
-      eq(dailyCommunityQuizzes.communityId, community.id),
-      eq(dailyCommunityQuizzes.quizDate, quizDate),
-    ))
-    .limit(1);
-  if (existing[0]) return 'already_exists';
+  let existing: Array<{
+    id: string;
+    title: string;
+    description: string;
+    questions: unknown;
+    notificationSentAt: Date | null;
+  }>;
+  try {
+    existing = await db.select({
+      id: dailyCommunityQuizzes.id,
+      title: dailyCommunityQuizzes.title,
+      description: dailyCommunityQuizzes.description,
+      questions: dailyCommunityQuizzes.questions,
+      notificationSentAt: dailyCommunityQuizzes.notificationSentAt,
+    })
+      .from(dailyCommunityQuizzes)
+      .where(and(
+        eq(dailyCommunityQuizzes.communityId, community.id),
+        eq(dailyCommunityQuizzes.quizDate, quizDate),
+      ))
+      .limit(1);
+  } catch (error) {
+    throw new DailyQuizFailure('database', 'Could not check for an existing community quiz.', { cause: error });
+  }
+  if (existing[0]) {
+    validateDailyQuiz(existing[0]);
+    if (sendNotifications && !existing[0].notificationSentAt) {
+      try {
+        await notifyDailyQuizMembers(community, existing[0].id, quizDate, existing[0].title);
+      } catch (error) {
+        throw new DailyQuizFailure('notification', 'Quiz exists, but member notification delivery failed.', { cause: error });
+      }
+      try {
+        await db.update(dailyCommunityQuizzes)
+          .set({ notificationSentAt: new Date() })
+          .where(eq(dailyCommunityQuizzes.id, existing[0].id));
+      } catch (error) {
+        throw new DailyQuizFailure('database', 'Quiz exists and notifications were sent, but delivery status could not be saved.', { cause: error });
+      }
+    }
+    return 'already_exists';
+  }
 
   const generated = await generateDailyCommunityQuiz(community, quizDate);
-  const inserted = await db.insert(dailyCommunityQuizzes).values({
-    id: generateId('community-quiz'),
-    communityId: community.id,
-    quizDate,
-    title: generated.title,
-    description: generated.description,
-    questions: generated.questions,
-  }).onConflictDoNothing({
-    target: [dailyCommunityQuizzes.communityId, dailyCommunityQuizzes.quizDate],
-  }).returning();
+  let inserted: Array<{ id: string; title: string }>;
+  try {
+    inserted = await db.insert(dailyCommunityQuizzes).values({
+      id: generateId('community-quiz'),
+      communityId: community.id,
+      quizDate,
+      title: generated.title,
+      description: generated.description,
+      questions: generated.questions,
+    }).onConflictDoNothing({
+      target: [dailyCommunityQuizzes.communityId, dailyCommunityQuizzes.quizDate],
+    }).returning();
+  } catch (error) {
+    throw new DailyQuizFailure('database', 'Could not save the generated community quiz.', { cause: error });
+  }
   const quiz = inserted[0];
   if (!quiz) return 'already_exists';
-  await notifyDailyQuizMembers(community, quiz.id, quizDate, quiz.title);
+  if (sendNotifications) {
+    try {
+      await notifyDailyQuizMembers(community, quiz.id, quizDate, quiz.title);
+    } catch (error) {
+      throw new DailyQuizFailure('notification', 'Quiz was saved, but member notification delivery failed.', { cause: error });
+    }
+    try {
+      await db.update(dailyCommunityQuizzes)
+        .set({ notificationSentAt: new Date() })
+        .where(eq(dailyCommunityQuizzes.id, quiz.id));
+    } catch (error) {
+      throw new DailyQuizFailure('database', 'Quiz and notifications were saved, but delivery status could not be recorded.', { cause: error });
+    }
+  }
   return 'created';
 }
 
@@ -4979,7 +5084,7 @@ app.post('/api/communities/:communityId/quizzes/:quizId/submit', async (req, res
       return res.status(400).json({ error: 'One or more submitted answers are invalid.' });
     }
     if (questions.some((question) => !Object.hasOwn(answers, question.id))) {
-      return res.status(400).json({ error: 'Answer all five questions before submitting.' });
+      return res.status(400).json({ error: 'Answer all ten questions before submitting.' });
     }
 
     const existing = await db.select({ id: dailyCommunityQuizAttempts.id })
@@ -5043,40 +5148,147 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
   }
   if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GEMINI_API_KEY is not configured.' });
 
+  const requestedLimit = req.body?.limit === undefined ? 20 : Number(req.body.limit);
+  if (requestedLimit !== 1 && requestedLimit !== 20) {
+    return res.status(400).json({ error: 'Quiz run limit must be either 1 or 20.' });
+  }
+  const sendNotifications = req.body?.suppressNotifications !== true;
   const quizDate = getIndiaDateKey();
   try {
-    const allCommunities = await db.select().from(communities);
-    const learningCommunities = allCommunities.filter((community) =>
-      isLearningCommunity(community) &&
-      Array.isArray(community.memberIds) &&
-      community.memberIds.length > 0,
-    );
-    const results: Array<{ communityId: string; name: string; status: 'created' | 'already_exists' | 'failed'; error?: string }> = [];
-    for (let offset = 0; offset < learningCommunities.length; offset += 3) {
-      const batch = learningCommunities.slice(offset, offset + 3);
+    let allCommunities: Array<typeof communities.$inferSelect>;
+    try {
+      allCommunities = await db.select().from(communities);
+    } catch (error) {
+      throw new DailyQuizFailure('database', 'Could not load learning communities.', { cause: error });
+    }
+    const learningCommunities = allCommunities
+      .filter((community) =>
+        isLearningCommunity(community) &&
+        Array.isArray(community.memberIds) &&
+        community.memberIds.length > 0,
+      )
+      .sort((a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() ||
+        a.id.localeCompare(b.id),
+      );
+    if (learningCommunities.length < requestedLimit) {
+      return res.status(503).json({
+        error: `Only ${learningCommunities.length} eligible learning communities are available; ${requestedLimit} are required.`,
+        eligibleCommunities: learningCommunities.length,
+      });
+    }
+    const selectedCommunities = learningCommunities.slice(0, requestedLimit);
+    const results: Array<{
+      communityId: string;
+      name: string;
+      status: 'created' | 'already_exists' | 'failed';
+      error?: string;
+      stage?: DailyQuizFailureStage | 'unknown';
+    }> = [];
+    for (let offset = 0; offset < selectedCommunities.length; offset += 3) {
+      const batch = selectedCommunities.slice(offset, offset + 3);
       results.push(...await Promise.all(batch.map(async (community) => {
         try {
-          const status = await createDailyQuizForCommunity(community, quizDate);
+          const status = await createDailyQuizForCommunity(community, quizDate, sendNotifications);
           return { communityId: community.id, name: community.name, status };
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unexpected quiz generation error.';
-          console.error(`[community quiz] generation failed community=${community.id}: ${message}`);
-          return { communityId: community.id, name: community.name, status: 'failed' as const, error: message };
+          const stage: DailyQuizFailureStage | 'unknown' =
+            error instanceof DailyQuizFailure ? error.stage : 'unknown';
+          const message = safeQuizErrorMessage(error);
+          const stack = error instanceof Error && error.stack ? safeQuizErrorMessage(error.stack) : '';
+          console.error(`[community quiz] failed community=${community.id} stage=${stage}: ${message}\n${stack}`);
+          return {
+            communityId: community.id,
+            name: community.name,
+            status: 'failed' as const,
+            error: message,
+            stage,
+          };
         }
       })));
+    }
+
+    let storedQuizzes: Array<{
+      communityId: string;
+      title: string;
+      description: string;
+      questions: unknown;
+    }>;
+    try {
+      storedQuizzes = await db.select({
+        communityId: dailyCommunityQuizzes.communityId,
+        title: dailyCommunityQuizzes.title,
+        description: dailyCommunityQuizzes.description,
+        questions: dailyCommunityQuizzes.questions,
+      })
+        .from(dailyCommunityQuizzes)
+        .where(and(
+          eq(dailyCommunityQuizzes.quizDate, quizDate),
+          inArray(dailyCommunityQuizzes.communityId, selectedCommunities.map((community) => community.id)),
+        ));
+    } catch (error) {
+      throw new DailyQuizFailure('database', 'Could not verify the saved community quizzes.', { cause: error });
+    }
+    const storedByCommunity = new Map(storedQuizzes.map((quiz) => [quiz.communityId, quiz]));
+    for (const community of selectedCommunities) {
+      const stored = storedByCommunity.get(community.id);
+      if (!stored) {
+        if (!results.some((result) => result.communityId === community.id && result.status === 'failed')) {
+          results.push({
+            communityId: community.id,
+            name: community.name,
+            status: 'failed',
+            stage: 'database',
+            error: 'No quiz record was found for this community and date.',
+          });
+        }
+        continue;
+      }
+      try {
+        validateDailyQuiz(stored);
+      } catch (error) {
+        const existingFailure = results.find((result) =>
+          result.communityId === community.id && result.status === 'failed',
+        );
+        const verificationError = `Saved quiz verification failed: ${safeQuizErrorMessage(error)}`;
+        if (existingFailure) {
+          existingFailure.error = `${existingFailure.error}; ${verificationError}`;
+        } else {
+          results.push({
+            communityId: community.id,
+            name: community.name,
+            status: 'failed',
+            stage: 'validation',
+            error: verificationError,
+          });
+        }
+      }
     }
     const failed = results.filter((result) => result.status === 'failed');
     return res.status(failed.length ? 502 : 200).json({
       date: quizDate,
       scheduledTime: '06:00 Asia/Kolkata',
-      learningCommunities: learningCommunities.length,
+      eligibleCommunities: learningCommunities.length,
+      selectedCommunities: selectedCommunities.length,
       created: results.filter((result) => result.status === 'created').length,
       alreadyExists: results.filter((result) => result.status === 'already_exists').length,
+      verifiedQuizzes: storedQuizzes.length,
+      verifiedQuestions: storedQuizzes.reduce((sum, quiz) =>
+        sum + (Array.isArray(quiz.questions) ? quiz.questions.length : 0), 0),
+      duplicateCount: storedQuizzes.length - storedByCommunity.size,
+      notificationsSuppressed: !sendNotifications,
       failed,
     });
   } catch (error) {
-    console.error('[community quiz] scheduled run failed:', error);
-    return res.status(500).json({ error: 'Could not run the daily community quiz job.' });
+    const stage = error instanceof DailyQuizFailure ? error.stage : 'unknown';
+    const message = safeQuizErrorMessage(error);
+    const stack = error instanceof Error && error.stack ? safeQuizErrorMessage(error.stack) : '';
+    console.error(`[community quiz] scheduled run failed stage=${stage}: ${message}\n${stack}`);
+    return res.status(500).json({
+      error: 'Could not run the daily community quiz job.',
+      stage,
+      detail: message,
+    });
   }
 });
 
@@ -10289,9 +10501,12 @@ await pool.query(`
     title text NOT NULL,
     description text NOT NULL,
     questions jsonb NOT NULL DEFAULT '[]',
+    notification_sent_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (community_id, quiz_date)
   );
+  ALTER TABLE daily_community_quizzes
+    ADD COLUMN IF NOT EXISTS notification_sent_at timestamptz;
   CREATE INDEX IF NOT EXISTS daily_community_quizzes_date_idx
     ON daily_community_quizzes (quiz_date);
   CREATE TABLE IF NOT EXISTS daily_community_quiz_attempts (
