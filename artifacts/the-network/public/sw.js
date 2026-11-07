@@ -1,4 +1,4 @@
-const CACHE_NAME = 'the-network-v60';
+const CACHE_NAME = 'the-network-v61';
 const STATIC_ASSETS = ['/', '/manifest.json', '/favicon.png'];
 const EXTERNAL_API_ORIGIN = 'https://the-network-api.onrender.com';
 const FIREBASE_HOSTS = new Set([
