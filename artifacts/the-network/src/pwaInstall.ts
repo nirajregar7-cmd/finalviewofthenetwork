@@ -14,15 +14,6 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-interface RelatedInstalledApp {
-  platform: string;
-}
-
-interface NavigatorWithRelatedApps extends Navigator {
-  getInstalledRelatedApps?: () => Promise<RelatedInstalledApp[]>;
-}
-
-const INSTALLED_STORAGE_KEY = 'the-network-pwa-installed';
 let _deferred: BeforeInstallPromptEvent | null = null;
 let _installed = false;
 let _installConfirmedThisSession = false;
@@ -43,37 +34,10 @@ function isStandalone(): boolean {
   );
 }
 
-function hasStoredInstallMarker(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return window.localStorage.getItem(INSTALLED_STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-function storeInstallMarker(installed: boolean) {
-  if (typeof window === 'undefined') return;
-  try {
-    if (installed) window.localStorage.setItem(INSTALLED_STORAGE_KEY, 'true');
-    else window.localStorage.removeItem(INSTALLED_STORAGE_KEY);
-  } catch {
-    // Standalone mode and install events still cover browsers that block storage.
-  }
-}
-
 function markInstalled(confirmedThisSession = true) {
   _installed = true;
   _deferred = null;
   if (confirmedThisSession) _installConfirmedThisSession = true;
-  storeInstallMarker(true);
-  notify();
-}
-
-function markNotInstalled() {
-  if (_installConfirmedThisSession || isStandalone()) return;
-  _installed = false;
-  storeInstallMarker(false);
   notify();
 }
 
@@ -82,40 +46,21 @@ export function canInstall(): boolean {
 }
 
 export function isAlreadyInstalled(): boolean {
-  return _installed || isStandalone() || hasStoredInstallMarker();
+  return _installed || isStandalone();
 }
 
-/** Refresh installed state where the browser can report installed related apps. */
+/** Refresh installed state when this page is running as an installed app. */
 export async function refreshInstalledStatus(): Promise<boolean> {
   if (isStandalone()) {
     markInstalled();
-    return true;
   }
-
-  const getInstalledRelatedApps =
-    (typeof navigator !== 'undefined' &&
-      (navigator as NavigatorWithRelatedApps).getInstalledRelatedApps) ||
-    undefined;
-  if (!getInstalledRelatedApps) return isAlreadyInstalled();
-
-  try {
-    const relatedApps = await getInstalledRelatedApps.call(navigator);
-    if (_installConfirmedThisSession) return isAlreadyInstalled();
-
-    if (relatedApps.some(app => app.platform === 'webapp')) {
-      markInstalled(false);
-    } else {
-      markNotInstalled();
-    }
-  } catch {
-    // Installation detection is optional; never block the web app on it.
-  }
-
   return isAlreadyInstalled();
 }
 
 export function isIOS(): boolean {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
+  const isAppleMobile = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return isAppleMobile && !(window as any).MSStream;
 }
 
 /** Call the native install prompt. Returns 'accepted' | 'dismissed' | 'unavailable'. */
@@ -159,7 +104,6 @@ if (typeof window !== 'undefined') {
     e.preventDefault();
     if (!_installConfirmedThisSession) {
       _installed = false;
-      storeInstallMarker(false);
       _deferred = e as BeforeInstallPromptEvent;
       notify();
     }

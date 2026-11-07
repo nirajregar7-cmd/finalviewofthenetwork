@@ -28,12 +28,9 @@ import {
   ShieldCheck,
   BookOpen,
   HelpCircle,
-  FolderGit2,
   BarChart2,
   ExternalLink,
   Info,
-  ListChecks,
-  Target,
   Image as ImageIcon,
   MessageCircle,
   Share2,
@@ -58,6 +55,7 @@ import { PostActionMenu } from './PostActionMenu';
 import { PostEditorModal } from './PostEditorModal';
 import { PostPoll } from './PostPoll';
 import { InlineCommentComposer, type InlineCommentComposerHandle } from './InlineCommentComposer';
+import { DailyCommunityQuizPanel } from './DailyCommunityQuizPanel';
 import { CommunityChatComposer } from './CommunityChatComposer';
 import JeeCountdownCard from '../../components/JeeCountdownCard';
 import AptitudeExamPanel from './AptitudeExamPanel';
@@ -175,6 +173,8 @@ interface CommunityDetailViewProps {
   focusPostId?: string | null;
   focusReply?: boolean;
   onFocusPostHandled?: () => void;
+  quizOpenRequest?: number;
+  currentUserId: string;
 }
 
 type CuratedLink = {
@@ -260,49 +260,6 @@ const DSA_CURATED_RESOURCES: CuratedLink[] = [
     url: 'https://www.youtube.com/channel/UCBwmMxybNva6P_5VmxjzwqA',
     tags: ['Video lessons', 'Beginner-friendly'],
     source: 'Apna College',
-  },
-];
-
-const DSA_CURATED_PROBLEMS: CuratedLink[] = [
-  {
-    id: 'two-sum',
-    title: 'Two Sum',
-    description: 'Start with a hash-map pattern: find two values that add to a target in one pass.',
-    url: 'https://leetcode.com/problems/two-sum/',
-    tags: ['Arrays', 'Hash map', 'Easy'],
-    source: 'LeetCode',
-  },
-  {
-    id: 'stock-profit',
-    title: 'Best Time to Buy and Sell Stock',
-    description: 'Practice tracking a running minimum and the best answer so far.',
-    url: 'https://leetcode.com/problems/best-time-to-buy-and-sell-stock/',
-    tags: ['Arrays', 'Greedy', 'Easy'],
-    source: 'LeetCode',
-  },
-  {
-    id: 'longest-substring',
-    title: 'Longest Substring Without Repeating Characters',
-    description: 'Use a sliding window to learn how to maintain a valid range efficiently.',
-    url: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/',
-    tags: ['Strings', 'Sliding window', 'Medium'],
-    source: 'LeetCode',
-  },
-  {
-    id: 'number-of-islands',
-    title: 'Number of Islands',
-    description: 'A classic grid traversal problem for building confidence with BFS or DFS.',
-    url: 'https://leetcode.com/problems/number-of-islands/',
-    tags: ['Graphs', 'BFS / DFS', 'Medium'],
-    source: 'LeetCode',
-  },
-  {
-    id: 'climbing-stairs',
-    title: 'Climbing Stairs',
-    description: 'A compact introduction to recognizing and writing a one-dimensional DP recurrence.',
-    url: 'https://leetcode.com/problems/climbing-stairs/',
-    tags: ['Dynamic programming', 'Easy'],
-    source: 'LeetCode',
   },
 ];
 
@@ -478,9 +435,11 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   focusPostId,
   focusReply = false,
   onFocusPostHandled,
+  quizOpenRequest = 0,
+  currentUserId,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'feed' | 'members' | 'chat' | 'groups' | 'resources' | 'problems' | 'projects' | 'opportunities' | 'about' | 'aptitude'
+    'feed' | 'members' | 'chat' | 'groups' | 'resources' | 'quizzes' | 'about' | 'aptitude'
   >('feed');
   const [feedFilter, setFeedFilter] = useState<'latest' | 'top' | 'unanswered' | 'projects'>('latest');
   const [memberSearch, setMemberSearch] = useState('');
@@ -585,9 +544,6 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const resourcePosts = communityPosts.filter((post) => post.type === 'resource');
   const problemPosts = communityPosts.filter((post) => post.type === 'question');
   const projectPosts = communityPosts.filter((post) => post.type === 'project');
-  const opportunityPosts = communityPosts.filter(
-    (post) => post.type === 'hackathon' || post.type === 'collab' || post.tags?.some((tag) => /opportunit|internship|hackathon/i.test(tag)),
-  );
 
   React.useEffect(() => {
     if (!focusPostId || !communityPosts.some((post) => post.id === focusPostId)) return;
@@ -614,10 +570,15 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
 
   React.useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get('tab');
-    if (isAptitudeCommunity && requestedTab === 'aptitude') {
+    if (requestedTab === 'quizzes') {
+      setActiveTab('quizzes');
+    } else if (isAptitudeCommunity && requestedTab === 'aptitude') {
       setActiveTab('aptitude');
     }
   }, [community.id, isAptitudeCommunity]);
+  React.useEffect(() => {
+    if (quizOpenRequest > 0) setActiveTab('quizzes');
+  }, [quizOpenRequest]);
   const feedPosts =
     feedFilter === 'projects'
       ? projectPosts
@@ -626,30 +587,11 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
         : feedFilter === 'top'
           ? [...communityPosts].sort((a, b) => b.upvotes - a.upvotes)
           : communityPosts;
-  const libraryPosts =
-    activeTab === 'resources'
-      ? resourcePosts
-      : activeTab === 'problems'
-        ? problemPosts
-        : activeTab === 'projects'
-          ? projectPosts
-          : opportunityPosts;
-  const libraryTitle = {
-    resources: 'Resources',
-    problems: 'Problems',
-    projects: 'Projects',
-    opportunities: 'Opportunities',
-  }[activeTab as 'resources' | 'problems' | 'projects' | 'opportunities'];
-  const libraryDescription = {
-    resources: 'Useful links, notes and learning paths shared with this community.',
-    problems: 'Practice questions and doubts to solve together.',
-    projects: 'Build ideas and project updates from community members.',
-    opportunities: 'Hackathons, collaborations and other ways to get involved.',
-  }[activeTab as 'resources' | 'problems' | 'projects' | 'opportunities'];
-  const curatedLinks = activeTab === 'resources'
-    ? (isDsaCommunity ? DSA_CURATED_RESOURCES : isCyberCommunity ? CYBER_CURATED_RESOURCES : [])
-    : activeTab === 'problems'
-      ? (isDsaCommunity ? DSA_CURATED_PROBLEMS : [])
+  const libraryPosts = resourcePosts;
+  const curatedLinks = isDsaCommunity
+    ? DSA_CURATED_RESOURCES
+    : isCyberCommunity
+      ? CYBER_CURATED_RESOURCES
       : [];
   const composerTypeLabel = composerType.charAt(0).toUpperCase() + composerType.slice(1);
   const composerPlaceholder = {
@@ -665,8 +607,8 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     }
     setActiveTab(tab);
     onChatTabChange?.(tab === 'chat');
-    if (tab === 'resources' || tab === 'problems' || tab === 'projects') {
-      setComposerType(tab === 'resources' ? 'resource' : tab === 'problems' ? 'question' : 'project');
+    if (tab === 'resources') {
+      setComposerType('resource');
     }
   };
   const openComposerFor = (type: 'post' | 'question' | 'resource' | 'project') => {
@@ -849,6 +791,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     const communityId = community.id;
     let disposed = false;
     let reconciliationInterval: number | null = null;
+    let reconciliationDelay = 0;
     let stream: ReturnType<typeof api.entityMessages.stream> | null = null;
 
     setChatMessages([]);
@@ -904,12 +847,21 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
       }
     };
 
-    void loadHistory();
-    if (isCommunityMember) {
+    const setReconciliationInterval = (delayMs: number) => {
+      if (reconciliationInterval !== null && reconciliationDelay === delayMs) return;
+      if (reconciliationInterval !== null) {
+        window.clearInterval(reconciliationInterval);
+      }
+      reconciliationDelay = delayMs;
       reconciliationInterval = window.setInterval(() => {
         if (document.visibilityState === 'hidden') return;
         void loadHistory(false);
-      }, 10_000);
+      }, delayMs);
+    };
+
+    void loadHistory();
+    if (isCommunityMember) {
+      setReconciliationInterval(60_000);
     }
     if (!isCommunityMember) {
       return () => {
@@ -922,6 +874,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
     stream.onopen = () => {
       if (disposed) return;
       setChatConnection('live');
+      setReconciliationInterval(60_000);
     };
     stream.onmessage = (event) => {
       if (disposed) return;
@@ -940,13 +893,17 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
       }
     };
     stream.onerror = () => {
-      if (!disposed) setChatConnection('reconnecting');
+      if (!disposed) {
+        setChatConnection('reconnecting');
+        setReconciliationInterval(10_000);
+      }
     };
 
     return () => {
       disposed = true;
       stream?.close();
       if (reconciliationInterval !== null) window.clearInterval(reconciliationInterval);
+      reconciliationDelay = 0;
     };
   }, [activeTab, community.id, currentUser.id, isCommunityMember]);
 
@@ -1336,9 +1293,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
             { id: 'chat', label: 'Chat' },
             { id: 'groups', label: 'Groups' },
             { id: 'resources', label: 'Resources' },
-            { id: 'problems', label: 'Problems' },
-            { id: 'projects', label: 'Projects' },
-            { id: 'opportunities', label: 'Opportunities' },
+            { id: 'quizzes', label: 'Quizzes' },
             { id: 'about', label: 'About' },
           ] as const
         ).map((tab) => (
@@ -1940,18 +1895,20 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
             <button type="button" onClick={() => openComposerFor('post')} className="mt-4 w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700">Start a discussion</button>
           </div>
         </section>
-      ) : activeTab === 'resources' || activeTab === 'problems' || activeTab === 'projects' || activeTab === 'opportunities' ? (
-        <section className="space-y-4" aria-label={libraryTitle}>
+      ) : activeTab === 'quizzes' ? (
+        <DailyCommunityQuizPanel communityId={community.id} currentUserId={currentUserId} />
+      ) : activeTab === 'resources' ? (
+        <section className="space-y-4" aria-label="Resources">
           <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                {activeTab === 'resources' ? <BookOpen className="h-5 w-5 text-amber-600" /> : activeTab === 'problems' ? <ListChecks className="h-5 w-5 text-emerald-600" /> : activeTab === 'projects' ? <FolderGit2 className="h-5 w-5 text-purple-600" /> : <Target className="h-5 w-5 text-indigo-600" />}
-                <h2 className="text-base font-black text-slate-900">{libraryTitle}</h2>
+                <BookOpen className="h-5 w-5 text-amber-600" />
+                <h2 className="text-base font-black text-slate-900">Resources</h2>
               </div>
-              <p className="mt-1 text-xs text-slate-500">{libraryDescription}</p>
+              <p className="mt-1 text-xs text-slate-500">Useful links, notes and learning paths shared with this community.</p>
             </div>
-            <button type="button" onClick={() => openComposerFor(activeTab === 'resources' ? 'resource' : activeTab === 'problems' ? 'question' : activeTab === 'projects' ? 'project' : 'post')} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700">
-              <Plus className="h-3.5 w-3.5" /> Add {activeTab === 'problems' ? 'problem' : activeTab === 'opportunities' ? 'opportunity' : activeTab.slice(0, -1)}
+            <button type="button" onClick={() => openComposerFor('resource')} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700">
+              <Plus className="h-3.5 w-3.5" /> Add resource
             </button>
           </div>
 
@@ -2038,13 +1995,13 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                 </article>
               ))}
             </div>
-          ) : curatedLinks.length === 0 ? (
+          ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
               <Sparkles className="mx-auto h-7 w-7 text-slate-300" />
-              <p className="mt-2 text-xs font-bold text-slate-600">Nothing here yet</p>
-              <p className="mt-1 text-[11px] text-slate-400">Be the first person to add a {activeTab === 'problems' ? 'problem' : activeTab.slice(0, -1)}.</p>
+              <p className="mt-2 text-xs font-bold text-slate-600">No resources shared yet.</p>
+              <p className="mt-1 text-[11px] text-slate-400">Share a helpful link or learning resource with the community.</p>
             </div>
-          ) : null}
+          )}
         </section>
       ) : (
       /* Main Grid: Feed & Sidebar */

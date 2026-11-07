@@ -3,40 +3,65 @@ export function registerServiceWorker() {
   if (import.meta.env.DEV) return;
 
   // Keep the worker URL versioned so a CDN cannot reuse a cached worker body.
-  const serviceWorkerUrl = '/sw.js?app-shell=v51';
+  const serviceWorkerUrl = '/sw.js?app-shell=v60';
 
-  window.addEventListener('load', async () => {
+  const register = async () => {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
     try {
+      const expectedWorkerUrl = new URL(serviceWorkerUrl, window.location.href).href;
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      const staleAppRegistrations = registrations.filter((registration) =>
+        [registration.active, registration.waiting, registration.installing].some((worker) => {
+          if (!worker) return false;
+          const workerUrl = new URL(worker.scriptURL);
+          return workerUrl.origin === window.location.origin &&
+            workerUrl.pathname === '/sw.js' &&
+            worker.scriptURL !== expectedWorkerUrl;
+        }),
+      );
+      if (staleAppRegistrations.length > 0) {
+        await Promise.all(staleAppRegistrations.map((registration) => registration.unregister()));
+        window.location.reload();
+        return;
+      }
+
       const reg = await navigator.serviceWorker.register(serviceWorkerUrl, { updateViaCache: 'none' });
       console.log('[PWA] Service worker registered:', reg.scope);
 
-      // Force update check immediately
-      reg.update();
-
-      // When a new SW is waiting, skip waiting so it takes over right away
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New SW installed — tell it to skip waiting
-            newWorker.postMessage({ type: 'SKIP_WAITING' });
+      const skipWaitingWhenInstalled = (worker: ServiceWorker | null) => {
+        if (!worker) return;
+        const skipWaiting = () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            worker.postMessage({ type: 'SKIP_WAITING' });
           }
-        });
-      });
+        };
+        skipWaiting();
+        worker.addEventListener('statechange', skipWaiting);
+      };
 
-      // When the SW takes control, reload once to get fresh content
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
+      reg.addEventListener('updatefound', () => skipWaitingWhenInstalled(reg.installing));
+      skipWaitingWhenInstalled(reg.waiting);
+      if (reg.installing) skipWaitingWhenInstalled(reg.installing);
+      void reg.update().catch((error: unknown) => {
+        console.warn('[PWA] Service worker update check failed:', error);
       });
     } catch (err) {
       console.warn('[PWA] Service worker registration failed:', err);
     }
-  });
+  };
+
+  if (document.readyState === 'complete') {
+    void register();
+  } else {
+    window.addEventListener('load', () => void register(), { once: true });
+  }
 }
 
 export async function unregisterAppServiceWorkerForDevelopment(): Promise<boolean> {

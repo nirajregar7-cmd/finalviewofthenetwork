@@ -1,7 +1,6 @@
 import React, {
   forwardRef,
   memo,
-  useCallback,
   useImperativeHandle,
   useRef,
   useState,
@@ -17,7 +16,6 @@ export interface InlineCommentComposerHandle {
 interface InlineCommentComposerProps {
   postId: string;
   placeholder: string;
-  submitting: boolean;
   onSubmit: (text: string) => Promise<boolean>;
   initialValue?: string;
   onDraftChange?: (value: string) => void;
@@ -31,30 +29,46 @@ export const InlineCommentComposer = memo(forwardRef<
 >(function InlineCommentComposer({
   postId,
   placeholder,
-  submitting,
   onSubmit,
   initialValue = '',
   onDraftChange,
   inputClassName = 'min-w-[150px] flex-1 basis-[150px] rounded-full border border-transparent bg-slate-100 px-3 py-1.5 text-xs focus:border-indigo-400 focus:bg-white focus:outline-none',
   buttonClassName = 'shrink-0 rounded-full bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40',
 }, ref) {
-  const [value, setValue] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
-  const updateValue = useCallback((nextValue: string) => {
-    setValue(nextValue);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const submitLockRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const updateValue = (nextValue: string) => {
+    if (inputRef.current) inputRef.current.value = nextValue;
     onDraftChange?.(nextValue);
-  }, [onDraftChange]);
+    if (buttonRef.current) {
+      buttonRef.current.disabled = submitting || !nextValue.trim();
+    }
+  };
 
   useImperativeHandle(ref, () => ({
-    getValue: () => value,
+    getValue: () => inputRef.current?.value || '',
     setValue: updateValue,
     focus: () => inputRef.current?.focus(),
-  }), [updateValue, value]);
+  }), [onDraftChange, submitting]);
 
   const submit = async () => {
-    const text = value.trim();
-    if (!text || submitting) return;
-    if (await onSubmit(text)) updateValue('');
+    const text = inputRef.current?.value.trim() || '';
+    if (!text || submitLockRef.current) return;
+    submitLockRef.current = true;
+    setSubmitting(true);
+    if (buttonRef.current) buttonRef.current.disabled = true;
+    try {
+      if (await onSubmit(text)) updateValue('');
+    } finally {
+      submitLockRef.current = false;
+      setSubmitting(false);
+      if (buttonRef.current) {
+        buttonRef.current.disabled = !inputRef.current?.value.trim();
+      }
+    }
   };
 
   return (
@@ -63,8 +77,12 @@ export const InlineCommentComposer = memo(forwardRef<
         ref={inputRef}
         type="text"
         data-post-comment-input={postId}
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
+        defaultValue={initialValue}
+        onChange={(event) => {
+          const value = event.target.value;
+          onDraftChange?.(value);
+          if (buttonRef.current) buttonRef.current.disabled = submitting || !value.trim();
+        }}
         onKeyDown={(event) => {
           if (event.key === 'Enter') {
             event.preventDefault();
@@ -75,9 +93,10 @@ export const InlineCommentComposer = memo(forwardRef<
         className={inputClassName}
       />
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => void submit()}
-        disabled={!value.trim() || submitting}
+        disabled={!initialValue.trim() || submitting}
         aria-label="Send reply"
         className={`${buttonClassName} cursor-pointer`}
       >

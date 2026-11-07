@@ -14,8 +14,6 @@ import {
   Mail,
   GraduationCap,
   MessageCircle,
-  Flag,
-  Ban,
   Link,
   Code,
   Building,
@@ -224,8 +222,6 @@ interface ProfileModalProps {
   onStartDirectChat: (user: User) => void;
   onUpdateCurrentUserProfile?: (updatedUser: Partial<User>) => void;
   onUpdateDirectMessagePreference?: (preference: NonNullable<User['directMessagePreference']>) => Promise<void>;
-  onBlockUser?: (userId: string) => Promise<void>;
-  onReportUser?: (userId: string, reason: string, description: string) => Promise<void>;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -238,8 +234,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onStartDirectChat,
   onUpdateCurrentUserProfile,
   onUpdateDirectMessagePreference,
-  onBlockUser,
-  onReportUser,
 }) => {
   const isMe = user.id === currentUser.id;
   const [isEditing, setIsEditing] = useState(false);
@@ -275,9 +269,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [savingDirectMessagePreference, setSavingDirectMessagePreference] = useState(false);
   const [safetyError, setSafetyError] = useState('');
   const [safetyNotice, setSafetyNotice] = useState('');
-  const [reporting, setReporting] = useState(false);
-  const [reportReason, setReportReason] = useState('Harassment or bullying');
-  const [reportDescription, setReportDescription] = useState('');
   const [blockedUsers, setBlockedUsers] = useState<Array<{ id: string; name: string; avatar: string; college: string }>>([]);
   const [loadingBlockedUsers, setLoadingBlockedUsers] = useState(false);
   const institutionLabel = INSTITUTION_TYPE_OPTIONS.find(option => option.value === editInstitutionType)?.label || 'Institution';
@@ -309,33 +300,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       setSafetyError(error instanceof Error ? error.message : 'Could not update direct message privacy.');
     } finally {
       setSavingDirectMessagePreference(false);
-    }
-  };
-
-  const handleBlockUser = async () => {
-    if (!onBlockUser || !window.confirm(`Block ${user.name}? They will not be able to message you or send connection requests.`)) return;
-    setSafetyError('');
-    setSafetyNotice('');
-    try {
-      await onBlockUser(user.id);
-      onClose();
-    } catch (error) {
-      setSafetyError(error instanceof Error ? error.message : 'Could not block this account.');
-    }
-  };
-
-  const handleReportUser = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!onReportUser) return;
-    setSafetyError('');
-    setSafetyNotice('');
-    try {
-      await onReportUser(user.id, reportReason, reportDescription.trim());
-      setReporting(false);
-      setReportDescription('');
-      setSafetyNotice('Your report was submitted to the moderation team.');
-    } catch (error) {
-      setSafetyError(error instanceof Error ? error.message : 'Could not submit the report.');
     }
   };
 
@@ -548,83 +512,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               )}
             </div>
           </div>
-
-          {!isMe && (onBlockUser || onReportUser) && (
-            <section aria-label="Safety actions" className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">Your safety</h2>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                  Blocking stops direct messages and connection requests. Reports are reviewed by the moderation team.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {onReportUser && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSafetyError('');
-                      setSafetyNotice('');
-                      setReporting((value) => !value);
-                    }}
-                    className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                  >
-                    <Flag className="h-3.5 w-3.5" /> Report account
-                  </button>
-                )}
-                {onBlockUser && (
-                  <button
-                    type="button"
-                    onClick={() => void handleBlockUser()}
-                    className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 text-xs font-bold text-rose-700 hover:bg-rose-50"
-                  >
-                    <Ban className="h-3.5 w-3.5" /> Block account
-                  </button>
-                )}
-              </div>
-              {reporting && onReportUser && (
-                <form onSubmit={(event) => void handleReportUser(event)} className="space-y-3 border-t border-rose-100 pt-3">
-                  <div>
-                    <label htmlFor="safety-report-reason" className="text-xs font-bold text-slate-700">What happened?</label>
-                    <select
-                      id="safety-report-reason"
-                      value={reportReason}
-                      onChange={(event) => setReportReason(event.target.value)}
-                      className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800"
-                    >
-                      <option>Harassment or bullying</option>
-                      <option>Threats or violence</option>
-                      <option>Unwanted or sexual content</option>
-                      <option>Impersonation or scam</option>
-                      <option>Spam</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="safety-report-details" className="text-xs font-bold text-slate-700">Details (optional)</label>
-                    <textarea
-                      id="safety-report-details"
-                      value={reportDescription}
-                      onChange={(event) => setReportDescription(event.target.value)}
-                      maxLength={2000}
-                      rows={3}
-                      placeholder="Share what the moderation team should know."
-                      className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button type="button" onClick={() => setReporting(false)} className="min-h-9 rounded-lg px-3 text-xs font-semibold text-slate-600 hover:bg-white">
-                      Cancel
-                    </button>
-                    <button type="submit" className="min-h-9 rounded-lg bg-rose-600 px-3 text-xs font-bold text-white hover:bg-rose-700">
-                      Submit report
-                    </button>
-                  </div>
-                </form>
-              )}
-              {safetyError && <p role="alert" className="text-xs font-semibold text-rose-700">{safetyError}</p>}
-              {safetyNotice && <p role="status" className="text-xs font-semibold text-emerald-700">{safetyNotice}</p>}
-            </section>
-          )}
 
           {isMe && (
             <section aria-labelledby="direct-message-privacy-title" className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">

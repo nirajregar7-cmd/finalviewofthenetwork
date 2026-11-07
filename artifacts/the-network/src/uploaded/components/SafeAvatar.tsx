@@ -32,6 +32,8 @@ export const SafeAvatar: React.FC<SafeAvatarProps> = ({ src, name, className, on
     <img
       src={resolveAssetUrl(src)}
       alt={name}
+      loading="lazy"
+      decoding="async"
       onClick={onClick}
       onError={() => setFailed(true)}
       className={`block object-cover object-center ${className}`}

@@ -196,7 +196,6 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
   const commentDraftsRef = useRef<Record<string, string>>({});
   const [anonymousCommentPosts, setAnonymousCommentPosts] = useState<Record<string, boolean>>({});
   const [replyingTo, setReplyingTo] = useState<Record<string, string | null>>({});
-  const [commentSubmitting, setCommentSubmitting] = useState<Record<string, boolean>>({});
   const [commentErrors, setCommentErrors] = useState<Record<string, string>>({});
   const [requestedUserIds, setRequestedUserIds] = useState<string[]>([]);
   const [connectingUserId, setConnectingUserId] = useState<string | null>(null);
@@ -274,12 +273,15 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
   };
 
   const handlePostCommentSubmit = async (postId: string, text: string): Promise<boolean> => {
-    if (!text.trim() || commentSubmitting[postId]) return false;
-    setCommentSubmitting((previous) => ({ ...previous, [postId]: true }));
-    setCommentErrors((previous) => ({ ...previous, [postId]: '' }));
+    if (!text.trim()) return false;
+    setCommentErrors((previous) => previous[postId]
+      ? { ...previous, [postId]: '' }
+      : previous);
     try {
       await onAddComment(postId, text.trim(), isPostingAnonymously(postId), replyingTo[postId] ?? null);
-      setReplyingTo((previous) => ({ ...previous, [postId]: null }));
+      if (replyingTo[postId]) {
+        setReplyingTo((previous) => ({ ...previous, [postId]: null }));
+      }
       return true;
     } catch {
       setCommentErrors((previous) => ({
@@ -287,8 +289,6 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
         [postId]: 'Could not send your reply. Please try again.',
       }));
       return false;
-    } finally {
-      setCommentSubmitting((previous) => ({ ...previous, [postId]: false }));
     }
   };
 
@@ -1823,7 +1823,6 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
                           initialValue={commentDraftsRef.current[post.id] || ''}
                           onDraftChange={(value) => { commentDraftsRef.current[post.id] = value; }}
                           placeholder={isPostingAnonymously(post.id) ? 'Reply anonymously…' : 'Write a helpful reply...'}
-                          submitting={Boolean(commentSubmitting[post.id])}
                           onSubmit={(text) => handlePostCommentSubmit(post.id, text)}
                         />
                     </div>

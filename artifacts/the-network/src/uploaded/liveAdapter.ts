@@ -100,6 +100,7 @@ export function toUploadedUser(profile: UserProfile): User {
   return {
     id: profile.id,
     name: profile.fullName,
+    email: profile.email,
     role: profile.role,
     createdAt: profile.createdAt,
     avatar: avatarFor(profileAvatar, profile.fullName),
@@ -514,17 +515,20 @@ export function normalizeChatReactions(
 export function toUploadedNotifications(items: ApiNotification[]): NotificationItem[] {
   return items.map((item) => {
     const communityId = item.body.match(/\[\[community:([^\]]+)\]\]/)?.[1];
+    const quizId = item.body.match(/\[\[quiz:([^\]]+)\]\]/)?.[1];
     const postId = item.body.match(/\[\[post:([^\]]+)\]\]/)?.[1];
     const groupId = item.body.match(/\[\[group:([^\]]+)\]\]/)?.[1];
     const projectId = item.body.match(/\[\[project:([^\]]+)\]\]/)?.[1];
     const subtitle = item.body
-      .replace(/\s*\[\[(?:community|post|group|project):[^\]]+\]\]/g, '')
+      .replace(/\s*\[\[(?:community|quiz|post|group|project):[^\]]+\]\]/g, '')
       .trim();
 
     return {
       id: item.id,
       type:
-        item.type === 'like'
+        item.type === 'community_quiz'
+          ? 'community_quiz'
+          : item.type === 'like'
           ? 'upvote'
           : item.type === 'connection_request'
             ? 'connection_request'
@@ -562,6 +566,7 @@ export function toUploadedNotifications(items: ApiNotification[]): NotificationI
       ),
       actorId: item.actorId,
       communityId,
+      quizId,
       groupId,
       projectId,
       postId,

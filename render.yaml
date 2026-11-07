@@ -11,3 +11,7 @@ services:
         value: production
       - key: NEON_DATABASE_URL
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: QUIZ_CRON_SECRET
+        sync: false

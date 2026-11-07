@@ -126,13 +126,12 @@ const CATEGORY_ICON_MAP: Record<string, React.ComponentType<{ className?: string
 
 const MAX_POST_WORDS = 5000;
 
-function countWords(value: string) {
-  return value.trim() ? value.trim().split(/\s+/).length : 0;
-}
-
-function limitToWords(value: string, maxWords = MAX_POST_WORDS) {
+function limitAndCountWords(value: string, maxWords = MAX_POST_WORDS) {
   const words = value.match(/\S+/g);
-  return words && words.length > maxWords ? words.slice(0, maxWords).join(' ') : value;
+  if (!words) return { value, count: 0 };
+  return words.length > maxWords
+    ? { value: words.slice(0, maxWords).join(' '), count: maxWords }
+    : { value, count: words.length };
 }
 
 interface PostTextFieldsHandle {
@@ -154,32 +153,39 @@ interface PostTextFieldsProps {
 
 const PostTextFields = React.memo(React.forwardRef<PostTextFieldsHandle, PostTextFieldsProps>(
   function PostTextFields({ draftValuesRef, showLinkInput, hasSubmitError, onEdited }, ref) {
-    const [title, setTitle] = useState(draftValuesRef.current.title);
-    const [content, setContent] = useState(draftValuesRef.current.content);
-    const [linkInput, setLinkInput] = useState(draftValuesRef.current.linkInput);
+  const titleRef = React.useRef<HTMLInputElement>(null);
+  const contentRef = React.useRef<HTMLTextAreaElement>(null);
+  const wordCountRef = React.useRef<HTMLSpanElement>(null);
+  const [linkInput, setLinkInput] = useState(draftValuesRef.current.linkInput);
 
-    React.useImperativeHandle(ref, () => ({
-      getValues: () => ({ title, content, linkInput }),
-    }), [content, linkInput, title]);
+  React.useImperativeHandle(ref, () => ({
+    getValues: () => ({
+      title: titleRef.current?.value ?? draftValuesRef.current.title,
+      content: contentRef.current?.value ?? draftValuesRef.current.content,
+      linkInput: draftValuesRef.current.linkInput,
+    }),
+  }), [draftValuesRef]);
 
-    const handleEdit = () => {
-      if (hasSubmitError) onEdited();
-    };
-    const previewUrl = showLinkInput ? extractUrls(`${content}\n${linkInput}`)[0] : undefined;
+  const handleEdit = () => {
+    if (hasSubmitError) onEdited();
+  };
+  const previewUrl = showLinkInput
+    ? extractUrls(`${contentRef.current?.value || draftValuesRef.current.content}\n${linkInput}`)[0]
+    : undefined;
 
     return (
       <>
         <div className="space-y-2">
           <label htmlFor="create-post-title" className="block text-xs font-black text-slate-800">Title</label>
           <input
+            ref={titleRef}
             id="create-post-title"
             type="text"
             required
             maxLength={140}
-            value={title}
+            defaultValue={draftValuesRef.current.title}
             onChange={(event) => {
               draftValuesRef.current.title = event.target.value;
-              setTitle(event.target.value);
               handleEdit();
             }}
             placeholder="Give your post a title"
@@ -191,21 +197,25 @@ const PostTextFields = React.memo(React.forwardRef<PostTextFieldsHandle, PostTex
           <label htmlFor="create-post-body" className="block text-xs font-black text-slate-800">Body</label>
           <div className="relative rounded-2xl border border-slate-200 bg-white shadow-sm">
             <textarea
+              ref={contentRef}
               id="create-post-body"
               rows={7}
               required
-              value={content}
+              defaultValue={draftValuesRef.current.content}
               onChange={(event) => {
-                const nextContent = limitToWords(event.target.value);
+                const { value: nextContent, count } = limitAndCountWords(event.target.value);
+                if (nextContent !== event.target.value) event.target.value = nextContent;
                 draftValuesRef.current.content = nextContent;
-                setContent(nextContent);
+                if (wordCountRef.current) {
+                  wordCountRef.current.textContent = String(count);
+                }
                 handleEdit();
               }}
               placeholder="What's on your mind?"
               className="min-h-[12rem] w-full resize-none rounded-2xl bg-transparent p-3.5 pb-8 text-sm leading-relaxed text-slate-800 outline-none placeholder:text-slate-400"
             />
             <span className="absolute bottom-3 right-3 text-[10px] font-semibold text-slate-400">
-              {countWords(content)}/{MAX_POST_WORDS} words
+              <span ref={wordCountRef}>{limitAndCountWords(draftValuesRef.current.content).count}</span>/{MAX_POST_WORDS} words
             </span>
           </div>
         </div>

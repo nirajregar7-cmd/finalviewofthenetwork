@@ -66,6 +66,23 @@
         ]
       },
       {
+        "source": "/manifest.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          },
+          {
+            "key": "CDN-Cache-Control",
+            "value": "no-store"
+          },
+          {
+            "key": "Cloudflare-CDN-Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
         "source": "/firebase-messaging-sw.js",
         "headers": [
           {

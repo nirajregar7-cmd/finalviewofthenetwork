@@ -12,9 +12,49 @@ import {
 
 interface Props { darkMode: boolean; }
 
+type InstallMode = 'android' | 'ios' | 'desktop';
+
 const DISMISS_KEY = 'pwa-prompt-dismissed-until';
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const FIRST_PROMPT_DELAY_MS = 2500;
+
+function getInstallMode(): InstallMode {
+  if (isIOS()) return 'ios';
+  return /android/i.test(navigator.userAgent) ? 'android' : 'desktop';
+}
+
+function getDesktopInstallSteps(): string[] {
+  const userAgent = navigator.userAgent;
+  if (/Edg\//i.test(userAgent)) {
+    return [
+      'Open the Settings and more menu (⋯) in Microsoft Edge.',
+      'Choose Apps, then Install this site as an app.',
+    ];
+  }
+  if (/Chrome\//i.test(userAgent)) {
+    return [
+      'Open the Chrome menu (⋮).',
+      'Choose Cast, save, and share, then Install page as app.',
+    ];
+  }
+  return [
+    'Open your browser menu.',
+    'Choose Install app or Install this site as an app.',
+  ];
+}
+
+function getAndroidInstallSteps(): string[] {
+  const isEmbeddedBrowser = /;\s*wv\)|\bGSA\/|FBAN|FBAV|Instagram|Line\/|TikTok/i.test(
+    navigator.userAgent,
+  );
+  return [
+    ...(isEmbeddedBrowser
+      ? ['Tap “Open in Chrome browser” in this browser’s menu first.']
+      : []),
+    'In Chrome, open the ⋮ menu.',
+    'Tap “Install app”. If it is not listed, choose “Add to Home screen”.',
+  ];
+}
 
 function isDismissed() {
   const until = Number(localStorage.getItem(DISMISS_KEY) || 0);
@@ -27,14 +67,15 @@ function dismiss() {
 
 export default function InstallPrompt({ darkMode }: Props) {
   const [show, setShow] = useState(false);
-  const [mode, setMode] = useState<'android' | 'ios' | null>(null);
+  const [mode, setMode] = useState<InstallMode | null>(null);
   const [showManualHelp, setShowManualHelp] = useState(false);
 
   useEffect(() => {
     const openInstallHelp = () => {
       if (isAlreadyInstalled()) return;
-      setMode(isIOS() ? 'ios' : 'android');
-      setShowManualHelp(false);
+      const installMode = getInstallMode();
+      setMode(installMode);
+      setShowManualHelp(installMode !== 'ios' && !canInstall());
       setShow(true);
     };
     window.addEventListener(INSTALL_HELP_REQUEST_EVENT, openInstallHelp);
@@ -52,21 +93,20 @@ export default function InstallPrompt({ darkMode }: Props) {
       if (isIOS()) {
         timer = setTimeout(() => {
           if (!isDismissed() && !isAlreadyInstalled()) {
-            setMode('ios');
+            setMode(getInstallMode());
             setShow(true);
           }
         }, FIRST_PROMPT_DELAY_MS);
       } else {
         const showAndroidPrompt = (available: boolean) => {
-          if (available && !isDismissed() && !isAlreadyInstalled()) {
-            setMode('android');
+          if (!isDismissed() && !isAlreadyInstalled()) {
+            setMode(getInstallMode());
+            setShowManualHelp(!available);
             setShow(true);
           }
         };
         unsubscribe = onInstallAvailableChange(showAndroidPrompt);
-        if (canInstall()) {
-          timer = setTimeout(() => showAndroidPrompt(true), FIRST_PROMPT_DELAY_MS);
-        }
+        timer = setTimeout(() => showAndroidPrompt(canInstall()), FIRST_PROMPT_DELAY_MS);
       }
     }
 
@@ -128,7 +168,7 @@ export default function InstallPrompt({ darkMode }: Props) {
           Install The Network
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign: 'center', margin: '0 0 20px', lineHeight: 1.5, maxWidth: 270 }}>
-          Add to your home screen for the full app experience
+          Install from your browser for quick access on your device
         </p>
 
         {/* iOS: step-by-step instructions */}
@@ -167,18 +207,53 @@ export default function InstallPrompt({ darkMode }: Props) {
                 </div>
               ))}
             </div>
-            <button
-              onClick={handleInstall}
-              style={{ width: '100%', padding: '15px 0', borderRadius: 16, background: 'linear-gradient(90deg, #7c3aed 0%, #6d28d9 50%, #4f46e5 100%)', color: '#fff', fontWeight: 800, fontSize: 16, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(109,40,217,0.5)', marginBottom: 12 }}
-            >
-              📲  Install App
-            </button>
+            {!showManualHelp && (
+              <button
+                onClick={handleInstall}
+                style={{ width: '100%', padding: '15px 0', borderRadius: 16, background: 'linear-gradient(90deg, #7c3aed 0%, #6d28d9 50%, #4f46e5 100%)', color: '#fff', fontWeight: 800, fontSize: 16, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(109,40,217,0.5)', marginBottom: 12 }}
+              >
+                📲  Install App
+              </button>
+            )}
             {showManualHelp && (
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, textAlign: 'center', lineHeight: 1.45, maxWidth: 290, margin: '0 auto 4px' }}>
-                A one-tap install prompt isn’t available right now. Open your browser menu and choose <strong style={{ color: 'rgba(255,255,255,0.75)' }}>Install app</strong> or <strong style={{ color: 'rgba(255,255,255,0.75)' }}>Add to Home screen</strong>.
-              </p>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 8 }}>
+                {getAndroidInstallSteps().map((text, index) => (
+                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 9, background: 'rgba(129,140,248,0.15)', color: '#a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 700 }}>{index + 1}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.45 }}>{text}</span>
+                  </div>
+                ))}
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, textAlign: 'center', lineHeight: 1.45, margin: '2px 0 0' }}>
+                  Installation is available in a supported browser; this does not download an APK.
+                </p>
+              </div>
             )}
           </>
+        )}
+
+        {mode === 'desktop' && (
+          <div style={{ width: '100%', marginBottom: 16 }}>
+            {!showManualHelp ? (
+              <button
+                onClick={handleInstall}
+                style={{ width: '100%', padding: '15px 0', borderRadius: 16, background: 'linear-gradient(90deg, #7c3aed 0%, #6d28d9 50%, #4f46e5 100%)', color: '#fff', fontWeight: 800, fontSize: 16, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(109,40,217,0.5)' }}
+              >
+                Install App
+              </button>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {getDesktopInstallSteps().map((text, index) => (
+                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 9, background: 'rgba(129,140,248,0.15)', color: '#a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 700 }}>{index + 1}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.45 }}>{text}</span>
+                  </div>
+                ))}
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, textAlign: 'center', lineHeight: 1.45, margin: '2px 0 0' }}>
+                  This installs the website as an app; it does not download an APK.
+                </p>
+              </div>
+            )}
+          </div>
         )}
 
         {mode === 'ios' && (

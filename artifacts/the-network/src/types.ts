@@ -215,6 +215,7 @@ export interface Notification {
     | 'group_message'
     | 'community_message'
     | 'community_post'
+    | 'community_quiz'
     | 'project_message'
     | 'group_invite'
     | 'announcement'

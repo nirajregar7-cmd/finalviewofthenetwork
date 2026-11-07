@@ -22,6 +22,7 @@ export interface UserProject {
 export interface User {
   id: string;
   name: string;
+  email?: string;
   role?: 'student' | 'admin' | 'college_admin';
   createdAt?: string;
   avatar: string;
@@ -302,6 +303,7 @@ export interface NotificationItem {
     | 'project_message'
     | 'profile_view'
     | 'announcement'
+    | 'community_quiz'
     | 'hackathon'
     | 'mentor'
     | 'message';
@@ -317,5 +319,6 @@ export interface NotificationItem {
   groupId?: string;
   projectId?: string;
   postId?: string;
+  quizId?: string;
   user?: User;
 }

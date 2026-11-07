@@ -1,5 +1,5 @@
 {
-  "id": "/",
+  "id": "https://the-network.co.in/",
   "name": "The Network",
   "short_name": "The Network",
   "description": "The premium verified student collaboration platform. Match co-founders, study partners and academic hubs.",
@@ -11,13 +11,6 @@
   "theme_color": "#FFFFFF",
   "lang": "en",
   "categories": ["education", "social", "productivity"],
-  "related_applications": [
-    {
-      "platform": "webapp",
-      "url": "/manifest.json",
-      "id": "https://www.the-network.co.in/"
-    }
-  ],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",

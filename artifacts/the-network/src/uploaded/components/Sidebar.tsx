@@ -1,5 +1,18 @@
 import React from 'react';
-import { Home, Users, UserPlus, BookOpen, MessageCircle, ChevronRight, ShieldAlert, Trophy } from 'lucide-react';
+import {
+  Home,
+  Users,
+  UserPlus,
+  MessageCircle,
+  ChevronRight,
+  ShieldAlert,
+  Trophy,
+  CalendarDays,
+  FileText,
+  LayoutDashboard,
+  Send,
+  LogOut,
+} from 'lucide-react';
 import { NavTab, User, Community } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 
@@ -12,6 +25,7 @@ interface SidebarProps {
   onOpenProfile: (user: User) => void;
   unreadChatsCount?: number;
   onLogout?: () => void;
+  onOpenInvite?: () => void;
   showCompete?: boolean;
 }
 
@@ -24,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenProfile,
   unreadChatsCount = 2,
   onLogout,
+  onOpenInvite,
   showCompete = true,
 }) => {
   const myCommunities = communities.filter((c) => c.isJoined || currentUser.communities.includes(c.slug));
@@ -32,19 +47,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
     activeTab === 'resources' ||
     activeTab === 'mentors';
 
-  const navLinks: { id: NavTab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'home', label: 'Home / Discover', icon: <Home className="w-4 h-4" /> },
-    { id: 'communities', label: 'Communities', icon: <Users className="w-4 h-4" /> },
-    { id: 'connect', label: 'Connect', icon: <UserPlus className="w-4 h-4" /> },
-    ...(showCompete
-      ? [{ id: 'compete' as NavTab, label: 'Compete', icon: <Trophy className="w-4 h-4" /> }]
-      : []),
-    { id: 'learn', label: 'Learn', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'chats', label: 'Chats', icon: <MessageCircle className="w-4 h-4" />, badge: unreadChatsCount },
-    ...(currentUser.role === 'admin'
-      ? [{ id: 'admin' as NavTab, label: 'Admin Center', icon: <ShieldAlert className="w-4 h-4" /> }]
-      : []),
+  const coreLinks: { id: NavTab; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: 'home', label: 'Home / Discover', icon: <Home className="h-5 w-5" /> },
+    { id: 'communities', label: 'Communities', icon: <Users className="h-5 w-5" /> },
+    { id: 'connect', label: 'Connect', icon: <UserPlus className="h-5 w-5" /> },
+    { id: 'chats', label: 'Chats', icon: <MessageCircle className="h-5 w-5" />, badge: unreadChatsCount },
   ];
+  const featureSections: {
+    title: string;
+    links: { id: NavTab; label: string; icon: React.ReactNode }[];
+  }[] = [
+    {
+      title: 'Explore',
+      links: [
+        ...(showCompete ? [{ id: 'compete' as NavTab, label: 'Compete', icon: <Trophy className="h-5 w-5" /> }] : []),
+        { id: 'workshops', label: 'Workshops & Events', icon: <CalendarDays className="h-5 w-5" /> },
+        { id: 'resources', label: 'Resources', icon: <FileText className="h-5 w-5" /> },
+      ],
+    },
+    {
+      title: 'Support',
+      links: [{ id: 'mentors', label: 'Guidance & Mentorship', icon: <Users className="h-5 w-5" /> }],
+    },
+    {
+      title: 'Your Network',
+      links: [{ id: 'my-space', label: 'My Space', icon: <LayoutDashboard className="h-5 w-5" /> }],
+    },
+  ];
+  const renderNavLink = (item: { id: NavTab; label: string; icon: React.ReactNode; badge?: number }) => {
+    const isActive = activeTab === item.id || (item.id === 'learn' && isLearningPage);
+    return (
+      <button
+        key={item.id}
+        onClick={() => onSelectTab(item.id)}
+        className={`nav-item w-[calc(100%-24px)] text-left cursor-pointer transition-all ${isActive ? 'active' : ''}`}
+      >
+        <span className={isActive ? 'text-indigo-600' : 'text-slate-400'}>{item.icon}</span>
+        <span className="text-sm font-medium flex-1">{item.label}</span>
+        {item.badge && item.badge > 0 ? (
+          <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">
+            {item.badge}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
+  const renderSectionHeading = (title: string) => (
+    <div className="flex items-center gap-3 px-6 pb-1 pt-5">
+      <p className="shrink-0 text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</p>
+      <span className="h-px flex-1 bg-slate-200" />
+    </div>
+  );
 
   return (
     <aside className="glass-sidebar network-sidebar hidden lg:flex flex-col h-screen sticky top-0 shrink-0 select-none z-30 justify-between">
@@ -53,45 +106,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div
           onClick={() => onSelectTab('home')}
-          className="px-6 mb-6 cursor-pointer group flex items-center justify-between"
+          className="px-6 mb-3 cursor-pointer group flex items-center justify-between"
         >
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-md shadow-indigo-200">
               N
             </div>
-            <div>
+            <div className="border-l border-slate-300 pl-3">
               <span className="text-base font-black tracking-tight text-slate-900 block leading-tight">
                 THE NETWORK
               </span>
-              <span className="text-[10px] font-semibold text-indigo-600 block leading-none">
-                India's Student Network
+              <span className="text-xs font-medium text-slate-500 block leading-tight mt-1">
+                Connect. Learn. Grow.
               </span>
             </div>
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="space-y-1">
-          {navLinks.map((item) => {
-            const isActive = activeTab === item.id || (item.id === 'learn' && isLearningPage);
-            return (
-              <button
-                key={item.id}
-                onClick={() => onSelectTab(item.id)}
-                className={`nav-item w-[calc(100%-24px)] text-left cursor-pointer transition-all ${
-                  isActive ? 'active' : ''
-                }`}
-              >
-                <span className={isActive ? 'text-indigo-600' : 'text-slate-400'}>{item.icon}</span>
-                <span className="text-xs font-semibold flex-1">{item.label}</span>
-                {item.badge && item.badge > 0 ? (
-                  <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">
-                    {item.badge}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
+        <nav aria-label="The Network navigation" className="space-y-1">
+          {renderSectionHeading('Your Campus')}
+          {coreLinks.map(renderNavLink)}
+          {featureSections.map((section) => (
+            <section key={section.title} aria-label={section.title}>
+              {renderSectionHeading(section.title)}
+              {section.links.map(renderNavLink)}
+              {section.title === 'Your Network' && onOpenInvite && (
+                <button
+                  type="button"
+                  onClick={onOpenInvite}
+                  className="nav-item w-[calc(100%-24px)] text-left cursor-pointer transition-all"
+                >
+                  <span className="text-slate-400"><Send className="h-5 w-5" /></span>
+                  <span className="text-sm font-medium flex-1">Invite Friends</span>
+                  <ChevronRight className="h-4 w-4 text-slate-400" />
+                </button>
+              )}
+            </section>
+          ))}
+          {currentUser.role === 'admin' && (
+            <section aria-label="Administration">
+              {renderSectionHeading('Administration')}
+              {renderNavLink({ id: 'admin', label: 'Admin access', icon: <ShieldAlert className="h-5 w-5" /> })}
+            </section>
+          )}
         </nav>
 
         {/* My Communities List */}
@@ -164,8 +221,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 w-full rounded-lg px-2 py-2 text-left text-[11px] font-semibold text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+            className="mt-2 flex min-h-12 w-full items-center gap-3 rounded-xl bg-rose-50 px-3 text-left text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100"
           >
+            <LogOut className="h-5 w-5" />
             Sign out
           </button>
         )}

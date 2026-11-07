@@ -493,6 +493,7 @@ export const App: React.FC<UploadedAppProps> = ({
   } | null>(() => initialPostId
     ? { postId: initialPostId, reply: initialUrlParams.get('focus') === 'comment' }
     : null);
+  const [communityQuizOpenRequest, setCommunityQuizOpenRequest] = useState(0);
   const [adminUsers, setAdminUsers] = useState<UserProfile[]>([]);
   const [adminReports, setAdminReports] = useState<UserReport[]>([]);
   const [adminPosts, setAdminPosts] = useState<CorePost[]>([]);
@@ -538,7 +539,6 @@ export const App: React.FC<UploadedAppProps> = ({
   const pendingConnectionUsersRef = useRef(new Set<string>());
   const connectionsRef = useRef<CoreConnection[]>([]);
   const lastNetworkRefreshRef = useRef(0);
-  const refreshViewKeyRef = useRef<string | null>(null);
   const sendLockRef = useRef<string | null>(null);
 
   // Modals & Overlays
@@ -693,6 +693,132 @@ export const App: React.FC<UploadedAppProps> = ({
     const postsRequest = authenticatedUser.role === 'admin'
       ? api.posts.getAll()
       : api.posts.getFeed('looking-for', authenticatedUser.id, HOME_FEED_PAGE_SIZE, 0);
+    const directMessagesRequest = api.messages.getForUser(
+      authenticatedUser.id,
+      undefined,
+      { limit: 1 },
+    );
+    const groupChatsRequest = api.groupChats.getAll();
+
+    void Promise.allSettled([
+      usersRequest,
+      communitiesRequest,
+      directMessagesRequest,
+      groupChatsRequest,
+    ]).then(async ([usersResult, communitiesResult, messagesResult, groupsResult]) => {
+      if (cancelled) return;
+
+      const profiles = usersResult.status === 'fulfilled' && Array.isArray(usersResult.value)
+        ? usersResult.value as UserProfile[]
+        : offlineSnapshot?.users ?? [authenticatedUser];
+      const rawCommunities = communitiesResult.status === 'fulfilled' && Array.isArray(communitiesResult.value)
+        ? communitiesResult.value as CoreCommunity[]
+        : offlineSnapshot?.communities ?? [];
+      const chatUserMap = createLiveUserMap(
+        profiles,
+        rawCommunities,
+        offlineSnapshot?.connections ?? [],
+        offlineSnapshot?.projects ?? [],
+      );
+      const userMap = chatUserMap[authenticatedAs.id]
+        ? chatUserMap
+        : { ...chatUserMap, [authenticatedAs.id]: authenticatedAs };
+      const chatCommunities = rawCommunities.map((community) =>
+        toUploadedCommunity(community, authenticatedUser.id, authenticatedUser.role),
+      );
+      const communityConversations: ChatConversation[] = chatCommunities
+        .filter((community) => community.isJoined)
+        .map((community) => ({
+          id: `community-${community.id}`,
+          type: 'community' as const,
+          title: community.displayName || community.name,
+          subtitle: `${community.membersCount} members`,
+          communitySlug: community.slug,
+          communityName: community.displayName || community.name,
+          communityIconBg: community.iconBg,
+          lastMessage: 'Loading...',
+          unreadCount: 0,
+          messages: [],
+        }));
+
+      let rawMessages = messagesResult.status === 'fulfilled' && Array.isArray(messagesResult.value)
+        ? messagesResult.value
+        : [];
+      if (rawMessages.length === 1 && rawMessages[0].unreadCount === undefined) {
+        try {
+          const expanded = await api.messages.getForUser(
+            authenticatedUser.id,
+            undefined,
+            { limit: 100 },
+          );
+          if (Array.isArray(expanded) && expanded.length > rawMessages.length) {
+            rawMessages = expanded;
+          }
+        } catch (error) {
+          console.warn('[Chat] Could not expand legacy conversation previews.', error);
+        }
+      }
+      if (cancelled) return;
+
+      for (const message of rawMessages) {
+        if (
+          message.createdAt &&
+          (!latestDirectMessageAtRef.current ||
+            new Date(message.createdAt).getTime() > new Date(latestDirectMessageAtRef.current).getTime())
+        ) {
+          latestDirectMessageAtRef.current = message.createdAt;
+        }
+      }
+      const directConversations = toUploadedConversations(
+        rawMessages,
+        userMap,
+        authenticatedUser.id,
+      );
+      const groups = groupsResult.status === 'fulfilled' && Array.isArray(groupsResult.value)
+        ? groupsResult.value as CoreGroupChat[]
+        : [];
+      const visibleGroups = groups.filter((group) =>
+        (Array.isArray(group.memberIds) ? group.memberIds : []).includes(authenticatedUser.id) ||
+        (Array.isArray(group.pendingIds) ? group.pendingIds : []).includes(authenticatedUser.id),
+      );
+      const groupConversations: ChatConversation[] = visibleGroups.map((group) => {
+        const memberIds = Array.isArray(group.memberIds) ? group.memberIds : [];
+        const isInvitePending = !memberIds.includes(authenticatedUser.id) &&
+          (Array.isArray(group.pendingIds) ? group.pendingIds : []).includes(authenticatedUser.id);
+        return {
+          id: `study-${group.id}`,
+          type: 'study_group' as const,
+          groupId: group.id,
+          creatorId: group.creatorId,
+          visibility: group.visibility,
+          memberIds,
+          isInvitePending,
+          title: group.name,
+          subtitle: isInvitePending
+            ? 'Group invitation'
+            : `${memberIds.length} ${memberIds.length === 1 ? 'member' : 'members'}`,
+          communityName: group.name,
+          lastMessage: isInvitePending ? 'You were invited to join this group' : 'Loading...',
+          unreadCount: 0,
+          messages: [],
+        };
+      });
+
+      setConversations((previous) =>
+        mergeChatConversationSnapshots(previous, [
+          ...directConversations,
+          ...communityConversations,
+          ...groupConversations,
+        ]),
+      );
+      setDirectChatsReady(true);
+      setChatBootstrapReady(true);
+    }).catch((error: unknown) => {
+      console.error('[Chat] Could not initialize conversations.', error);
+      if (cancelled) return;
+      setDirectChatsReady(true);
+      setChatBootstrapReady(true);
+    });
 
     if (authenticatedUser.role !== 'admin') {
       initialHomeFeedRequestPendingRef.current = true;
@@ -882,95 +1008,6 @@ export const App: React.FC<UploadedAppProps> = ({
         mergeChatConversationSnapshots(previous, communityConversations),
       );
 
-      // Chat history is deliberately loaded outside the app bootstrap. The old
-      // path waited for 50 messages from every joined community and group before
-      // making either chat tab visible.
-      void (async () => {
-        const [messagesResult, groupsResult] = await Promise.allSettled([
-          api.messages.getForUser(authenticatedUser.id, undefined, { limit: 1 }),
-          api.groupChats.getAll(),
-        ]);
-        if (cancelled) return;
-
-        let rawMessages =
-          messagesResult.status === 'fulfilled' && Array.isArray(messagesResult.value)
-            ? messagesResult.value
-            : [];
-        // Older deployed APIs treated limit=1 as one row total instead of one
-        // preview per peer. Their rows also lack unreadCount, so expand only
-        // that legacy response to keep existing direct conversations visible.
-        if (
-          rawMessages.length === 1 &&
-          rawMessages[0].unreadCount === undefined
-        ) {
-          try {
-            const expanded = await api.messages.getForUser(
-              authenticatedUser.id,
-              undefined,
-              { limit: 100 },
-            );
-            if (Array.isArray(expanded) && expanded.length > rawMessages.length) {
-              rawMessages = expanded;
-            }
-          } catch {
-            // Keep the initial one-message preview if the compatibility read fails.
-          }
-        }
-        if (cancelled) return;
-        for (const message of rawMessages) {
-          if (
-            message.createdAt &&
-            (!latestDirectMessageAtRef.current ||
-              new Date(message.createdAt).getTime() > new Date(latestDirectMessageAtRef.current).getTime())
-          ) {
-            latestDirectMessageAtRef.current = message.createdAt;
-          }
-        }
-        const directConversations = toUploadedConversations(rawMessages, userMap, authenticatedUser.id);
-        setDirectChatsReady(true);
-        const groups = groupsResult.status === 'fulfilled' && Array.isArray(groupsResult.value)
-          ? groupsResult.value as CoreGroupChat[]
-          : [];
-        const visibleGroups = groups.filter((group) =>
-          (Array.isArray(group.memberIds) ? group.memberIds : []).includes(authenticatedUser.id) ||
-          (Array.isArray(group.pendingIds) ? group.pendingIds : []).includes(authenticatedUser.id),
-        );
-        const groupConversations: ChatConversation[] = visibleGroups.map((group) => {
-          const memberIds = Array.isArray(group.memberIds) ? group.memberIds : [];
-          const isInvitePending = !memberIds.includes(authenticatedUser.id) &&
-            (Array.isArray(group.pendingIds) ? group.pendingIds : []).includes(authenticatedUser.id);
-          return {
-            id: `study-${group.id}`,
-            type: 'study_group' as const,
-            groupId: group.id,
-            creatorId: group.creatorId,
-            visibility: group.visibility,
-            memberIds,
-            isInvitePending,
-            title: group.name,
-            subtitle: isInvitePending
-              ? 'Group invitation'
-              : `${memberIds.length} ${memberIds.length === 1 ? 'member' : 'members'}`,
-            communityName: group.name,
-            lastMessage: isInvitePending ? 'You were invited to join this group' : 'Loading...',
-            unreadCount: 0,
-            messages: [],
-          };
-        });
-
-        setConversations((previous) =>
-          mergeChatConversationSnapshots(previous, [
-            ...directConversations,
-            ...communityConversations,
-            ...groupConversations,
-          ]),
-        );
-        setChatBootstrapReady(true);
-      })().catch(() => {
-        setDirectChatsReady(true);
-        setChatBootstrapReady(true);
-      });
-
       if (freshNotifications) {
         setNotifications(toUploadedNotifications(freshNotifications));
       }
@@ -1146,20 +1183,15 @@ export const App: React.FC<UploadedAppProps> = ({
     void loadHomeFeed(homeFeedFilter);
   }, [networkDataReady, initialHomeFeedBootstrapDone, homeFeedFilter, authenticatedUser.id]);
 
-  // Keep the visible app current after another session changes the data. The
-  // community detail view is intentionally left alone while it is open so a
-  // user's reading position and in-progress interaction are not disturbed.
-  // Every other view refreshes on entry, on return, and on a short interval.
+  // Refresh shared app data after returning to a long-lived session. Individual
+  // views use their own streams or polling for data that needs faster updates.
   useEffect(() => {
     let cancelled = false;
     let refreshInFlight = false;
-    const viewKey = `${activeTab}:${selectedCommunitySlug || ''}`;
-    const enteringView = refreshViewKeyRef.current !== viewKey;
-    refreshViewKeyRef.current = viewKey;
 
     const refreshNetworkData = async () => {
       const now = Date.now();
-      if (refreshInFlight || now - lastNetworkRefreshRef.current < 30_000) return;
+      if (refreshInFlight || now - lastNetworkRefreshRef.current < 120_000) return;
       refreshInFlight = true;
       lastNetworkRefreshRef.current = now;
 
@@ -1328,24 +1360,14 @@ export const App: React.FC<UploadedAppProps> = ({
       if (selectedCommunitySlug) return;
       if (document.visibilityState === 'visible') void refreshNetworkData();
     };
-    // Refresh immediately when entering any live view. Community detail is
-    // excluded so its local reading and interaction state remains untouched.
-    if (!selectedCommunitySlug && enteringView && networkDataReady) {
-      lastNetworkRefreshRef.current = 0;
-      void refreshNetworkData();
-    }
-    const refreshTimer = selectedCommunitySlug
-      ? null
-      : window.setInterval(refreshOnReturn, 30_000);
     window.addEventListener('focus', refreshOnReturn);
     document.addEventListener('visibilitychange', refreshOnReturn);
     return () => {
       cancelled = true;
-      if (refreshTimer !== null) window.clearInterval(refreshTimer);
       window.removeEventListener('focus', refreshOnReturn);
       document.removeEventListener('visibilitychange', refreshOnReturn);
     };
-  }, [activeTab, homeFeedFilter, selectedCommunitySlug, networkDataReady, authenticatedUser.id]);
+  }, [homeFeedFilter, selectedCommunitySlug, networkDataReady, authenticatedUser.id]);
 
   // Keep one authenticated Socket.IO connection for chat while the current
   // user's session is active.
@@ -1774,6 +1796,7 @@ export const App: React.FC<UploadedAppProps> = ({
     if (!authenticatedUser.id) return;
     const stream = api.notifications.stream(authenticatedUser.id);
     let fallbackTimer: number | null = null;
+    let fallbackDelay = 0;
     const refreshNotifications = async () => {
       try {
         const result = await api.notifications.getForUser(authenticatedUser.id);
@@ -1787,18 +1810,25 @@ export const App: React.FC<UploadedAppProps> = ({
         window.clearInterval(fallbackTimer);
         fallbackTimer = null;
       }
+      fallbackDelay = 0;
     };
-    const startFallback = () => {
-      if (fallbackTimer !== null) return;
+    const startFallback = (delayMs: number) => {
+      if (fallbackTimer !== null && fallbackDelay === delayMs) return;
+      stopFallback();
+      fallbackDelay = delayMs;
+      fallbackTimer = window.setInterval(refreshNotifications, delayMs);
+    };
+    const useFastFallback = () => {
+      if (fallbackDelay === 10_000) return;
       void refreshNotifications();
-      fallbackTimer = window.setInterval(refreshNotifications, 10_000);
+      startFallback(10_000);
     };
-    // Polling is always active because SSE connections can terminate after a
-    // serverless timeout or remain pinned to an instance that did not receive
-    // the write. SSE still updates the UI immediately when it is available.
+    // Keep a slow reconciliation poll while the live stream is healthy, and
+    // retry faster only while it is reconnecting.
     void refreshNotifications();
-    fallbackTimer = window.setInterval(refreshNotifications, 10_000);
-    stream.onerror = startFallback;
+    startFallback(60_000);
+    stream.onopen = () => startFallback(60_000);
+    stream.onerror = useFastFallback;
     stream.onmessage = (event) => {
       try {
         const notification = JSON.parse(event.data);
@@ -1839,10 +1869,17 @@ export const App: React.FC<UploadedAppProps> = ({
       }
     };
 
-    const interval = window.setInterval(refreshConnections, 5000);
+    const refreshOnReturn = () => {
+      if (document.visibilityState === 'visible') void refreshConnections();
+    };
+    const interval = window.setInterval(refreshConnections, 30_000);
+    window.addEventListener('focus', refreshOnReturn);
+    document.addEventListener('visibilitychange', refreshOnReturn);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+      window.removeEventListener('focus', refreshOnReturn);
+      document.removeEventListener('visibilitychange', refreshOnReturn);
     };
   }, [authenticatedUser.id]);
 
@@ -1989,23 +2026,17 @@ export const App: React.FC<UploadedAppProps> = ({
     replyToId?: string | null,
   ) => {
     const threadId = getPostThreadId(postId);
-    const savedComment = await api.posts.addComment(
-      threadId,
-      authenticatedUser.id,
-      text,
-      isAnonymous,
-      replyToId,
-    );
-    const newComment = {
-      id: savedComment.id,
+    const pendingCommentId = `pending-comment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const newComment: Post['comments'][number] = {
+      id: pendingCommentId,
       author: isAnonymous ? anonymousUserFor(authenticatedUser.id) : currentUser,
       isAnonymous,
-      replyToId: savedComment.replyToId ?? replyToId ?? null,
-      content: savedComment.content,
+      replyToId: replyToId ?? null,
+      content: text,
       timestamp: 'Just now',
       upvotes: 0,
     };
-    updateVisiblePosts((prev) =>
+    React.startTransition(() => updateVisiblePosts((prev) =>
       prev.map((p) => {
         if (!isInPostThread(p, threadId)) return p;
         const comments = p.comments.some((comment) => comment.id === newComment.id)
@@ -2014,10 +2045,46 @@ export const App: React.FC<UploadedAppProps> = ({
         return {
           ...p,
           comments,
-          commentsCount: Math.max(p.commentsCount || p.comments.length, comments.length),
+          commentsCount: (p.commentsCount ?? p.comments.length) + 1,
         };
       })
-    );
+    ));
+
+    try {
+      const savedComment = await api.posts.addComment(
+        threadId,
+        authenticatedUser.id,
+        text,
+        isAnonymous,
+        replyToId,
+      );
+      React.startTransition(() => updateVisiblePosts((prev) =>
+        prev.map((p) => isInPostThread(p, threadId)
+          ? {
+              ...p,
+              comments: p.comments.map((comment) => comment.id === pendingCommentId
+                ? {
+                    ...comment,
+                    id: savedComment.id,
+                    replyToId: savedComment.replyToId ?? replyToId ?? null,
+                    content: savedComment.content,
+                  }
+                : comment),
+            }
+          : p),
+      ));
+    } catch (error) {
+      React.startTransition(() => updateVisiblePosts((prev) =>
+        prev.map((p) => isInPostThread(p, threadId)
+          ? {
+              ...p,
+              comments: p.comments.filter((comment) => comment.id !== pendingCommentId),
+              commentsCount: Math.max(0, (p.commentsCount ?? p.comments.length) - 1),
+            }
+          : p),
+      ));
+      throw error;
+    }
   };
 
   // Join / Leave Community
@@ -3345,6 +3412,19 @@ export const App: React.FC<UploadedAppProps> = ({
       return;
     }
 
+    if (notification.type === 'community_quiz' && notification.communityId) {
+      const targetCommunity = communities.find((community) => community.id === notification.communityId);
+      if (targetCommunity) {
+        setSelectedCommunitySlug(targetCommunity.slug);
+        setActiveTab('communities');
+        setIsCommunityChatActive(false);
+        setCommunityQuizOpenRequest((request) => request + 1);
+      } else {
+        handleSelectTab('communities');
+      }
+      return;
+    }
+
     if (notification.type === 'community' && notification.communityId) {
       setRequestedConversationId(`community-${notification.communityId}`);
       setSelectedCommunitySlug(null);
@@ -3537,6 +3617,7 @@ export const App: React.FC<UploadedAppProps> = ({
         onOpenProfile={handleOpenProfile}
         unreadChatsCount={conversations.reduce((total, conversation) => total + conversation.unreadCount, 0)}
         onLogout={onLogout}
+        onOpenInvite={() => setInviteSheet({})}
       />
 
       {/* 2. Main Content Area */}
@@ -3626,6 +3707,8 @@ export const App: React.FC<UploadedAppProps> = ({
               focusPostId={notificationFocus?.postId}
               focusReply={notificationFocus?.reply}
               onFocusPostHandled={() => setNotificationFocus(null)}
+              quizOpenRequest={communityQuizOpenRequest}
+              currentUserId={authenticatedUser.id}
               onOpenCommunityChat={handleOpenCommunityChat}
               onOpenGroupChat={handleOpenCommunityGroup}
               onChatTabChange={setIsCommunityChatActive}
@@ -3831,6 +3914,8 @@ export const App: React.FC<UploadedAppProps> = ({
               users={Object.values(users)}
               communities={communities}
               onOpenProfile={handleOpenProfile}
+              onBlockUser={handleBlockUser}
+              onReportUser={handleReportUser}
               onCreateGroup={handleCreateStandaloneGroup}
               onUpdateGroupVisibility={handleUpdateGroupVisibility}
               onInviteGroupMembers={handleInviteGroupMembers}
@@ -3845,7 +3930,6 @@ export const App: React.FC<UploadedAppProps> = ({
               initialConversationId={requestedConversationId}
               initialTab={requestedChatTab}
               sharedGroupMessage={sharedGroupMessage}
-              onOpenSafetyOptions={(user) => handleOpenProfile(user)}
             />
           ) : activeTab === 'admin' && currentUser.role === 'admin' ? (
             <div className="network-admin-page p-4 lg:p-8 max-w-7xl mx-auto w-full">
@@ -3915,8 +3999,6 @@ export const App: React.FC<UploadedAppProps> = ({
           onStartDirectChat={handleStartDirectChat}
           onUpdateCurrentUserProfile={handleUpdateCurrentUserProfile}
           onUpdateDirectMessagePreference={handleUpdateDirectMessagePreference}
-          onBlockUser={handleBlockUser}
-          onReportUser={handleReportUser}
         />
       )}
 

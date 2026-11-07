@@ -45,6 +45,15 @@ const APP_LAUNCHER_ITEMS: {
   },
 ];
 
+const APP_LAUNCHER_SECTIONS: {
+  title: string;
+  itemIds: LauncherDestination[];
+}[] = [
+  { title: 'Explore', itemIds: ['compete', 'workshops', 'resources'] },
+  { title: 'Support', itemIds: ['mentors'] },
+  { title: 'Your Network', itemIds: ['my-space'] },
+];
+
 interface HeaderProps {
   currentUser: User;
   unreadNotificationsCount?: number;
@@ -219,12 +228,12 @@ export const Header: React.FC<HeaderProps> = ({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="network-app-launcher-title"
-                className="relative z-10 flex h-[100dvh] w-[min(88vw,420px)] shrink-0 flex-col overflow-hidden overscroll-contain bg-gradient-to-b from-white via-white to-violet-50/60 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))] shadow-2xl"
+                className="relative z-10 flex h-[100dvh] w-[min(88vw,560px)] shrink-0 flex-col overflow-hidden overscroll-contain bg-white px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))] shadow-2xl"
               >
-                <div className="mb-5 flex items-center justify-between gap-3 px-1.5">
+                <div className="mb-5 flex items-center justify-between gap-3 border-b border-slate-200 px-1.5 pb-5">
                   <div className="flex min-w-0 items-center gap-4">
                     <NetworkLogo size={50} className="shrink-0 rounded-[13px] shadow-sm" />
-                    <div className="min-w-0">
+                    <div className="min-w-0 border-l border-slate-300 pl-4">
                       <h2 id="network-app-launcher-title" className="truncate text-[18px] font-black leading-tight text-slate-950">
                         The Network
                       </h2>
@@ -242,80 +251,109 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 </div>
 
-                <nav aria-label="The Network sections" className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-4">
-                  {APP_LAUNCHER_ITEMS
-                  .filter((item) => item.id !== 'compete' || showCompete)
-                    .map(({ id, title, description, icon: Icon }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => {
-                          closeLauncher();
-                          onNavigateFromLauncher?.(id);
-                        }}
-                        className="group flex min-h-[88px] w-full items-center gap-3.5 rounded-[20px] border border-slate-200/80 bg-white/90 px-3.5 py-3 text-left shadow-[0_2px_10px_rgba(15,23,42,0.025)] transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-md active:scale-[0.99]"
-                        data-testid={`button-launcher-${id}`}
-                      >
-                        <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[17px] bg-gradient-to-br from-violet-50 to-indigo-50 text-violet-600 ring-1 ring-violet-100/80 transition-colors group-hover:from-violet-100 group-hover:to-indigo-100">
-                          <Icon className="h-[26px] w-[26px]" strokeWidth={1.9} />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[15px] font-extrabold leading-tight text-slate-950">{title}</span>
-                          <span className="mt-1.5 block text-[12px] leading-[1.35] text-slate-500">{description}</span>
-                        </span>
-                        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-500" />
-                      </button>
-                    ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeLauncher();
-                      onOpenInvite?.();
-                    }}
-                    className="group mt-1 flex min-h-[84px] w-full items-center gap-3.5 rounded-[20px] border border-slate-200/80 bg-white/90 px-3.5 py-3 text-left shadow-[0_2px_10px_rgba(15,23,42,0.025)] transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md active:scale-[0.99]"
-                    data-testid="button-launcher-invite"
-                  >
-                    <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[17px] bg-gradient-to-br from-violet-50 to-indigo-50 text-violet-600 ring-1 ring-violet-100/80 transition-colors group-hover:from-violet-100 group-hover:to-indigo-100">
-                      <Send className="h-[26px] w-[26px]" strokeWidth={1.9} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[15px] font-extrabold leading-tight text-slate-950">Invite Friends</span>
-                      <span className="mt-1.5 block text-[12px] leading-[1.35] text-slate-500">Bring your friends to The Network</span>
-                    </span>
-                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-500" />
-                  </button>
+                <nav aria-label="The Network sections" className="min-h-0 flex-1 space-y-7 overflow-y-auto overscroll-contain pb-4">
+                  {APP_LAUNCHER_SECTIONS.map((section) => (
+                    <section key={section.title} aria-label={section.title}>
+                      <div className="mb-2 flex items-center gap-3">
+                        <h3 className="shrink-0 text-[12px] font-bold uppercase tracking-wide text-slate-500">
+                          {section.title}
+                        </h3>
+                        <span className="h-px flex-1 bg-slate-200" />
+                      </div>
+                      <div>
+                        {APP_LAUNCHER_ITEMS
+                          .filter(({ id }) => section.itemIds.includes(id) && (id !== 'compete' || showCompete))
+                          .map(({ id, title, icon: Icon }) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                closeLauncher();
+                                onNavigateFromLauncher?.(id);
+                              }}
+                              className="group flex min-h-[64px] w-full items-center gap-4 rounded-lg px-2 text-left transition-colors hover:bg-violet-50 active:bg-violet-100"
+                              data-testid={`button-launcher-${id}`}
+                            >
+                              <Icon className="h-7 w-7 shrink-0 text-violet-600" strokeWidth={1.8} />
+                              <span className="min-w-0 flex-1 text-[15px] font-medium text-slate-950">
+                                {title}
+                              </span>
+                              <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5" />
+                            </button>
+                          ))}
+                        {section.title === 'Your Network' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              closeLauncher();
+                              onOpenInvite?.();
+                            }}
+                            className="group flex min-h-[64px] w-full items-center gap-4 rounded-lg px-2 text-left transition-colors hover:bg-violet-50 active:bg-violet-100"
+                            data-testid="button-launcher-invite"
+                          >
+                            <Send className="h-7 w-7 shrink-0 text-violet-600" strokeWidth={1.8} />
+                            <span className="min-w-0 flex-1 text-[15px] font-medium text-slate-950">Invite Friends</span>
+                            <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5" />
+                          </button>
+                        )}
+                      </div>
+                    </section>
+                  ))}
                 </nav>
-                <div className="mt-auto shrink-0 border-t border-violet-100/80 bg-gradient-to-t from-white via-white to-white/90 pt-3 pb-[max(4px,env(safe-area-inset-bottom))]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeLauncher();
-                      onOpenProfile(currentUser);
-                    }}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/90 p-3 text-left shadow-sm transition-colors hover:border-violet-200 hover:bg-white"
-                    data-testid="button-launcher-profile"
-                  >
-                    <SafeAvatar
-                      src={currentUser.avatar}
-                      name={currentUser.name}
-                      className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-violet-100"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold text-slate-900">{currentUser.name}</span>
-                      <span className="mt-0.5 block truncate text-xs text-slate-500">{currentUser.college}</span>
-                    </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
-                  </button>
+                <div className="mt-auto shrink-0 border-t border-slate-200 bg-white pt-3 pb-[max(4px,env(safe-area-inset-bottom))]">
+                  {currentUser.role === 'admin' ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeLauncher();
+                        onSelectTab?.('admin');
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-violet-50"
+                      data-testid="button-launcher-admin-access"
+                    >
+                      <SafeAvatar
+                        src={currentUser.avatar}
+                        name={currentUser.name}
+                        className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-violet-100"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-bold text-slate-950">Admin</span>
+                        <span className="mt-0.5 block truncate text-sm text-slate-500">The Network</span>
+                      </span>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-slate-500" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeLauncher();
+                        onOpenProfile(currentUser);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-violet-50"
+                      data-testid="button-launcher-profile"
+                    >
+                      <SafeAvatar
+                        src={currentUser.avatar}
+                        name={currentUser.name}
+                        className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-violet-100"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-bold text-slate-950">{currentUser.name}</span>
+                        <span className="mt-0.5 block truncate text-sm text-slate-500">{currentUser.college}</span>
+                      </span>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-slate-500" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
                       closeLauncher();
                       onLogout();
                     }}
-                    className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-700 shadow-sm transition-colors hover:border-rose-300 hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                    className="mt-2 flex min-h-14 w-full items-center gap-3 rounded-xl bg-rose-50 px-4 text-[15px] font-bold text-rose-700 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
                     data-testid="button-launcher-logout"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-5 w-5" />
                     Sign out
                   </button>
                 </div>

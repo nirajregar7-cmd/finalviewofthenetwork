@@ -516,6 +516,12 @@ export const api = {
     submit: (attemptId: string, userId: string, answers: Record<string, number | null>) =>
       post('/aptitude/exam/submit', { attemptId, userId, answers }),
   },
+  communityQuizzes: {
+    getToday: (communityId: string) =>
+      get(`/communities/${encodeURIComponent(communityId)}/quizzes/today`),
+    submit: (communityId: string, quizId: string, answers: Record<string, number>) =>
+      post(`/communities/${encodeURIComponent(communityId)}/quizzes/${encodeURIComponent(quizId)}/submit`, { answers }),
+  },
   saved: {
     getForUser: (userId: string) => get(`/saved?userId=${encodeURIComponent(userId)}`),
     toggle: (userId: string, itemType: 'post' | 'community', itemId: string) =>

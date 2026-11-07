@@ -19,9 +19,10 @@ import {
   FileText,
   Reply,
   UserPlus,
-  ShieldAlert,
   Users,
   ShieldCheck,
+  Flag,
+  Ban,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { api, PUBLIC_APP_URL } from '../../api';
@@ -59,7 +60,8 @@ interface ChatsViewProps {
   users?: User[];
   communities?: Community[];
   onOpenProfile: (user: User) => void;
-  onOpenSafetyOptions?: (user: User) => void;
+  onBlockUser?: (userId: string) => Promise<void>;
+  onReportUser?: (userId: string, reason: string, description: string) => Promise<void>;
   onCreateGroup?: (input: {
     name: string;
     description: string;
@@ -96,7 +98,8 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
   users = [],
   communities = [],
   onOpenProfile,
-  onOpenSafetyOptions,
+  onBlockUser,
+  onReportUser,
   onCreateGroup,
   onAcceptGroupInvite,
   onDeclineGroupInvite,
@@ -143,6 +146,12 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [createGroupError, setCreateGroupError] = useState<string | null>(null);
   const [showGroupActions, setShowGroupActions] = useState(false);
+  const [showDirectSafetyActions, setShowDirectSafetyActions] = useState(false);
+  const [showDirectReportForm, setShowDirectReportForm] = useState(false);
+  const [directReportReason, setDirectReportReason] = useState('Harassment or bullying');
+  const [directReportDescription, setDirectReportDescription] = useState('');
+  const [directSafetyError, setDirectSafetyError] = useState<string | null>(null);
+  const [submittingDirectReport, setSubmittingDirectReport] = useState(false);
   const [showGroupLinkField, setShowGroupLinkField] = useState(false);
   const [showManageInvites, setShowManageInvites] = useState(false);
   const [manageInviteSearch, setManageInviteSearch] = useState('');
@@ -251,6 +260,7 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
     }
     return sortChatMessagesChronologically(result);
   }, [activeConv?.messages]);
+  const userById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
 
   const markSeenThrough = (conversation: ChatConversation | undefined, messageId?: string) => {
     if (
@@ -352,6 +362,35 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
     setReactionMenuFor(null);
     setActionMenuFor(null);
     onConversationBack?.();
+  };
+
+  const handleDirectReport = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!activeConv?.participant || !onReportUser || submittingDirectReport) return;
+    setDirectSafetyError(null);
+    setSubmittingDirectReport(true);
+    try {
+      await onReportUser(activeConv.participant.id, directReportReason, directReportDescription.trim());
+      setShowDirectReportForm(false);
+      setShowDirectSafetyActions(false);
+      setDirectReportDescription('');
+    } catch (error) {
+      setDirectSafetyError(error instanceof Error ? error.message : 'Could not submit the report.');
+    } finally {
+      setSubmittingDirectReport(false);
+    }
+  };
+
+  const handleDirectBlock = async () => {
+    if (!activeConv?.participant || !onBlockUser) return;
+    if (!window.confirm(`Block ${activeConv.title || 'this account'}? They will not be able to message you or send connection requests.`)) return;
+    setDirectSafetyError(null);
+    try {
+      await onBlockUser(activeConv.participant.id);
+      setShowDirectSafetyActions(false);
+    } catch (error) {
+      setDirectSafetyError(error instanceof Error ? error.message : 'Could not block this account.');
+    }
   };
 
   useEffect(() => {
@@ -784,16 +823,19 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
             {filteredConversations.length > 0 ? (
               filteredConversations.map((conv) => {
                 const isSelected = conv.id === activeConv?.id;
+                const participant = conv.participant;
                 return (
                   <div
                     key={conv.id}
                     onClick={() => {
                       if (!conv.isInvitePending) openConversation(conv);
                     }}
-                    className={`min-h-[4.8rem] px-4 sm:px-5 py-3 flex items-center gap-3 transition-colors border-b border-slate-100/80 ${
+                    className={`chat-conversation-row min-h-[4.8rem] px-4 sm:px-5 py-3 flex items-center gap-3 transition-colors border-b border-slate-100/80 ${
                       conv.isInvitePending
                         ? 'bg-amber-50/50'
-                        : isSelected ? 'cursor-pointer bg-indigo-50/70' : 'cursor-pointer hover:bg-slate-50 active:bg-slate-100'
+                        : isSelected
+                          ? 'chat-conversation-selected cursor-pointer'
+                          : 'chat-conversation-idle cursor-pointer hover:bg-slate-50 active:bg-slate-100'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -816,9 +858,23 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h3 className={`text-[14px] truncate ${conv.unreadCount > 0 ? 'font-extrabold text-slate-950' : 'font-bold text-slate-800'}`}>
-                            {conv.title}
-                          </h3>
+                          {conv.type === 'direct' && participant && !conv.anonymousTargetId ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onOpenProfile(participant);
+                              }}
+                              className={`min-w-0 truncate text-left text-[14px] ${conv.unreadCount > 0 ? 'font-extrabold text-slate-950' : 'font-bold text-slate-800'}`}
+                              aria-label={`Open ${conv.title || participant.name}'s profile`}
+                            >
+                              {conv.title}
+                            </button>
+                          ) : (
+                            <h3 className={`text-[14px] truncate ${conv.unreadCount > 0 ? 'font-extrabold text-slate-950' : 'font-bold text-slate-800'}`}>
+                              {conv.title}
+                            </h3>
+                          )}
                           {conv.verified && (
                             <span className="w-3.5 h-3.5 rounded-full bg-emerald-100 text-emerald-700 text-[8px] font-bold flex items-center justify-center">
                               ✓
@@ -914,23 +970,15 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                     <ChevronLeft className="w-6 h-6" />
                   </button>
 
-                  <div
-                    role={
-                      activeConv.type === 'community' || (
-                        activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId
-                      ) ? 'button' : undefined
-                    }
-                    tabIndex={
-                      activeConv.type === 'community' || (
-                        activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId
-                      ) ? 0 : undefined
-                    }
+                  <button
+                    type="button"
+                    disabled={activeConv.type !== 'community' && (
+                      activeConv.type !== 'direct' || !activeConv.participant || Boolean(activeConv.anonymousTargetId)
+                    )}
                     aria-label={
                       activeConv.type === 'community'
                         ? `View ${activeConv.title || 'community'} information and members`
-                        : activeConv.type === 'direct'
-                          ? `Open ${activeConv.title || 'user'} profile`
-                          : undefined
+                        : `Open ${activeConv.title || 'user'} profile`
                     }
                     onClick={() => {
                       if (activeConv.type === 'community') {
@@ -940,63 +988,29 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                         onOpenProfile(activeConv.participant);
                       }
                     }}
-                    onKeyDown={(event) => {
-                      if (
-                        (event.key === 'Enter' || event.key === ' ') &&
-                        (
-                          activeConv.type === 'community' ||
-                          (activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId)
-                        )
-                      ) {
-                        event.preventDefault();
-                        if (activeConv.type === 'community') {
-                          setCommunityMemberSearch('');
-                          setShowCommunityInfo(true);
-                        } else if (activeConv.participant) {
-                          onOpenProfile(activeConv.participant);
-                        }
-                      }
-                    }}
-                    className={`flex items-center gap-3 rounded-xl text-left outline-none ${
+                    className={`flex min-w-0 items-center rounded-xl text-left outline-none disabled:cursor-default ${
                       activeConv.type === 'community' ||
                       (activeConv.type === 'direct' && activeConv.participant && !activeConv.anonymousTargetId)
-                        ? 'cursor-pointer hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-indigo-400'
+                        ? 'cursor-pointer hover:underline focus-visible:ring-2 focus-visible:ring-indigo-400'
                         : ''
                     }`}
                   >
-                    <div className="relative">
-                      {activeConv.type === 'community' ? (
-                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-mono font-bold text-xs">
-                          {(activeConv.title || 'Chat').slice(1, 3).toUpperCase()}
-                        </div>
-                      ) : (
-                        <SafeAvatar
-                          src={activeConv.avatar}
-                          name={activeConv.title || 'Chat'}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      )}
-                      {activeConv.online && (
-                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold tracking-tight text-slate-900">
                           {activeConv.title}
-                        </h2>
+                        </span>
                         {activeConv.verified && (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 rounded-full">
                             ✓ Verified
                           </span>
                         )}
-                      </div>
-                      <p className="text-[11px] text-slate-500">
+                      </span>
+                      <span className="block truncate text-[11px] text-slate-500">
                         {activeConv.subtitle || 'Active now'}
-                      </p>
-                    </div>
-                  </div>
+                      </span>
+                    </span>
+                  </button>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-0.5 text-slate-500">
@@ -1098,20 +1112,99 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                       )}
                     </div>
                   ) : activeConv.type === 'direct' ? (
-                    <button
-                      type="button"
-                      aria-label={`Safety options for ${activeConv.title || 'this account'}`}
-                      title="Safety options"
-                      disabled={!activeConv.participant || Boolean(activeConv.anonymousTargetId)}
-                      onClick={() => {
-                        if (activeConv.participant && !activeConv.anonymousTargetId) {
-                          onOpenSafetyOptions?.(activeConv.participant);
-                        }
-                      }}
-                      className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40"
-                    >
-                      <ShieldAlert className="w-4 h-4" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        aria-label="Conversation options"
+                        aria-expanded={showDirectSafetyActions}
+                        title="Conversation options"
+                        disabled={!activeConv.participant || Boolean(activeConv.anonymousTargetId)}
+                        onClick={() => {
+                          setShowDirectSafetyActions((open) => !open);
+                          setShowDirectReportForm(false);
+                          setDirectSafetyError(null);
+                        }}
+                        className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {showDirectSafetyActions && (
+                        <div className="absolute right-0 top-11 z-40 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                          {showDirectReportForm ? (
+                            <form onSubmit={(event) => void handleDirectReport(event)} className="space-y-3 p-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <h3 className="text-sm font-bold text-slate-900">Report account</h3>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowDirectReportForm(false)}
+                                  className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100"
+                                >
+                                  Back
+                                </button>
+                              </div>
+                              <label className="block text-xs font-semibold text-slate-700" htmlFor="chat-report-reason">
+                                What happened?
+                                <select
+                                  id="chat-report-reason"
+                                  value={directReportReason}
+                                  onChange={(event) => setDirectReportReason(event.target.value)}
+                                  className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800"
+                                >
+                                  <option>Harassment or bullying</option>
+                                  <option>Threats or violence</option>
+                                  <option>Unwanted or sexual content</option>
+                                  <option>Impersonation or scam</option>
+                                  <option>Spam</option>
+                                  <option>Other</option>
+                                </select>
+                              </label>
+                              <label className="block text-xs font-semibold text-slate-700" htmlFor="chat-report-details">
+                                Details (optional)
+                                <textarea
+                                  id="chat-report-details"
+                                  value={directReportDescription}
+                                  onChange={(event) => setDirectReportDescription(event.target.value)}
+                                  maxLength={2000}
+                                  rows={3}
+                                  className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
+                                />
+                              </label>
+                              {directSafetyError && <p role="alert" className="text-xs font-semibold text-rose-700">{directSafetyError}</p>}
+                              <button
+                                type="submit"
+                                disabled={submittingDirectReport}
+                                className="min-h-9 w-full rounded-xl bg-rose-600 px-3 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-60"
+                              >
+                                {submittingDirectReport ? 'Submitting…' : 'Submit report'}
+                              </button>
+                            </form>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                disabled={!onReportUser}
+                                onClick={() => {
+                                  setDirectSafetyError(null);
+                                  setShowDirectReportForm(true);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                <Flag className="h-4 w-4" /> Report account
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!onBlockUser}
+                                onClick={() => void handleDirectBlock()}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                              >
+                                <Ban className="h-4 w-4" /> Block account
+                              </button>
+                              {directSafetyError && <p role="alert" className="px-3 py-2 text-xs font-semibold text-rose-700">{directSafetyError}</p>}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <button aria-label="Conversation options" className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-slate-100 hover:text-slate-800">
                       <MoreVertical className="w-4 h-4" />
@@ -1152,6 +1245,7 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                 )}
                 {visibleMessages.map((msg, messageIndex) => {
                   const isMe = msg.senderId === currentUser.id;
+                  const senderUser = userById.get(msg.senderId);
                   const previousMessage = visibleMessages[messageIndex - 1];
                   const day = getChatDayMarker(msg.createdAt, msg.timestamp);
                   const previousDay = previousMessage
@@ -1178,7 +1272,7 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                       <div
                         onDoubleClick={() => void toggleReaction(msg, '❤️')}
                         className={`max-w-[86%] sm:max-w-md px-4 py-2.5 rounded-[20px] text-[14px] leading-6 shadow-sm ${
-                          isMe ? 'bg-indigo-600 text-white rounded-br-md' : 'bg-white text-slate-800 rounded-bl-md border border-white'
+                          isMe ? 'chat-message-outgoing bg-indigo-600 text-white rounded-br-md' : 'bg-white text-slate-800 rounded-bl-md border border-white'
                         } ${grouped ? (isMe ? 'rounded-tr-md' : 'rounded-tl-md') : ''}`}
                         title="Double-click to react with ❤️"
                       >
@@ -1199,9 +1293,18 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                           </button>
                         )}
                         {!isMe && activeConv.type !== 'direct' && (
-                          <p className="text-[10px] font-bold text-indigo-600 mb-0.5">
-                            {msg.senderName}
-                          </p>
+                          senderUser ? (
+                            <button
+                              type="button"
+                              onClick={() => onOpenProfile(senderUser)}
+                              className="mb-0.5 text-left text-[10px] font-bold text-slate-800 hover:underline"
+                              aria-label={`Open ${msg.senderName}'s profile`}
+                            >
+                              {msg.senderName}
+                            </button>
+                          ) : (
+                            <p className="mb-0.5 text-[10px] font-bold text-slate-800">{msg.senderName}</p>
+                          )
                         )}
                         {msg.attachmentData && msg.attachmentMimeType?.startsWith('image/') && msg.attachmentData.startsWith('data:') && (
                           <button

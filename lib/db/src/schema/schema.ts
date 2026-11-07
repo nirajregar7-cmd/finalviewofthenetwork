@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, integer, timestamp, jsonb, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, integer, timestamp, jsonb, date, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const events = pgTable('events', {
@@ -262,6 +262,36 @@ export const aptitudeAttempts = pgTable('aptitude_attempts', {
   status: text('status').notNull().default('in_progress'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+export const dailyCommunityQuizzes = pgTable('daily_community_quizzes', {
+  id: text('id').primaryKey(),
+  communityId: text('community_id').notNull().references(() => communities.id, { onDelete: 'cascade' }),
+  quizDate: date('quiz_date', { mode: 'string' }).notNull(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  questions: jsonb('questions').notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  communityDateUnique: uniqueIndex('daily_community_quizzes_community_date_idx')
+    .on(table.communityId, table.quizDate),
+  quizDateIdx: index('daily_community_quizzes_date_idx').on(table.quizDate),
+}));
+
+export const dailyCommunityQuizAttempts = pgTable('daily_community_quiz_attempts', {
+  id: text('id').primaryKey(),
+  quizId: text('quiz_id').notNull().references(() => dailyCommunityQuizzes.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  answers: jsonb('answers').notNull().default({}),
+  score: integer('score').notNull().default(0),
+  maxScore: integer('max_score').notNull(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  quizUserUnique: uniqueIndex('daily_community_quiz_attempts_quiz_user_idx')
+    .on(table.quizId, table.userId),
+  quizLeaderboardIdx: index('daily_community_quiz_attempts_leaderboard_idx')
+    .on(table.quizId, table.score, table.submittedAt),
+}));
 
 export const stories = pgTable('stories', {
   id: text('id').primaryKey(),

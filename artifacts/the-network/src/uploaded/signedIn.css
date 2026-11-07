@@ -6,12 +6,12 @@
  * Public pages and authentication keep their own visual language.
  */
 .network-app-shell {
-  --nw-paper: #f7f8fc;
-  --nw-paper-deep: #eff0f7;
+  --nw-paper: #fafafa;
+  --nw-paper-deep: #f4f4f6;
   --nw-card: #ffffff;
   --nw-ink: #171827;
   --nw-muted: #6c7182;
-  --nw-line: #e6e8f0;
+  --nw-line: #e5e7eb;
   --nw-forest: #6542e8;
   --nw-forest-deep: #512fcf;
   --nw-rust: #6542e8;
@@ -44,7 +44,7 @@
 .network-app-shell .glass-sidebar {
   width: 264px;
   min-width: 264px;
-  background: #f3f4fa;
+  background: #ffffff;
   border-right: 1px solid var(--nw-line);
   box-shadow: 1px 0 0 rgba(255, 255, 255, .65);
 }
@@ -64,10 +64,10 @@
 }
 
 .network-app-shell .nav-item {
-  min-height: 43px;
-  margin: 4px 12px;
-  padding: 10px 14px;
-  border-radius: 9px;
+  min-height: 50px;
+  margin: 1px 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
   color: var(--nw-muted);
   letter-spacing: .005em;
 }
@@ -89,7 +89,7 @@
 }
 
 .network-app-shell .glass-sidebar > div:last-child {
-  background: #eff0f7;
+  background: #ffffff;
   border-color: var(--nw-line);
 }
 
@@ -1520,12 +1520,12 @@
 }
 
 .network-app-shell .chat-conversation-pane {
-  background: #f2f3f8 !important;
+  background: #ffffff !important;
 }
 
 .network-app-shell .chat-conversation-pane > div:first-child {
   padding: 22px 20px 16px;
-  background: #f2f3f8;
+  background: #ffffff;
   border-color: var(--nw-line);
 }
 
@@ -1534,12 +1534,34 @@
   font-size: 31px !important;
 }
 
+.network-app-shell .chat-conversation-row.chat-conversation-idle {
+  background-color: #f1f2f7 !important;
+}
+
+.network-app-shell .chat-conversation-row.chat-conversation-idle:hover {
+  background-color: #f8f8fb !important;
+}
+
+.network-app-shell .chat-conversation-row.chat-conversation-selected {
+  background-color: #f0ecff !important;
+}
+
+.network-app-shell .chat-message-outgoing {
+  background-color: #6542e8 !important;
+  color: #ffffff !important;
+}
+
 .network-app-shell .chat-conversation-pane > div:nth-child(2) > div {
   border-color: var(--nw-line);
 }
 
 .network-app-shell .chat-conversation-pane [class*="bg-indigo-50"] {
   background: var(--nw-lavender) !important;
+}
+
+.network-app-shell .mobile-chat-messages,
+.network-app-shell .mobile-chat-composer {
+  background: var(--nw-paper) !important;
 }
 
 /* Learning uses a chapter index; resource detail stays the main event. */
