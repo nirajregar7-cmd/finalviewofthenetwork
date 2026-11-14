@@ -641,6 +641,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const communityHeadId = community.creatorId;
   const communityPathSlug = community.slug.replace(/^\/+/, '').replace(/\/+$/, '');
   const communityShareUrl = `https://www.the-network.co.in/community/${encodeURIComponent(communityPathSlug)}`;
+  const quizShareUrl = `${communityShareUrl}?tab=quizzes`;
   const examShareUrl = `${communityShareUrl}?tab=aptitude`;
   const communityShareText = `Join ${community.displayName || community.name} on The Network!\n\n${community.description}\n\n${communityShareUrl}`;
   const directConversations = conversations.filter(
@@ -1897,7 +1898,12 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
           </div>
         </section>
       ) : activeTab === 'quizzes' && !isCollegeCommunity ? (
-        <DailyCommunityQuizPanel communityId={community.id} currentUserId={currentUserId} />
+        <DailyCommunityQuizPanel
+          communityId={community.id}
+          communityName={community.displayName || community.name}
+          currentUserId={currentUserId}
+          shareUrl={quizShareUrl}
+        />
       ) : activeTab === 'resources' ? (
         <section className="space-y-4" aria-label="Resources">
           <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">

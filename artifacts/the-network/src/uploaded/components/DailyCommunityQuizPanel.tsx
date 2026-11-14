@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Award, CheckCircle2, CircleHelp, Loader2, RotateCw, Trophy } from 'lucide-react';
+import { AlertCircle, Award, Check, CheckCircle2, CircleHelp, Copy, Loader2, RotateCw, Share2, Trophy } from 'lucide-react';
 import { api } from '../../api';
 
 type QuizQuestion = {
@@ -47,15 +47,18 @@ type QuizResponse = {
 
 interface DailyCommunityQuizPanelProps {
   communityId: string;
+  communityName: string;
   currentUserId: string;
+  shareUrl: string;
 }
 
-export function DailyCommunityQuizPanel({ communityId, currentUserId }: DailyCommunityQuizPanelProps) {
+export function DailyCommunityQuizPanel({ communityId, communityName, currentUserId, shareUrl }: DailyCommunityQuizPanelProps) {
   const [data, setData] = useState<QuizResponse | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
 
   const loadQuiz = useCallback(async () => {
     setLoading(true);
@@ -95,6 +98,51 @@ export function DailyCommunityQuizPanel({ communityId, currentUserId }: DailyCom
       setError(submitError instanceof Error ? submitError.message : 'Could not submit your quiz.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const getInviteMessage = (quiz: DailyQuiz) =>
+    `Challenge yourself with “${quiz.title}” in the ${communityName} learning community on The Network! It’s a ${quiz.questions.length}-question quiz for ${quiz.date}. Join the community and try it here:\n${shareUrl}`;
+
+  const copyInvite = async () => {
+    if (!data?.quiz) return;
+    const message = getInviteMessage(data.quiz);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(message);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = message;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        const copied = document.execCommand('copy');
+        input.remove();
+        if (!copied) throw new Error('Clipboard copy was not available.');
+      }
+      setShareNotice('Invite copied. Share it with your friends!');
+    } catch {
+      setShareNotice('Could not copy the invite. Please try again or use WhatsApp.');
+    }
+  };
+
+  const shareWithDevice = async () => {
+    if (!data?.quiz) return;
+    if (!navigator.share) {
+      await copyInvite();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: `${data.quiz.title} · ${communityName}`,
+        text: `Try the ${data.quiz.questions.length}-question quiz in the ${communityName} learning community on The Network.`,
+        url: shareUrl,
+      });
+    } catch (shareError) {
+      if (shareError instanceof Error && shareError.name !== 'AbortError') {
+        setShareNotice('Could not open the share menu. Copy the invite or use WhatsApp instead.');
+      }
     }
   };
 
@@ -155,6 +203,35 @@ export function DailyCommunityQuizPanel({ communityId, currentUserId }: DailyCom
         <h2 className="mt-3 text-xl font-black tracking-tight">{data.quiz.title}</h2>
         <p className="mt-2 max-w-2xl text-xs leading-5 text-indigo-100">{data.quiz.description}</p>
         <p className="mt-3 text-[10px] font-semibold text-indigo-200">One submission per member. Results appear on the community leaderboard.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(getInviteMessage(data.quiz))}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-3.5 py-2.5 text-xs font-extrabold text-white no-underline transition hover:bg-[#20bc5a]"
+          >
+            <span aria-hidden="true">💬</span> Invite on WhatsApp
+          </a>
+          <button
+            type="button"
+            onClick={() => void shareWithDevice()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-3.5 py-2.5 text-xs font-extrabold text-white transition hover:bg-white/20"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share
+          </button>
+          <button
+            type="button"
+            onClick={() => void copyInvite()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-3.5 py-2.5 text-xs font-extrabold text-white transition hover:bg-white/20"
+          >
+            {shareNotice?.startsWith('Invite copied') ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {shareNotice?.startsWith('Invite copied') ? 'Invite copied' : 'Copy invite'}
+          </button>
+        </div>
+        <p className="mt-2 text-[10px] leading-4 text-indigo-200">
+          Invitees open this quiz in the community; they may need to join or sign up before attempting it.
+        </p>
+        {shareNotice && <p className="mt-2 text-[11px] font-semibold text-white" role="status">{shareNotice}</p>}
       </div>
 
       {attempt ? (
