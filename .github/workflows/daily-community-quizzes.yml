@@ -6,11 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       community_count:
-        description: Number of communities to run (test with 1 before selecting 20)
+        description: Number of communities to run, or all eligible learning communities
         type: choice
         options:
           - '1'
           - '20'
+          - 'all'
         default: '1'
       suppress_notifications:
         description: Suppress email, push, and in-app notifications during verification
@@ -32,7 +33,7 @@ jobs:
       - name: Generate and publish today's quizzes
         env:
           QUIZ_CRON_SECRET: ${{ secrets.QUIZ_CRON_SECRET }}
-          QUIZ_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.community_count || '20' }}
+          QUIZ_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.community_count || 'all' }}
           SUPPRESS_NOTIFICATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.suppress_notifications || false }}
         run: |
           set -euo pipefail
@@ -40,7 +41,7 @@ jobs:
             echo "Configure the QUIZ_CRON_SECRET repository secret before running this workflow."
             exit 1
           fi
-          payload=$(printf '{"limit":%s,"suppressNotifications":%s}' "$QUIZ_LIMIT" "$SUPPRESS_NOTIFICATIONS")
+          payload=$(printf '{"limit":"%s","suppressNotifications":%s}' "$QUIZ_LIMIT" "$SUPPRESS_NOTIFICATIONS")
           curl --fail-with-body --silent --show-error \
             --connect-timeout 30 \
             --max-time 900 \
