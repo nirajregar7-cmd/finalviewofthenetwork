@@ -541,6 +541,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   const isCyberCommunity = `${community.slug} ${community.name} ${community.displayName} ${community.description}`.toLowerCase().includes('cyber');
   const isJeeCommunity = `${community.slug} ${community.name} ${community.displayName}`.toLowerCase().includes('jee');
   const isAptitudeCommunity = `${community.id} ${community.slug} ${community.name} ${community.displayName} ${(community.tags || []).join(' ')}`.toLowerCase().includes('aptitude');
+  const isCollegeCommunity = community.category === 'college' || community.id.startsWith('college-');
   const resourcePosts = communityPosts.filter((post) => post.type === 'resource');
   const problemPosts = communityPosts.filter((post) => post.type === 'question');
   const projectPosts = communityPosts.filter((post) => post.type === 'project');
@@ -571,14 +572,14 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   React.useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get('tab');
     if (requestedTab === 'quizzes') {
-      setActiveTab('quizzes');
+      setActiveTab(isCollegeCommunity ? 'feed' : 'quizzes');
     } else if (isAptitudeCommunity && requestedTab === 'aptitude') {
       setActiveTab('aptitude');
     }
-  }, [community.id, isAptitudeCommunity]);
+  }, [community.id, isAptitudeCommunity, isCollegeCommunity]);
   React.useEffect(() => {
-    if (quizOpenRequest > 0) setActiveTab('quizzes');
-  }, [quizOpenRequest]);
+    if (quizOpenRequest > 0 && !isCollegeCommunity) setActiveTab('quizzes');
+  }, [quizOpenRequest, isCollegeCommunity]);
   const feedPosts =
     feedFilter === 'projects'
       ? projectPosts
@@ -1293,7 +1294,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
             { id: 'chat', label: 'Chat' },
             { id: 'groups', label: 'Groups' },
             { id: 'resources', label: 'Resources' },
-            { id: 'quizzes', label: 'Quizzes' },
+            ...(!isCollegeCommunity ? [{ id: 'quizzes', label: 'Quizzes' }] : []),
             { id: 'about', label: 'About' },
           ] as const
         ).map((tab) => (
@@ -1895,7 +1896,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
             <button type="button" onClick={() => openComposerFor('post')} className="mt-4 w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700">Start a discussion</button>
           </div>
         </section>
-      ) : activeTab === 'quizzes' ? (
+      ) : activeTab === 'quizzes' && !isCollegeCommunity ? (
         <DailyCommunityQuizPanel communityId={community.id} currentUserId={currentUserId} />
       ) : activeTab === 'resources' ? (
         <section className="space-y-4" aria-label="Resources">

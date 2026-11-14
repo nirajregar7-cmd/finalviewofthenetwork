@@ -4462,7 +4462,7 @@ const QUIZ_LEARNING_COMMUNITIES: QuizLearningCommunitySpec[] = [
     name: 'Cybersecurity',
     description: 'Learn cybersecurity fundamentals, defensive security, networks, and safe security practices.',
     tags: ['cybersecurity', 'cyber security', 'learning'],
-    aliases: ['cybersecurity', 'cyber security'],
+    aliases: ['cybersecurity', 'cyber security', 'ethical hacking'],
   },
   {
     id: 'quiz-learning-web-development',
@@ -4476,42 +4476,42 @@ const QUIZ_LEARNING_COMMUNITIES: QuizLearningCommunitySpec[] = [
     name: 'DSA',
     description: 'Learn data structures and algorithms through daily practice.',
     tags: ['dsa', 'data structures', 'algorithms', 'learning'],
-    aliases: ['dsa', 'data structures and algorithms'],
+    aliases: ['dsa', 'data structures and algorithms', 'dsa corner'],
   },
   {
     id: 'quiz-learning-robotics',
     name: 'Robotics',
     description: 'Learn robotics, electronics, control systems, and automation.',
     tags: ['robotics', 'engineering', 'learning'],
-    aliases: ['robotics'],
+    aliases: ['robotics', 'robotics and automation', 'robotics automation'],
   },
   {
     id: 'quiz-learning-python',
     name: 'Python',
     description: 'Learn Python programming from fundamentals through practical projects.',
     tags: ['python', 'programming', 'learning'],
-    aliases: ['python'],
+    aliases: ['python', 'python learners'],
   },
   {
     id: 'quiz-learning-ai-ml',
     name: 'AI and Machine Learning',
     description: 'Learn artificial intelligence, machine learning, and responsible AI.',
     tags: ['artificial intelligence', 'machine learning', 'ai ml', 'learning'],
-    aliases: ['artificial intelligence', 'machine learning', 'ai ml'],
+    aliases: ['artificial intelligence', 'machine learning', 'ai ml', 'ai / ml', 'ai / ml enthusiasts', 'ai ml enthusiasts', 'machine learning enthusiasts'],
   },
   {
     id: 'quiz-learning-placement-preparation',
     name: 'Placement Preparation',
     description: 'Prepare for placements with aptitude, interview, and technical practice.',
     tags: ['placement preparation', 'interviews', 'aptitude', 'learning'],
-    aliases: ['placement preparation', 'placement prep'],
+    aliases: ['placement preparation', 'placement prep', 'placement prep hub'],
   },
   {
     id: 'quiz-learning-class-11',
     name: 'Class 11',
     description: 'Learn and revise Class 11 subjects with daily practice.',
     tags: ['class 11', '11th class', 'school', 'learning'],
-    aliases: ['class 11', 'class xi', '11th class', '11th grade'],
+    aliases: ['class 11', 'class xi', '11th class', '11th grade', 'class 11 students', 'class 11th'],
     excludeNameTerms: ['pcm'],
   },
   {
@@ -4519,7 +4519,7 @@ const QUIZ_LEARNING_COMMUNITIES: QuizLearningCommunitySpec[] = [
     name: 'Class 12',
     description: 'Learn and revise Class 12 subjects with daily practice.',
     tags: ['class 12', '12th class', 'school', 'learning'],
-    aliases: ['class 12', 'class xii', '12th class', '12th grade'],
+    aliases: ['class 12', 'class xii', '12th class', '12th grade', 'class 12 students', 'class 12th'],
     excludeNameTerms: ['pcm'],
   },
   {
@@ -4527,28 +4527,28 @@ const QUIZ_LEARNING_COMMUNITIES: QuizLearningCommunitySpec[] = [
     name: 'Class 11 PCM',
     description: 'Learn and practice Class 11 Physics, Chemistry, and Mathematics.',
     tags: ['class 11', 'pcm', 'physics', 'chemistry', 'mathematics', 'learning'],
-    aliases: ['class 11 pcm', '11th pcm', 'pcm 11'],
+    aliases: ['class 11 pcm', '11th pcm', 'pcm 11', 'pcm 11th', '11th class pcm'],
   },
   {
     id: 'quiz-learning-pcm-12',
     name: 'Class 12 PCM',
     description: 'Learn and practice Class 12 Physics, Chemistry, and Mathematics.',
     tags: ['class 12', 'pcm', 'physics', 'chemistry', 'mathematics', 'learning'],
-    aliases: ['class 12 pcm', '12th pcm', 'pcm 12'],
+    aliases: ['class 12 pcm', '12th pcm', 'pcm 12', 'pcm 12th', '12th class pcm'],
   },
   {
     id: 'quiz-learning-english',
-    name: 'English Learning',
+    name: 'English Learning Community',
     description: 'Practice English vocabulary, grammar, reading, and communication.',
-    tags: ['english', 'language learning', 'learning'],
-    aliases: ['english learning', 'english learners', 'english language', 'english conversation', 'learn english', 'spoken english'],
+    tags: ['english', 'english learning', 'language learning', 'learning'],
+    aliases: ['english learning', 'english learners', 'english learning community', 'english language', 'english conversation', 'learn english', 'spoken english'],
   },
   {
     id: 'quiz-learning-jee-aspirants',
     name: 'JEE Aspirants',
     description: 'Learn and practice for JEE Main and Advanced with fellow aspirants.',
     tags: ['jee', 'exam preparation', 'learning'],
-    aliases: ['jee aspirants', 'jee preparation', 'jee prep'],
+    aliases: ['jee aspirants', 'jee preparation', 'jee prep', 'jee vedantu'],
   },
   {
     id: 'quiz-learning-neet-aspirants',
@@ -4562,12 +4562,30 @@ const QUIZ_LEARNING_COMMUNITIES: QuizLearningCommunitySpec[] = [
     name: 'SAT India',
     description: 'Prepare for the SAT with reading, writing, and mathematics practice.',
     tags: ['sat', 'sat india', 'exam preparation', 'learning'],
-    aliases: ['sat india', 'sat preparation'],
+    aliases: ['sat india', 'sat preparation', 'sat aspirants'],
+  },
+  {
+    id: 'official-aptitude',
+    name: 'Aptitude',
+    description: 'Learn and practice aptitude and reasoning.',
+    tags: ['aptitude', 'reasoning', 'learning'],
+    aliases: ['aptitude', 'aptitude and reasoning', 'aptitude reasoning india'],
+  },
+  {
+    id: 'quiz-learning-iat-aspirants',
+    name: 'IAT Aspirants',
+    description: 'Prepare for the IISER Aptitude Test with science and reasoning practice.',
+    tags: ['iat', 'exam preparation', 'learning'],
+    aliases: ['iat aspirants', 'iat preparation'],
   },
 ];
 
 function isCollegeCommunity(community: typeof communities.$inferSelect): boolean {
-  return /college|university|campus/i.test(community.category) || Boolean(community.college?.trim());
+  return (
+    community.id.startsWith('college-') ||
+    /college|university|campus/i.test(community.category) ||
+    Boolean(community.college?.trim())
+  );
 }
 
 function normalizeCommunityText(value: string): string {
@@ -4618,9 +4636,7 @@ async function ensureQuizLearningCommunities() {
 function isLearningCommunity(community: typeof communities.$inferSelect): boolean {
   if (isCollegeCommunity(community)) return false;
   if (QUIZ_LEARNING_COMMUNITIES.some((spec) => matchesQuizLearningCommunity(community, spec))) return true;
-  const tags = Array.isArray(community.tags) ? community.tags.join(' ') : '';
-  const subject = `${community.name} ${community.description} ${community.category} ${tags}`;
-  return /\b(learn(?:er|ers|ing)?|study|student|academic|education|class(?:es)?|school|university|exam|prepar(?:e|ation)|aspirant|jee|neet|sat|gate|upsc|math(?:s|ematics)?|physics|chemistry|biology|science|engineering|coding|programming|computer science|dsa|aptitude|revision|notes|cybersecurity|robotics|python|placement|english|artificial intelligence|machine learning)\b/i.test(subject);
+  return /^(engineering & technology|school & exams|course community|exam preparation|competitive exams|government exams|law & public policy|medical & healthcare)$/i.test(community.category.trim());
 }
 
 type DailyQuizFailureStage = 'database' | 'gemini' | 'validation' | 'notification';
@@ -5164,6 +5180,9 @@ app.get('/api/communities/:communityId/quizzes/today', async (req, res) => {
       .where(eq(communities.id, communityId))
       .limit(1);
     if (!community) return res.status(404).json({ error: 'Community not found.' });
+    if (isCollegeCommunity(community)) {
+      return res.json({ quiz: null, leaderboard: [], myAttempt: null });
+    }
     const memberIds = Array.isArray(community.memberIds) ? community.memberIds as string[] : [];
     const adminIds = Array.isArray(community.adminIds) ? community.adminIds as string[] : [];
     if (!memberIds.includes(userId) && community.creatorId !== userId && !adminIds.includes(userId)) {
@@ -5171,12 +5190,28 @@ app.get('/api/communities/:communityId/quizzes/today', async (req, res) => {
     }
 
     const quizDate = getIndiaDateKey();
-    const [quiz] = await db.select().from(dailyCommunityQuizzes)
+    let [quiz] = await db.select().from(dailyCommunityQuizzes)
       .where(and(
         eq(dailyCommunityQuizzes.communityId, communityId),
         eq(dailyCommunityQuizzes.quizDate, quizDate),
       ))
       .limit(1);
+
+    if (!quiz && isLearningCommunity(community) && GEMINI_API_KEY) {
+      try {
+        await createDailyQuizForCommunity(community, quizDate, false);
+        const [created] = await db.select().from(dailyCommunityQuizzes)
+          .where(and(
+            eq(dailyCommunityQuizzes.communityId, communityId),
+            eq(dailyCommunityQuizzes.quizDate, quizDate),
+          ))
+          .limit(1);
+        quiz = created;
+      } catch (genError) {
+        console.warn(`[community quiz] on-demand generation failed for ${community.id}:`, safeQuizErrorMessage(genError));
+      }
+    }
+
     if (!quiz) return res.json({ quiz: null, leaderboard: [], myAttempt: null });
 
     const [attempt] = await db.select().from(dailyCommunityQuizAttempts)
@@ -5228,6 +5263,9 @@ app.post('/api/communities/:communityId/quizzes/:quizId/submit', async (req, res
       .where(eq(communities.id, communityId))
       .limit(1);
     if (!community) return res.status(404).json({ error: 'Community not found.' });
+    if (isCollegeCommunity(community)) {
+      return res.status(400).json({ error: 'Quizzes are only available in learning communities.' });
+    }
     const memberIds = Array.isArray(community.memberIds) ? community.memberIds as string[] : [];
     const adminIds = Array.isArray(community.adminIds) ? community.adminIds as string[] : [];
     if (!memberIds.includes(userId) && community.creatorId !== userId && !adminIds.includes(userId)) {
@@ -5310,18 +5348,26 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
   const bearer = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1] || '';
   const supplied = Buffer.from(bearer);
   const expected = Buffer.from(QUIZ_CRON_SECRET);
-  if (!QUIZ_CRON_SECRET || supplied.length !== expected.length ||
-    !crypto.timingSafeEqual(supplied, expected)) {
+  const isSecretMatch = QUIZ_CRON_SECRET && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+  const sessionUserId = authenticatedChatUserId(req);
+  const isAdmin = sessionUserId ? await isPlatformAdmin(sessionUserId) : false;
+  if (!isSecretMatch && !isAdmin) {
     return res.status(QUIZ_CRON_SECRET ? 401 : 503).json({
       error: QUIZ_CRON_SECRET ? 'Invalid scheduler credential.' : 'QUIZ_CRON_SECRET is not configured.',
     });
   }
   if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GEMINI_API_KEY is not configured.' });
 
-  const runAllCommunities = req.body?.limit === undefined || req.body?.limit === 'all';
-  const requestedLimit = runAllCommunities ? null : Number(req.body.limit);
-  if (!runAllCommunities && requestedLimit !== 1 && requestedLimit !== 20) {
-    return res.status(400).json({ error: 'Quiz run limit must be 1, 20, or all.' });
+  const specificCommunityId = typeof req.body?.communityId === 'string' ? req.body.communityId.trim() : null;
+  const rawLimit = req.body?.limit;
+  const runAllCommunities = rawLimit === undefined || rawLimit === 'all';
+  let requestedLimit: number | null = null;
+  if (!runAllCommunities) {
+    const parsed = Number(rawLimit);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 50) {
+      return res.status(400).json({ error: 'Quiz run limit must be an integer between 1 and 50, or all.' });
+    }
+    requestedLimit = parsed;
   }
   const sendNotifications = req.body?.suppressNotifications !== true;
   const quizDate = getIndiaDateKey();
@@ -5334,13 +5380,28 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
     }
     const learningCommunities = allCommunities
       .filter(isLearningCommunity)
-      .sort((a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() ||
-        a.id.localeCompare(b.id),
-      );
-    const selectedCommunities = requestedLimit === null
+      .sort((a, b) => {
+        const specIndexA = QUIZ_LEARNING_COMMUNITIES.findIndex((spec) => matchesQuizLearningCommunity(a, spec));
+        const specIndexB = QUIZ_LEARNING_COMMUNITIES.findIndex((spec) => matchesQuizLearningCommunity(b, spec));
+        const rankA = specIndexA === -1 ? 999 : specIndexA;
+        const rankB = specIndexB === -1 ? 999 : specIndexB;
+        if (rankA !== rankB) return rankA - rankB;
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() ||
+          a.id.localeCompare(b.id)
+        );
+      });
+    let selectedCommunities = requestedLimit === null
       ? learningCommunities
       : learningCommunities.slice(0, requestedLimit);
+
+    if (specificCommunityId) {
+      const found = learningCommunities.find((c) => c.id === specificCommunityId);
+      if (!found) {
+        return res.status(404).json({ error: `Learning community "${specificCommunityId}" not found or is not an eligible learning community.` });
+      }
+      selectedCommunities = [found];
+    }
     const results: Array<{
       communityId: string;
       name: string;
