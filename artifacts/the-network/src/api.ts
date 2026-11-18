@@ -26,7 +26,8 @@ const _cloudflareHosts = [
 ];
 export const IS_STATIC_SITE_HOST = IS_FIREBASE_HOST ||
   _cloudflareHosts.includes(_hostname) ||
-  _hostname.endsWith('.the-network-1vw.pages.dev');
+  _hostname.endsWith('.the-network-1vw.pages.dev') ||
+  _hostname.endsWith('.azurestaticapps.net');
 const _isCloudflarePagesHost = typeof window !== 'undefined' && (
   _cloudflareHosts.includes(_hostname) ||
   _hostname.endsWith('.the-network-1vw.pages.dev')
@@ -112,6 +113,10 @@ export function resolveAssetUrl(value: string | null | undefined): string | unde
 }
 
 const BASE = API_ORIGIN + '/api';
+const EDGE_API_ORIGIN = (
+  import.meta.env.VITE_EDGE_API_URL
+  || 'https://the-network-api-gateway.nirajregar9587.workers.dev'
+).replace(/\/$/, '');
 
 // ─── Session tracking ────────────────────────────────────────────────────────
 // Keeps a single active sessionId in memory for the tab lifetime.
@@ -142,12 +147,28 @@ async function request(method: string, path: string, body?: any) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const token = typeof window !== 'undefined' ? localStorage.getItem('network_auth_token') : null;
   if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${BASE}${path}`, {
+  const nativePath = path.split('?')[0];
+  const useEdgeApi = IS_STATIC_SITE_HOST
+    && ['/auth/me', '/bootstrap', '/public/stats'].includes(nativePath);
+  const apiBase = useEdgeApi ? `${EDGE_API_ORIGIN}/api` : BASE;
+  const requestOptions: RequestInit = {
     method,
     headers,
     cache: method === 'GET' ? 'no-store' : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  };
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}${path}`, requestOptions);
+  } catch (error) {
+    if (!useEdgeApi) throw error;
+    console.warn('Cloudflare startup API is unavailable; retrying the existing API origin.', error);
+    res = await fetch(`${BASE}${path}`, requestOptions);
+  }
+  if (useEdgeApi && res.status >= 500) {
+    console.warn(`Cloudflare startup API returned ${res.status}; retrying the existing API origin.`);
+    res = await fetch(`${BASE}${path}`, requestOptions);
+  }
   const contentType = res.headers.get('content-type') || '';
   const data = contentType.includes('application/json')
     ? await res.json()

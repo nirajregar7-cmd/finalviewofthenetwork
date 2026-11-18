@@ -978,7 +978,8 @@ app.use(cors({
           || hostname === '127.0.0.1'
           || hostname.endsWith('.replit.dev')
           || hostname.endsWith('.replit.app')
-          || hostname.endsWith('.the-network-1vw.pages.dev');
+          || hostname.endsWith('.the-network-1vw.pages.dev')
+          || hostname.endsWith('.azurestaticapps.net');
       } catch {
         allowedDevelopmentOrigin = false;
       }
