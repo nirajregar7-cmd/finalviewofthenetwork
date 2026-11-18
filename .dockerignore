@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+**/node_modules
+**/dist
+**/.tsbuildinfo
+**/coverage
+**/.firebase
+**/.wrangler
+**/.env*
+!.env.example
+attached_assets
