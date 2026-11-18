@@ -1,6 +1,7 @@
-const CACHE_NAME = 'the-network-v62';
+const CACHE_NAME = 'the-network-v63';
 const STATIC_ASSETS = ['/', '/manifest.json', '/favicon.png'];
 const EXTERNAL_API_ORIGIN = 'https://the-network-api.onrender.com';
+const AZURE_API_ORIGIN = 'https://thenetworkapi.proudrock-aea1c198.eastasia.azurecontainerapps.io';
 const FIREBASE_HOSTS = new Set([
   'the-network-72bba.web.app',
   'the-network-72bba.firebaseapp.com',
@@ -16,13 +17,16 @@ const CLOUDFLARE_API_HOSTS = new Set([
   'www.the-network.co.in',
   'the-network-1vw.pages.dev',
 ]);
+const IS_AZURE_STATIC_HOST = self.location.hostname.endsWith('.azurestaticapps.net');
 const API_BASE = (
   self.__API_BASE__ ||
-  (FIREBASE_HOSTS.has(self.location.hostname) ||
-  CLOUDFLARE_API_HOSTS.has(self.location.hostname) ||
-  self.location.hostname.endsWith('.the-network-1vw.pages.dev')
-    ? EXTERNAL_API_ORIGIN
-    : '')
+  (IS_AZURE_STATIC_HOST
+    ? AZURE_API_ORIGIN
+    : (FIREBASE_HOSTS.has(self.location.hostname) ||
+      CLOUDFLARE_API_HOSTS.has(self.location.hostname) ||
+      self.location.hostname.endsWith('.the-network-1vw.pages.dev')
+      ? EXTERNAL_API_ORIGIN
+      : ''))
 ).replace(/\/$/, '');
 
 self.addEventListener('install', (event) => {
