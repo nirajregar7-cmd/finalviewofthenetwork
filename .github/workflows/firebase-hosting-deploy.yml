@@ -5,9 +5,13 @@ on:
     branches:
       - main
     paths-ignore:
+      - '.dockerignore'
+      - 'Dockerfile'
+      - 'artifacts/api-server/README.md'
       - 'artifacts/api-server/**'
       - 'artifacts/the-network/**'
       - 'lib/**'
+      - '.github/workflows/azure-api-ghcr.yml'
       - '.github/workflows/daily-community-quizzes.yml'
       - '.github/workflows/firebase-hosting-deploy.yml'
   workflow_dispatch:
