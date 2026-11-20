@@ -13,7 +13,7 @@ import nodemailer from 'nodemailer';
 import { db, pool } from './db.js';
 import {
   users, posts, comments, connections, userBlocks, messages, communities, stories, reports, pushSubscriptions,
-  notifications, projects, events, workshopRegistrations, hostedWorkshops, groupChats, groupMessages, collegeAnnouncements, attendanceSubjects, savedItems,
+  notifications, notificationEmailQueue, projects, events, workshopRegistrations, hostedWorkshops, groupChats, groupMessages, collegeAnnouncements, attendanceSubjects, savedItems,
   collegeSettings, referrals, findPeopleRequests, findPeopleApplications, customColleges,
   networkCompetitions, networkCompetitionTeams, networkCompetitionSubmissions, networkCompetitionVotes,
   aptitudeExams, aptitudeAttempts, dailyCommunityQuizzes, dailyCommunityQuizAttempts
@@ -327,8 +327,8 @@ function canonicalizeCollegeName(value: string | null | undefined): string | nul
 }
 
 // ── Email delivery ─────────────────────────────────────────────────────────────
-// Authentication/security and activity mail use Brevo when configured, with
-// the generic SMTP transport retained as a fallback for existing deployments.
+// Authentication/security mail uses Brevo. Activity mail is queued in Neon
+// and delivered by the Render worker using its existing Gmail SMTP settings.
 // Credentials stay server-only and are never returned to clients.
 const PRIMARY_ADMIN_EMAIL = (process.env.PRIMARY_ADMIN_EMAIL || 'admin@thenetwork.app').trim().toLowerCase();
 const EMAIL_FROM_ADDRESS = (process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@thenetwork.app').trim();
@@ -347,6 +347,7 @@ const BREVO_SMTP_USER = (process.env.BREVO_SMTP_USER || '').trim();
 const BREVO_SMTP_PASS = (process.env.BREVO_SMTP_PASS || '').replace(/\s+/g, '');
 const BREVO_SMTP_SECURE = process.env.BREVO_SMTP_SECURE === 'true' || BREVO_SMTP_PORT === 465;
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').trim();
+const ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED = process.env.ACTIVITY_EMAIL_QUEUE_WORKER === 'true';
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim();
 const GEMINI_MODEL = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim();
 const QUIZ_CRON_SECRET = (process.env.QUIZ_CRON_SECRET || '').trim();
@@ -372,7 +373,7 @@ const brevoSmtpTransporter = !IS_VERCEL_RUNTIME && BREVO_SMTP_HOST && BREVO_SMTP
       socketTimeout: SMTP_SOCKET_TIMEOUT,
     })
   : null;
-const { sendBrevoEmail, sendSmtpEmail, sendSmtpBulkEmail, sendBrevoBulkEmail } = createEmailDelivery({
+const { sendBrevoEmail, sendSmtpEmail, sendSmtpBulkEmail } = createEmailDelivery({
   brevoApiKey: BREVO_API_KEY,
   emailFromAddress: EMAIL_FROM_ADDRESS,
   brevoEmailFromAddress: BREVO_EMAIL_FROM_ADDRESS,
@@ -381,7 +382,6 @@ const { sendBrevoEmail, sendSmtpEmail, sendSmtpBulkEmail, sendBrevoBulkEmail } =
   preferBrevoApi: IS_VERCEL_RUNTIME || Boolean(BREVO_API_KEY),
   apiTimeoutMs: IS_VERCEL_RUNTIME ? 4_000 : 8_000,
 });
-const hasBrevoDelivery = Boolean(BREVO_API_KEY || brevoSmtpTransporter);
 if (BREVO_API_KEY) {
   console.info('[email] Brevo API preferred for transactional mail');
 }
@@ -396,8 +396,8 @@ if (brevoSmtpTransporter) {
 if (smtpTransporter) {
   console.log(`[email] SMTP fallback configured host=${SMTP_HOST} port=${SMTP_PORT} secure=${SMTP_SECURE}`);
 }
-if (!hasBrevoDelivery && !smtpTransporter) {
-  console.warn('[email] No Brevo or SMTP sender is configured; activity/admin mail is disabled');
+if (ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED && !smtpTransporter) {
+  console.error('[email] SMTP is not configured; activity email queue worker cannot deliver');
 }
 
 function logEmailFailure(context: string, error: unknown) {
@@ -507,6 +507,31 @@ function notificationEmailHtml({
   `;
 }
 
+type ActivityEmailQueueInsert = typeof notificationEmailQueue.$inferInsert;
+
+function wakeActivityEmailQueueWorker() {
+  if (ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED || process.env.NODE_ENV !== 'production') return;
+
+  void fetch('https://the-network-api.onrender.com/api/healthz', {
+    signal: AbortSignal.timeout(3_000),
+  }).then((response) => {
+    if (!response.ok) {
+      console.warn(`[email] activity queue worker wake failed status=${response.status}`);
+    }
+  }).catch(() => {
+    console.warn('[email] activity queue worker wake failed code=network');
+  });
+}
+
+async function enqueueActivityEmailRows(rows: ActivityEmailQueueInsert[]) {
+  for (let offset = 0; offset < rows.length; offset += 200) {
+    await db.insert(notificationEmailQueue)
+      .values(rows.slice(offset, offset + 200))
+      .onConflictDoNothing();
+  }
+  wakeActivityEmailQueueWorker();
+}
+
 async function sendActivityEmail({
   recipient,
   subject,
@@ -516,7 +541,7 @@ async function sendActivityEmail({
   params,
   context,
 }: {
-  recipient: { email?: string | null };
+  recipient: { id?: string; email?: string | null };
   subject: string;
   title: string;
   body: string;
@@ -532,17 +557,40 @@ async function sendActivityEmail({
     ctaLabel: view === 'messages' ? 'Open messages' : 'Open The Network',
     ctaUrl: notificationEmailUrl(view, params),
   });
-  try {
-    if (hasBrevoDelivery) {
-      await sendBrevoEmail({ to: email, subject, html });
-      console.log(`[email] ${context} delivered provider=brevo`);
-    } else {
+  if (process.env.NODE_ENV !== 'production') {
+    try {
       await sendSmtpEmail({ to: email, subject, html });
       console.log(`[email] ${context} delivered provider=smtp`);
+    } catch (error) {
+      logEmailFailure(`${context} smtp`, error);
     }
+    return;
+  }
+
+  try {
+    const recipientId = recipient.id?.trim() || (
+      await db.select({ id: users.id })
+        .from(users)
+        .where(sql`LOWER(${users.email}) = ${email.toLowerCase()}`)
+        .limit(1)
+    )[0]?.id;
+    if (!recipientId) {
+      console.warn(`[email] ${context} skipped code=recipient_not_found`);
+      return;
+    }
+
+    await enqueueActivityEmailRows([{
+      id: crypto.randomUUID(),
+      recipientId,
+      eventType: context,
+      dedupeKey: crypto.randomUUID(),
+      payload: { subject, html },
+      scheduledAt: new Date(),
+    }]);
+    console.log(`[email] ${context} queued provider=render-smtp`);
   } catch (error) {
     // Delivery failure must not prevent the in-app notification or saved message.
-    logEmailFailure(`${context} ${hasBrevoDelivery ? 'brevo' : 'smtp'}`, error);
+    logEmailFailure(`${context} queue`, error);
   }
 }
 
@@ -651,62 +699,188 @@ async function sendCommunityPostActivityEmail({
   )];
   if (!uniqueEmails.length) return;
 
-  // Keep batches below common SMTP recipient limits while using BCC so
-  // community members never see one another's email addresses.
-  const batchSize = 25;
   const html = notificationEmailHtml({
     title,
     body,
     ctaLabel,
     ctaUrl: notificationEmailUrl(view, params),
   });
-  const totalBatches = Math.ceil(uniqueEmails.length / batchSize);
-  console.log(`[email] ${context} queued recipients=${uniqueEmails.length} batches=${totalBatches}`);
-  const batches = Array.from(
-    { length: totalBatches },
-    (_, index) => uniqueEmails.slice(index * batchSize, (index + 1) * batchSize),
-  );
-  const sendBatch = async (bcc: string[], batchNumber: number) => {
-    const batchLabel = `${context} batch ${batchNumber}`;
-    try {
-      if (hasBrevoDelivery) {
-        await sendBrevoBulkEmail({
-          to: EMAIL_FROM_ADDRESS,
-          bcc,
-          subject,
-          html,
-        });
-        console.log(`[email] ${batchLabel} delivered provider=brevo count=${bcc.length}`);
-      } else {
-        await sendSmtpBulkEmail({
-          to: EMAIL_FROM_ADDRESS,
-          bcc,
-          subject,
-          html,
-        });
-        console.log(`[email] ${batchLabel} delivered provider=smtp count=${bcc.length}`);
+  if (process.env.NODE_ENV !== 'production') {
+    const batchSize = 25;
+    for (let offset = 0; offset < uniqueEmails.length; offset += batchSize) {
+      const bcc = uniqueEmails.slice(offset, offset + batchSize);
+      try {
+        await sendSmtpBulkEmail({ to: EMAIL_FROM_ADDRESS, bcc, subject, html });
+      } catch (error) {
+        logEmailFailure(`${context} smtp`, error);
       }
-    } catch (error) {
-      const provider = hasBrevoDelivery ? 'brevo' : 'smtp';
-      logEmailFailure(`${batchLabel} ${provider}`, error);
-      console.error(`[email] ${batchLabel} ${provider} delivery incomplete failed=${bcc.length}`);
     }
-  };
+    return;
+  }
 
-  if (IS_VERCEL_RUNTIME) {
-    // Keep serverless runtime bounded for large communities without sending a
-    // burst large enough to trip provider rate limits.
-    const concurrency = 10;
-    for (let offset = 0; offset < batches.length; offset += concurrency) {
-      await Promise.all(
-        batches.slice(offset, offset + concurrency)
-          .map((bcc, index) => sendBatch(bcc, offset + index + 1)),
-      );
+  try {
+    const { rows: recipients } = await pool.query<{ id: string }>(
+      'SELECT id FROM users WHERE LOWER(email) = ANY($1::text[])',
+      [uniqueEmails],
+    );
+    if (!recipients.length) return;
+
+    const now = new Date();
+    await enqueueActivityEmailRows(recipients.map(({ id }) => ({
+      id: crypto.randomUUID(),
+      recipientId: id,
+      eventType: context,
+      dedupeKey: crypto.randomUUID(),
+      payload: { subject, html },
+      scheduledAt: now,
+    })));
+    console.log(`[email] ${context} queued provider=render-smtp recipients=${recipients.length}`);
+  } catch (error) {
+    logEmailFailure(`${context} queue`, error);
+  }
+}
+
+type ActivityEmailQueueRow = {
+  id: string;
+  recipientId: string;
+  eventType: string;
+  payload: unknown;
+  attempts: number;
+  email: string | null;
+};
+
+type ValidActivityEmailQueueRow = ActivityEmailQueueRow & {
+  payload: { subject: string; html: string };
+};
+
+let activityEmailQueueWorkerRunning = false;
+
+async function processActivityEmailQueue() {
+  if (!ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED || !smtpTransporter || activityEmailQueueWorkerRunning) return;
+  activityEmailQueueWorkerRunning = true;
+
+  try {
+    await pool.query(`
+      UPDATE notification_email_queue
+      SET status = 'failed', locked_at = NULL, last_error = 'attempts_exhausted'
+      WHERE status = 'processing'
+        AND locked_at < now() - interval '5 minutes'
+        AND attempts >= 5
+    `);
+
+    const { rows } = await pool.query<ActivityEmailQueueRow>(`
+      WITH pending AS (
+        SELECT id
+        FROM notification_email_queue
+        WHERE attempts < 5
+          AND scheduled_at <= now()
+          AND (
+            status = 'pending'
+            OR (status = 'processing' AND locked_at < now() - interval '5 minutes')
+          )
+        ORDER BY scheduled_at, created_at
+        FOR UPDATE SKIP LOCKED
+        LIMIT 25
+      ),
+      claimed AS (
+        UPDATE notification_email_queue AS queue
+        SET status = 'processing',
+            locked_at = now(),
+            attempts = queue.attempts + 1
+        FROM pending
+        WHERE queue.id = pending.id
+        RETURNING queue.id, queue.recipient_id, queue.event_type, queue.payload, queue.attempts
+      )
+      SELECT claimed.id, claimed.recipient_id AS "recipientId",
+             claimed.event_type AS "eventType", claimed.payload,
+             claimed.attempts, users.email
+      FROM claimed
+      LEFT JOIN users ON users.id = claimed.recipient_id
+    `);
+
+    const groups = new Map<string, ValidActivityEmailQueueRow[]>();
+    for (const row of rows) {
+      let payload: unknown;
+      try {
+        payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+      } catch {
+        await pool.query(`
+          UPDATE notification_email_queue
+          SET status = 'failed', locked_at = NULL, last_error = 'invalid_payload'
+          WHERE id = $1
+        `, [row.id]);
+        console.error('[email] activity queue item failed code=invalid_payload');
+        continue;
+      }
+
+      if (
+        !row.email
+        || !payload
+        || typeof payload !== 'object'
+        || !('subject' in payload)
+        || !('html' in payload)
+        || typeof payload.subject !== 'string'
+        || typeof payload.html !== 'string'
+      ) {
+        await pool.query(`
+          UPDATE notification_email_queue
+          SET status = 'failed', locked_at = NULL, last_error = 'invalid_payload'
+          WHERE id = $1
+        `, [row.id]);
+        console.error('[email] activity queue item failed code=invalid_payload');
+        continue;
+      }
+
+      const emailPayload = { subject: payload.subject, html: payload.html };
+      const groupKey = row.eventType.toLowerCase().includes('community')
+        ? `${row.eventType}\n${row.attempts}\n${emailPayload.subject}\n${emailPayload.html}`
+        : row.id;
+      const group = groups.get(groupKey) || [];
+      group.push({ ...row, payload: emailPayload });
+      groups.set(groupKey, group);
     }
-  } else {
-    for (let index = 0; index < batches.length; index += 1) {
-      await sendBatch(batches[index], index + 1);
+
+    for (const group of groups.values()) {
+      const first = group[0];
+      const payload = first.payload;
+      const recipients = [...new Set(group.map((row) => row.email!))];
+      try {
+        if (group.length > 1 && first.eventType.toLowerCase().includes('community')) {
+          await sendSmtpBulkEmail({
+            to: EMAIL_FROM_ADDRESS,
+            bcc: recipients,
+            subject: payload.subject,
+            html: payload.html,
+          });
+        } else {
+          await sendSmtpEmail({ to: recipients[0], subject: payload.subject, html: payload.html });
+        }
+        await pool.query(`
+          UPDATE notification_email_queue
+          SET status = 'sent', locked_at = NULL, sent_at = now(), last_error = NULL
+          WHERE id = ANY($1::text[])
+        `, [group.map((row) => row.id)]);
+        console.log(`[email] queued activity emails delivered provider=smtp count=${group.length}`);
+      } catch (error) {
+        const status = group.some((row) => row.attempts >= 5) ? 'failed' : 'pending';
+        const attempts = Math.max(...group.map((row) => row.attempts));
+        const delaySeconds = Math.min(3_600, 60 * 2 ** (attempts - 1));
+        const lastError = error instanceof EmailDeliveryError ? error.code : 'unexpected';
+        await pool.query(`
+          UPDATE notification_email_queue
+          SET status = $2,
+              scheduled_at = now() + ($3 * interval '1 second'),
+              locked_at = NULL,
+              last_error = $4
+          WHERE id = ANY($1::text[])
+        `, [group.map((row) => row.id), status, delaySeconds, lastError]);
+        logEmailFailure('queued activity email smtp', error);
+      }
     }
+  } catch (error) {
+    logEmailFailure('activity email queue worker', error);
+  } finally {
+    activityEmailQueueWorkerRunning = false;
   }
 }
 
@@ -10920,6 +11094,15 @@ if (!IS_SERVERLESS_RUNTIME) {
   attachChatRealtime(httpServer);
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    if (ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED) {
+      if (smtpTransporter) {
+        console.info('[email] activity email queue worker started provider=smtp');
+        void processActivityEmailQueue();
+        setInterval(() => void processActivityEmailQueue(), 15_000);
+      } else {
+        console.error('[email] activity email queue worker stopped code=smtp_not_configured');
+      }
+    }
     autoSeedDomainCommunities();
   });
   setTimeout(() => {

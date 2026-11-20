@@ -15,3 +15,5 @@ services:
         sync: false
       - key: QUIZ_CRON_SECRET
         sync: false
+      - key: ACTIVITY_EMAIL_QUEUE_WORKER
+        value: "true"
