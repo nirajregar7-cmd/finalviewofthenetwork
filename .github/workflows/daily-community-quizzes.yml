@@ -2,7 +2,7 @@ name: Generate daily community quizzes
 
 on:
   schedule:
-    - cron: '30 0 * * *'
+    - cron: '30 18 * * *' # 00:00 IST
   workflow_dispatch:
     inputs:
       community_count:
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Generate and publish today's quizzes
+      - name: Close yesterday's quizzes and publish today's quizzes
         env:
           QUIZ_CRON_SECRET: ${{ secrets.QUIZ_CRON_SECRET }}
           QUIZ_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.community_count || 'all' }}

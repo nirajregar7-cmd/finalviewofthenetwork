@@ -36,6 +36,8 @@ type DailyQuiz = {
   date: string;
   title: string;
   description: string;
+  opensAt?: string;
+  closesAt?: string;
   questions: QuizQuestion[];
 };
 
@@ -177,7 +179,7 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
         </div>
         <h2 className="mt-4 text-base font-black text-slate-900">Today’s quiz is being prepared</h2>
         <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-500">
-          A fresh ten-question quiz is scheduled for 6:00 AM IST every day. Check back soon.
+          A fresh ten-question quiz is scheduled for midnight IST every day. Check back soon.
         </p>
         {error && <p className="mt-3 text-xs font-semibold text-rose-600" role="alert">{error}</p>}
         <button type="button" onClick={() => void loadQuiz()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">
@@ -190,6 +192,16 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
   const attempt = data.myAttempt;
   const reviewByQuestion = new Map((attempt?.review || []).map((item) => [item.id, item]));
   const allAnswered = data.quiz.questions.every((question) => answers[question.id] !== undefined);
+  const quizClosesAt = data.quiz.closesAt
+    ? new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(new Date(data.quiz.closesAt))
+    : '12:00 AM the next day';
 
   return (
     <section className="space-y-4" aria-label="Daily community quiz">
@@ -202,7 +214,9 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
         </div>
         <h2 className="mt-3 text-xl font-black tracking-tight">{data.quiz.title}</h2>
         <p className="mt-2 max-w-2xl text-xs leading-5 text-indigo-100">{data.quiz.description}</p>
-        <p className="mt-3 text-[10px] font-semibold text-indigo-200">One submission per member. Results appear on the community leaderboard.</p>
+        <p className="mt-3 text-[10px] font-semibold text-indigo-200">
+          One submission per member. Open until {quizClosesAt} IST; result emails are sent after closing.
+        </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a
             href={`https://wa.me/?text=${encodeURIComponent(getInviteMessage(data.quiz))}`}

@@ -6,6 +6,8 @@ on:
       - main
     paths-ignore:
       - 'artifacts/api-server/**'
+      - 'artifacts/the-network/**'
+      - 'lib/**'
       - '.github/workflows/daily-community-quizzes.yml'
       - '.github/workflows/firebase-hosting-deploy.yml'
   workflow_dispatch:

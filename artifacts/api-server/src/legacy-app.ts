@@ -23,7 +23,7 @@ import {
   getCommentNotificationRecipients,
   hasBroadcastMention,
 } from './mentions.js';
-import { eq, or, and, desc, gte, lte, lt, inArray, sql } from 'drizzle-orm';
+import { eq, or, and, desc, gte, lte, lt, isNull, inArray, sql } from 'drizzle-orm';
 import {
   buildHomeFeedScope,
   normalizeHomeFeedRequest,
@@ -47,6 +47,11 @@ import {
   replyToInboxThread,
 } from './gmail-mailbox.js';
 import { deriveVapidPublicKey, normalizeVapidKey, vapidKeysMatch } from './vapid.js';
+import {
+  getDailyCommunityQuizWindow,
+  getPreviousDailyQuizDate,
+  isDailyQuizAttendanceMilestone,
+} from './daily-community-quiz-window.js';
 import { getPublicAppBaseUrl } from './runtime-config.js';
 import {
   buildPostEngagementById,
@@ -540,6 +545,7 @@ async function sendActivityEmail({
   view,
   params,
   context,
+  dedupeKey,
 }: {
   recipient: { id?: string; email?: string | null };
   subject: string;
@@ -548,9 +554,10 @@ async function sendActivityEmail({
   view: string;
   params?: Record<string, string | undefined>;
   context: string;
-}) {
+  dedupeKey?: string;
+}): Promise<boolean> {
   const email = recipient.email?.trim();
-  if (!email) return;
+  if (!email) return false;
   const html = notificationEmailHtml({
     title,
     body,
@@ -561,10 +568,11 @@ async function sendActivityEmail({
     try {
       await sendSmtpEmail({ to: email, subject, html });
       console.log(`[email] ${context} delivered provider=smtp`);
+      return true;
     } catch (error) {
       logEmailFailure(`${context} smtp`, error);
+      return false;
     }
-    return;
   }
 
   try {
@@ -576,21 +584,23 @@ async function sendActivityEmail({
     )[0]?.id;
     if (!recipientId) {
       console.warn(`[email] ${context} skipped code=recipient_not_found`);
-      return;
+      return false;
     }
 
     await enqueueActivityEmailRows([{
       id: crypto.randomUUID(),
       recipientId,
       eventType: context,
-      dedupeKey: crypto.randomUUID(),
+      dedupeKey: dedupeKey || crypto.randomUUID(),
       payload: { subject, html },
       scheduledAt: new Date(),
     }]);
     console.log(`[email] ${context} queued provider=render-smtp`);
+    return true;
   } catch (error) {
     // Delivery failure must not prevent the in-app notification or saved message.
     logEmailFailure(`${context} queue`, error);
+    return false;
   }
 }
 
@@ -4611,17 +4621,6 @@ type DailyCommunityQuizQuestion = {
   explanation: string;
 };
 
-function getIndiaDateKey(date = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
 type QuizLearningCommunitySpec = {
   id: string;
   name: string;
@@ -4814,7 +4813,7 @@ function isLearningCommunity(community: typeof communities.$inferSelect): boolea
   return /^(engineering & technology|school & exams|course community|exam preparation|competitive exams|government exams|law & public policy|medical & healthcare)$/i.test(community.category.trim());
 }
 
-type DailyQuizFailureStage = 'database' | 'gemini' | 'validation' | 'notification';
+type DailyQuizFailureStage = 'database' | 'email' | 'gemini' | 'validation' | 'notification';
 
 class DailyQuizFailure extends Error {
   constructor(
@@ -5010,11 +5009,7 @@ async function notifyDailyQuizMembers(
   const recipients = await db.select({ id: users.id, email: users.email })
     .from(users)
     .where(inArray(users.id, memberIds));
-  const pushUsers = vapidEnabled
-    ? new Set((await db.selectDistinct({ userId: pushSubscriptions.userId })
-      .from(pushSubscriptions)
-      .where(inArray(pushSubscriptions.userId, memberIds))).map((row) => row.userId))
-    : new Set<string>();
+  const pushUsers = await getDailyQuizPushUsers(memberIds);
   const notificationTitle = `🧠 Daily quiz: ${community.name}`;
   const body = `${title} is ready for ${quizDate}. Take today's 10-question community quiz. [[community:${community.id}]] [[quiz:${quizId}]]`;
 
@@ -5052,6 +5047,172 @@ async function notifyDailyQuizMembers(
     params: { communityId: community.id, tab: 'quizzes' },
     context: 'daily community quiz email',
   });
+}
+
+async function getDailyQuizPushUsers(userIds: string[]): Promise<Set<string>> {
+  if (!userIds.length) return new Set();
+  const subscriptions = await db.select({
+    userId: pushSubscriptions.userId,
+    p256dh: pushSubscriptions.p256dh,
+  })
+    .from(pushSubscriptions)
+    .where(inArray(pushSubscriptions.userId, userIds));
+  return new Set(subscriptions
+    .filter((subscription) => subscription.p256dh === 'fcm' || vapidEnabled)
+    .map((subscription) => subscription.userId));
+}
+
+async function notifyDailyQuizAttendanceMilestone(
+  community: typeof communities.$inferSelect,
+  quizId: string,
+  actorId: string,
+  attemptCount: number,
+) {
+  const attempts = await db.select({ userId: dailyCommunityQuizAttempts.userId })
+    .from(dailyCommunityQuizAttempts)
+    .where(eq(dailyCommunityQuizAttempts.quizId, quizId));
+  if (!isDailyQuizAttendanceMilestone(attemptCount)) return;
+
+  const attemptedUserIds = new Set(attempts.map((attempt) => attempt.userId));
+  const memberIds = Array.isArray(community.memberIds)
+    ? [...new Set((community.memberIds as unknown[]).filter(
+      (id): id is string => typeof id === 'string' && !attemptedUserIds.has(id),
+    ))]
+    : [];
+  if (!memberIds.length) return;
+
+  const pushUsers = await getDailyQuizPushUsers(memberIds);
+  const studentLabel = attemptCount === 1 ? 'student has' : 'students have';
+  const title = `${attemptCount} ${attemptCount === 1 ? 'student' : 'students'} attempted the ${community.name} quiz`;
+  const body = `${attemptCount} ${studentLabel} completed today's quiz in ${community.name}. You can still try it before midnight IST. [[community:${community.id}]] [[quiz:${quizId}]]`;
+
+  for (let offset = 0; offset < memberIds.length; offset += 20) {
+    await Promise.all(memberIds.slice(offset, offset + 20).map(async (recipientId) => {
+      const notification = await createNotification(
+        recipientId,
+        actorId,
+        'community_quiz',
+        title,
+        body,
+      );
+      if (notification && pushUsers.has(recipientId)) {
+        await dispatchPush(recipientId, {
+          title,
+          body: `${attemptCount} ${studentLabel} completed today's quiz in ${community.name}. Take it before midnight IST.`,
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          tag: `community-quiz-progress-${quizId}-${attemptCount}`,
+          view: 'communities',
+          type: 'community_quiz',
+          data: { communityId: community.id, quizId },
+        });
+      }
+    }));
+  }
+}
+
+async function emailClosedDailyQuizResults(quizDate: string): Promise<{
+  closedQuizzes: number;
+  resultEmailsQueued: number;
+}> {
+  const closedQuizzes = await db.select({
+    id: dailyCommunityQuizzes.id,
+    communityId: dailyCommunityQuizzes.communityId,
+    title: dailyCommunityQuizzes.title,
+    quizDate: dailyCommunityQuizzes.quizDate,
+  })
+    .from(dailyCommunityQuizzes)
+    .where(and(
+      eq(dailyCommunityQuizzes.quizDate, quizDate),
+      isNull(dailyCommunityQuizzes.resultsEmailQueuedAt),
+    ));
+
+  let closedCount = 0;
+  let resultEmailsQueued = 0;
+  for (const quiz of closedQuizzes) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const lockedQuiz = await client.query(
+        'SELECT id FROM daily_community_quizzes WHERE id = $1 AND results_email_queued_at IS NULL FOR UPDATE',
+        [quiz.id],
+      );
+      if (!lockedQuiz.rows[0]) {
+        await client.query('COMMIT');
+        continue;
+      }
+
+      const [community] = await db.select({ id: communities.id, name: communities.name })
+        .from(communities)
+        .where(eq(communities.id, quiz.communityId))
+        .limit(1);
+      if (!community) {
+        throw new DailyQuizFailure('database', 'Could not load a community for closed quiz results.');
+      }
+
+      const { rows: attempts } = await client.query<{
+        user_id: string;
+        full_name: string;
+        email: string;
+        score: number;
+        max_score: number;
+        rank: number;
+        participant_count: number;
+      }>(`
+        SELECT a.user_id, u.full_name, u.email, a.score, a.max_score,
+               ROW_NUMBER() OVER (ORDER BY a.score DESC, a.submitted_at ASC, a.user_id ASC)::integer AS rank,
+               COUNT(*) OVER ()::integer AS participant_count
+        FROM daily_community_quiz_attempts a
+        INNER JOIN users u ON u.id = a.user_id
+        WHERE a.quiz_id = $1
+        ORDER BY a.score DESC, a.submitted_at ASC, a.user_id ASC
+      `, [quiz.id]);
+
+      for (let offset = 0; offset < attempts.length; offset += 20) {
+        const batch = attempts.slice(offset, offset + 20);
+        const delivered = await Promise.all(batch.map((attempt) => sendActivityEmail({
+          recipient: { id: attempt.user_id, email: attempt.email },
+          subject: `Your ${community.name} daily quiz result`,
+          title: 'Your daily quiz result is ready',
+          body: [
+            `Hi ${attempt.full_name},`,
+            '',
+            `The ${community.name} quiz "${quiz.title}" for ${quiz.quizDate} has closed.`,
+            `Your score: ${attempt.score}/${attempt.max_score}.`,
+            `Your rank: ${attempt.rank} of ${attempt.participant_count} participants.`,
+            '',
+            'Thanks for taking part in today’s quiz.',
+          ].join('\n'),
+          view: 'communities',
+          params: { communityId: community.id, tab: 'quizzes' },
+          context: 'daily community quiz result email',
+          dedupeKey: `daily-community-quiz-result:${quiz.id}:${attempt.user_id}`,
+        })));
+        if (delivered.some((success) => !success)) {
+          throw new DailyQuizFailure('email', 'Could not queue every participant result email.');
+        }
+        resultEmailsQueued += batch.length;
+      }
+
+      await client.query(
+        'UPDATE daily_community_quizzes SET results_email_queued_at = now() WHERE id = $1',
+        [quiz.id],
+      );
+      await client.query('COMMIT');
+      closedCount += 1;
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error(`[community quiz] result rollback failed quiz=${quiz.id}:`, rollbackError);
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  return { closedQuizzes: closedCount, resultEmailsQueued };
 }
 
 async function createDailyQuizForCommunity(
@@ -5364,7 +5525,8 @@ app.get('/api/communities/:communityId/quizzes/today', async (req, res) => {
       return res.status(403).json({ error: 'Join this community to take its daily quiz.' });
     }
 
-    const quizDate = getIndiaDateKey();
+    const quizWindow = getDailyCommunityQuizWindow();
+    const quizDate = quizWindow.quizDate;
     let [quiz] = await db.select().from(dailyCommunityQuizzes)
       .where(and(
         eq(dailyCommunityQuizzes.communityId, communityId),
@@ -5416,6 +5578,8 @@ app.get('/api/communities/:communityId/quizzes/today', async (req, res) => {
         date: quiz.quizDate,
         title: quiz.title,
         description: quiz.description,
+        opensAt: quizWindow.opensAt.toISOString(),
+        closesAt: quizWindow.closesAt.toISOString(),
         questions: questions.map(({ answerIndex: _answerIndex, explanation: _explanation, ...question }) => question),
       },
       myAttempt,
@@ -5454,6 +5618,9 @@ app.post('/api/communities/:communityId/quizzes/:quizId/submit', async (req, res
       ))
       .limit(1);
     if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
+    if (quiz.quizDate !== getDailyCommunityQuizWindow().quizDate) {
+      return res.status(410).json({ error: 'This quiz has closed. Daily quizzes are open from midnight to midnight IST.' });
+    }
     const questions = (quiz.questions || []) as DailyCommunityQuizQuestion[];
     const answers = req.body?.answers;
     if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
@@ -5470,32 +5637,71 @@ app.post('/api/communities/:communityId/quizzes/:quizId/submit', async (req, res
       return res.status(400).json({ error: 'Answer all ten questions before submitting.' });
     }
 
-    const existing = await db.select({ id: dailyCommunityQuizAttempts.id })
-      .from(dailyCommunityQuizAttempts)
-      .where(and(
-        eq(dailyCommunityQuizAttempts.quizId, quiz.id),
-        eq(dailyCommunityQuizAttempts.userId, userId),
-      ))
-      .limit(1);
-    if (existing[0]) return res.status(409).json({ error: 'You have already submitted this quiz.' });
-
     const score = questions.reduce(
       (total, question) => total + (answers[question.id] === question.answerIndex ? 1 : 0),
       0,
     );
-    const submittedAt = new Date();
-    const inserted = await db.insert(dailyCommunityQuizAttempts).values({
-      id: generateId('community-quiz-attempt'),
-      quizId: quiz.id,
-      userId,
-      answers,
-      score,
-      maxScore: questions.length,
-      submittedAt,
-    }).onConflictDoNothing({
-      target: [dailyCommunityQuizAttempts.quizId, dailyCommunityQuizAttempts.userId],
-    }).returning();
-    if (!inserted[0]) return res.status(409).json({ error: 'You have already submitted this quiz.' });
+    const client = await pool.connect();
+    let submittedAt: Date;
+    let attemptCount: number;
+    try {
+      await client.query('BEGIN');
+      const lockedQuiz = await client.query(
+        'SELECT id FROM daily_community_quizzes WHERE id = $1 FOR UPDATE',
+        [quiz.id],
+      );
+      if (!lockedQuiz.rows[0]) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Quiz not found.' });
+      }
+      submittedAt = new Date();
+      if (quiz.quizDate !== getDailyCommunityQuizWindow(submittedAt).quizDate) {
+        await client.query('ROLLBACK');
+        return res.status(410).json({ error: 'This quiz has closed. Daily quizzes are open from midnight to midnight IST.' });
+      }
+
+      const inserted = await client.query(`
+        INSERT INTO daily_community_quiz_attempts
+          (id, quiz_id, user_id, answers, score, max_score, submitted_at)
+        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
+        ON CONFLICT (quiz_id, user_id) DO NOTHING
+        RETURNING id
+      `, [
+        generateId('community-quiz-attempt'),
+        quiz.id,
+        userId,
+        JSON.stringify(answers),
+        score,
+        questions.length,
+        submittedAt,
+      ]);
+      if (!inserted.rows[0]) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'You have already submitted this quiz.' });
+      }
+
+      const countResult = await client.query<{ count: number }>(
+        'SELECT COUNT(*)::integer AS count FROM daily_community_quiz_attempts WHERE quiz_id = $1',
+        [quiz.id],
+      );
+      attemptCount = countResult.rows[0].count;
+      await client.query('COMMIT');
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('[community quiz] submission rollback failed:', rollbackError);
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    try {
+      await notifyDailyQuizAttendanceMilestone(community, quiz.id, userId, attemptCount);
+    } catch (error) {
+      console.error(`[community quiz] attendance notification failed quiz=${quiz.id}:`, error);
+    }
 
     const leaderboard = await getDailyQuizLeaderboard(quiz.id);
     return res.json({
@@ -5531,8 +5737,6 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
       error: QUIZ_CRON_SECRET ? 'Invalid scheduler credential.' : 'QUIZ_CRON_SECRET is not configured.',
     });
   }
-  if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GEMINI_API_KEY is not configured.' });
-
   const specificCommunityId = typeof req.body?.communityId === 'string' ? req.body.communityId.trim() : null;
   const rawLimit = req.body?.limit;
   const runAllCommunities = rawLimit === undefined || rawLimit === 'all';
@@ -5545,8 +5749,26 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
     requestedLimit = parsed;
   }
   const sendNotifications = req.body?.suppressNotifications !== true;
-  const quizDate = getIndiaDateKey();
+  const quizWindow = getDailyCommunityQuizWindow();
+  const quizDate = quizWindow.quizDate;
   try {
+    let closeSummary = { closedQuizzes: 0, resultEmailsQueued: 0 };
+    if (sendNotifications) {
+      try {
+        closeSummary = await emailClosedDailyQuizResults(getPreviousDailyQuizDate(quizDate));
+      } catch (error) {
+        if (error instanceof DailyQuizFailure) throw error;
+        throw new DailyQuizFailure('email', 'Could not process closed community quiz results.', { cause: error });
+      }
+    }
+    if (!GEMINI_API_KEY) {
+      return res.status(503).json({
+        error: 'GEMINI_API_KEY is not configured.',
+        ...closeSummary,
+        resultEmailsSuppressed: !sendNotifications,
+      });
+    }
+
     let allCommunities: Array<typeof communities.$inferSelect>;
     try {
       allCommunities = await ensureQuizLearningCommunities();
@@ -5666,7 +5888,7 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
     const failed = results.filter((result) => result.status === 'failed');
     return res.status(failed.length ? 502 : 200).json({
       date: quizDate,
-      scheduledTime: '06:00 Asia/Kolkata',
+      scheduledTime: '00:00 Asia/Kolkata',
       eligibleCommunities: learningCommunities.length,
       selectedCommunities: selectedCommunities.length,
       excludedCollegeCommunities: allCommunities.filter(isCollegeCommunity).length,
@@ -5676,7 +5898,9 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
       verifiedQuestions: storedQuizzes.reduce((sum, quiz) =>
         sum + (Array.isArray(quiz.questions) ? quiz.questions.length : 0), 0),
       duplicateCount: storedQuizzes.length - storedByCommunity.size,
+      ...closeSummary,
       notificationsSuppressed: !sendNotifications,
+      resultEmailsSuppressed: !sendNotifications,
       failed,
     });
   } catch (error) {
@@ -10902,11 +11126,14 @@ await pool.query(`
     description text NOT NULL,
     questions jsonb NOT NULL DEFAULT '[]',
     notification_sent_at timestamptz,
+    results_email_queued_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (community_id, quiz_date)
   );
   ALTER TABLE daily_community_quizzes
     ADD COLUMN IF NOT EXISTS notification_sent_at timestamptz;
+  ALTER TABLE daily_community_quizzes
+    ADD COLUMN IF NOT EXISTS results_email_queued_at timestamptz;
   CREATE INDEX IF NOT EXISTS daily_community_quizzes_date_idx
     ON daily_community_quizzes (quiz_date);
   CREATE TABLE IF NOT EXISTS daily_community_quiz_attempts (
