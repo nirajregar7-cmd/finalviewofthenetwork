@@ -935,7 +935,7 @@ try {
   const serviceAccount = JSON.parse(credStr) as admin.ServiceAccount;
   const projectId = (serviceAccount as admin.ServiceAccount & { project_id?: string }).project_id
     || serviceAccount.projectId;
-  const expectedProjectId = 'the-netwowrk';
+  const expectedProjectId = 'the-network-a1188';
   if (projectId !== expectedProjectId) {
     throw new Error('Firebase service account belongs to a different project');
   }
@@ -1145,6 +1145,8 @@ app.use(cors({
       'https://the-network-d1d4c.firebaseapp.com',
       'https://the-network-44912.web.app',
       'https://the-network-44912.firebaseapp.com',
+      'https://the-network-a1188.web.app',
+      'https://the-network-a1188.firebaseapp.com',
       'https://the-network.co.in',
       'https://www.the-network.co.in',
       'http://localhost:5000',

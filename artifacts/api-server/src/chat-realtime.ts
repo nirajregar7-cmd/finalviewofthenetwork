@@ -23,6 +23,8 @@ const allowedOrigins = new Set([
   'https://the-network-d1d4c.firebaseapp.com',
   'https://the-network-44912.web.app',
   'https://the-network-44912.firebaseapp.com',
+  'https://the-network-a1188.web.app',
+  'https://the-network-a1188.firebaseapp.com',
   'https://the-network.co.in',
   'https://www.the-network.co.in',
   'https://the-network-1vw.pages.dev',
