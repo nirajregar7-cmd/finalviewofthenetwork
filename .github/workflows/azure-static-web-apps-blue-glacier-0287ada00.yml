@@ -35,7 +35,8 @@ jobs:
           PORT: 3000
           BASE_PATH: /
           NODE_ENV: production
-          VITE_API_URL: https://the-network-api.onrender.com
+          VITE_API_URL: https://thenetworkapi.proudrock-aea1c198.eastasia.azurecontainerapps.io
+          VITE_OTP_API_URL: https://the-network-api.onrender.com
           VITE_FCM_VAPID_KEY: ${{ secrets.VITE_FCM_VAPID_KEY }}
       - name: Build And Deploy
         id: builddeploy

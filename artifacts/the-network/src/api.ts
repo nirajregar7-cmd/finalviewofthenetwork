@@ -113,6 +113,16 @@ export function resolveAssetUrl(value: string | null | undefined): string | unde
 }
 
 const BASE = API_ORIGIN + '/api';
+const OTP_API_ORIGIN = (
+  import.meta.env.VITE_OTP_API_URL?.trim() || DEFAULT_API_ORIGIN
+).replace(/\/$/, '');
+const OTP_AUTH_PATHS = new Set([
+  '/auth/send-otp',
+  '/auth/verify-otp',
+  '/auth/reset-password',
+  '/auth/send-email-change-otp',
+  '/auth/confirm-email-change',
+]);
 const EDGE_API_ORIGIN = (
   import.meta.env.VITE_EDGE_API_URL
   || 'https://the-network-api-gateway.nirajregar9587.workers.dev'
@@ -148,9 +158,14 @@ async function request(method: string, path: string, body?: any) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('network_auth_token') : null;
   if (token) headers.Authorization = `Bearer ${token}`;
   const nativePath = path.split('?')[0];
+  const useOtpApi = OTP_AUTH_PATHS.has(nativePath);
   const useEdgeApi = IS_STATIC_SITE_HOST
     && ['/auth/me', '/bootstrap', '/public/stats'].includes(nativePath);
-  const apiBase = useEdgeApi ? `${EDGE_API_ORIGIN}/api` : BASE;
+  const apiBase = useOtpApi
+    ? `${OTP_API_ORIGIN}/api`
+    : useEdgeApi
+      ? `${EDGE_API_ORIGIN}/api`
+      : BASE;
   const requestOptions: RequestInit = {
     method,
     headers,
