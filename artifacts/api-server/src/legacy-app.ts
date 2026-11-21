@@ -1040,62 +1040,88 @@ function isValidP256dh(p256dh: string): boolean {
   } catch { return false; }
 }
 
-async function sendPushToUser(userId: string, payload: object) {
-  try {
-    const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
-    if (!subs.length) {
-      console.warn(`[push] no registered device for user=${userId}`);
-      return;
-    }
+type PushDeliveryResult = {
+  subscriptionCount: number;
+  acceptedCount: number;
+  failureCodes: string[];
+};
 
-    const safe: Record<string, any> = { ...(payload as any) };
-    if (safe.senderAvatar && (safe.senderAvatar.startsWith('data:') || safe.senderAvatar.length > 300)) {
-      delete safe.senderAvatar;
-    }
-    if (typeof safe.body === 'string' && safe.body.length > 200) {
-      safe.body = safe.body.substring(0, 197) + '…';
-    }
+async function sendPushToUser(userId: string, payload: object): Promise<PushDeliveryResult> {
+  const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  if (!subs.length) {
+    console.warn(`[push] no registered device for user=${userId}`);
+    return { subscriptionCount: 0, acceptedCount: 0, failureCodes: [] };
+  }
 
-    const results = await Promise.allSettled(
-      subs.map(async s => {
-        // ── FCM token (p256dh marker = 'fcm') ─────────────────────────────
-        if (s.p256dh === 'fcm') {
-          return withTimeout(sendFCMMessage(s.endpoint, safe), 4000);
-        }
+  const safe: Record<string, any> = { ...(payload as any) };
+  if (safe.senderAvatar && (safe.senderAvatar.startsWith('data:') || safe.senderAvatar.length > 300)) {
+    delete safe.senderAvatar;
+  }
+  if (typeof safe.body === 'string' && safe.body.length > 200) {
+    safe.body = safe.body.substring(0, 197) + '…';
+  }
 
-        // ── VAPID Web Push ─────────────────────────────────────────────────
-        if (!isValidP256dh(s.p256dh)) {
-          console.warn('[push] deleting corrupted subscription for user', userId);
-          await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, s.endpoint));
-          return;
-        }
-        const msg = JSON.stringify(safe);
-        const finalMsg = Buffer.byteLength(msg, 'utf8') > 3800
-          ? JSON.stringify({ title: safe.title, body: safe.body, icon: safe.icon, badge: safe.badge, tag: safe.tag, view: safe.view, type: safe.type })
-          : msg;
-        return withTimeout(webpush.sendNotification(
+  const results = await Promise.allSettled(
+    subs.map(async s => {
+      // ── FCM token (p256dh marker = 'fcm') ─────────────────────────────
+      if (s.p256dh === 'fcm') {
+        await withTimeout(sendFCMMessage(s.endpoint, safe), 4000);
+        return true;
+      }
+
+      // ── VAPID Web Push ─────────────────────────────────────────────────
+      if (!isValidP256dh(s.p256dh)) {
+        console.warn('[push] deleting corrupted subscription for user', userId);
+        await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, s.endpoint));
+        return false;
+      }
+      const msg = JSON.stringify(safe);
+      const finalMsg = Buffer.byteLength(msg, 'utf8') > 3800
+        ? JSON.stringify({ title: safe.title, body: safe.body, icon: safe.icon, badge: safe.badge, tag: safe.tag, view: safe.view, type: safe.type })
+        : msg;
+      try {
+        await withTimeout(webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           finalMsg
-        ), 4000).catch(async (err: any) => {
-          const errMsg = (err.body || err.message || '').toString();
-          if ([400, 401, 403, 404, 410].includes(err.statusCode) ||
-              errMsg.includes('p256dh') || errMsg.includes('auth') || errMsg.includes('subscription')) {
-            console.warn('[push] deleting invalid VAPID sub for user', userId, '—', errMsg);
-            await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, s.endpoint));
-          } else {
-            console.error('[push] VAPID delivery failed for user', userId, '— status:', err.statusCode, errMsg);
-          }
-        });
-      })
-    );
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        console.error('[push] device delivery rejected:', result.reason?.message || result.reason);
+        ), 4000);
+        return true;
+      } catch (err: any) {
+        const errMsg = (err.body || err.message || '').toString();
+        if ([400, 401, 403, 404, 410].includes(err.statusCode) ||
+            errMsg.includes('p256dh') || errMsg.includes('auth') || errMsg.includes('subscription')) {
+          console.warn('[push] deleting invalid VAPID sub for user', userId, '—', errMsg);
+          await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, s.endpoint));
+        } else {
+          console.error('[push] VAPID delivery failed for user', userId, '— status:', err.statusCode, errMsg);
+        }
+        throw err;
       }
+    })
+  );
+  let acceptedCount = 0;
+  const failureCodes: string[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      acceptedCount += 1;
+      continue;
     }
-  } catch (err: any) {
-    console.error('[push] sendPushToUser error:', err.message);
+    const failure = result.status === 'rejected' ? result.reason as { code?: unknown; statusCode?: unknown } : undefined;
+    const failureCode = typeof failure?.code === 'string'
+      ? failure.code
+      : typeof failure?.statusCode === 'number'
+        ? `http_${failure.statusCode}`
+        : 'delivery_failed';
+    failureCodes.push(failureCode);
+    if (result.status === 'rejected') {
+      console.error('[push] device delivery rejected:', result.reason?.message || result.reason);
+    }
   }
+
+  return {
+    subscriptionCount: subs.length,
+    acceptedCount,
+    failureCodes: [...new Set(failureCodes)],
+  };
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -10229,11 +10255,13 @@ app.post('/api/push/reply', async (req, res) => {
 // Test push — sends a test notification to the requesting user
 app.post('/api/push/test', async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ error: 'userId required' });
-    const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
-    if (!subs.length) return res.status(404).json({ error: 'No push subscription found. Please enable notifications first.' });
-    await sendPushToUser(userId, {
+    const authenticatedUserId = (req as any).authUser?.id as string | undefined;
+    if (!authenticatedUserId) return res.status(401).json({ error: 'Sign in to continue.' });
+    const requestedUserId = (req.body as { userId?: unknown } | undefined)?.userId;
+    if (requestedUserId && requestedUserId !== authenticatedUserId) {
+      return res.status(403).json({ error: 'You can only test notifications for your own account.' });
+    }
+    const delivery = await sendPushToUser(authenticatedUserId, {
       title: '🔔 Test Notification',
       body: 'Push notifications are working on The Network! You\'ll get alerts for messages, connections & more.',
       icon: '/icons/icon-192x192.png',
@@ -10241,9 +10269,21 @@ app.post('/api/push/test', async (req, res) => {
       tag: 'test-push',
       view: 'notifications',
     });
-    return res.json({ ok: true, subscriptionCount: subs.length });
+    if (!delivery.subscriptionCount) {
+      return res.status(404).json({ error: 'No push subscription found. Please enable notifications first.' });
+    }
+    if (!delivery.acceptedCount) {
+      console.error('[push:test] no provider accepted delivery:', delivery.failureCodes);
+      return res.status(424).json({
+        error: 'The push provider did not accept the test notification.',
+        code: 'PUSH_DELIVERY_FAILED',
+        failureCodes: delivery.failureCodes,
+      });
+    }
+    return res.json({ ok: true, subscriptionCount: delivery.subscriptionCount, acceptedCount: delivery.acceptedCount });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    console.error('[push:test] failed:', err.code || err.message);
+    return res.status(500).json({ error: 'Unable to send the test notification.' });
   }
 });
 

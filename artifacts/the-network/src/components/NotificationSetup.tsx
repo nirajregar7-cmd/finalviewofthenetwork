@@ -260,16 +260,31 @@ export async function subscribePush(userId: string): Promise<boolean> {
   return false;
 }
 
-export async function sendPushTest(userId: string): Promise<boolean> {
+export async function sendPushTest(userId: string): Promise<{ ok: boolean; message?: string }> {
   try {
     const res = await fetch(`${API_BASE}/push/test`, {
       method: 'POST',
       headers: apiAuthHeaders(true),
       body: JSON.stringify({ userId }),
     });
-    return res.ok;
+    if (res.ok) return { ok: true };
+    try {
+      const payload = await res.json() as { error?: unknown; failureCodes?: unknown };
+      const failureCodes = Array.isArray(payload.failureCodes)
+        ? payload.failureCodes.filter((code): code is string => typeof code === 'string')
+        : [];
+      const errorMessage = typeof payload.error === 'string'
+        ? payload.error
+        : `Test notification failed (${res.status}).`;
+      return {
+        ok: false,
+        message: failureCodes.length ? `${errorMessage} (${failureCodes.join(', ')})` : errorMessage,
+      };
+    } catch {
+      return { ok: false, message: `Test notification failed (${res.status}).` };
+    }
   } catch {
-    return false;
+    return { ok: false, message: 'Could not reach the notification service. Check your connection and try again.' };
   }
 }
 

@@ -12,19 +12,20 @@ export default function NotificationBanner({ userId, darkMode }: Props) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const testSuccessKey = `network-push-test-passed:${userId}`;
 
   useEffect(() => {
     // Keep this visible when permission was denied too. A denied permission
     // needs a clear explanation instead of silently disabling OS alerts.
     if (!('Notification' in window)) return;
-    if (Notification.permission === 'granted') return;
+    if (Notification.permission === 'granted' && localStorage.getItem(testSuccessKey) === 'true') return;
     // Show after a short delay so the browser has rendered the app, while
     // still giving the user a clear gesture for Android's permission prompt.
     // Do not persist dismissal: a dismissed prompt must not permanently block
     // push registration on a newly installed phone.
     const t = setTimeout(() => setShow(true), 3000);
     return () => clearTimeout(t);
-  }, []);
+  }, [testSuccessKey]);
 
   if (!show) return null;
 
@@ -42,12 +43,17 @@ export default function NotificationBanner({ userId, darkMode }: Props) {
       setError('The device was not registered. Check Android notification permission and try again.');
       return;
     }
-    // A user-initiated test confirms both token registration and OS delivery.
-    const testOk = await sendPushTest(userId);
+    // A user-initiated test confirms registration and push-provider acceptance.
+    const testResult = await sendPushTest(userId);
     setLoading(false);
-    if (!testOk) {
-      setError('Permission is enabled, but the test alert could not be sent. Please try again.');
+    if (!testResult.ok) {
+      setError(testResult.message || 'The test alert could not be sent. Please try again.');
       return;
+    }
+    try {
+      localStorage.setItem(testSuccessKey, 'true');
+    } catch (storageError) {
+      console.warn('[push] could not save test notification status:', storageError);
     }
     setSuccess(true);
     setTimeout(() => setShow(false), 2500);
@@ -80,9 +86,9 @@ export default function NotificationBanner({ userId, darkMode }: Props) {
             <BellRing className="w-5 h-5 text-green-500" />
           </div>
           <div>
-            <p className="font-semibold text-sm text-green-500">Notifications enabled! 🎉</p>
+            <p className="font-semibold text-sm text-green-500">Test accepted by push service</p>
             <p className={`text-xs mt-0.5 ${darkMode ? 'text-white/60' : 'text-neutral-500'}`}>
-              You'll never miss a message or connection.
+              Check your device’s notification tray for the alert.
             </p>
           </div>
         </div>
@@ -111,9 +117,13 @@ export default function NotificationBanner({ userId, darkMode }: Props) {
             `}</style>
 
             <div className="flex-1 min-w-0 pr-6">
-              <p className="font-bold text-sm leading-snug">Stay connected, always</p>
+              <p className="font-bold text-sm leading-snug">
+                {Notification.permission === 'granted' ? 'Test your notifications' : 'Stay connected, always'}
+              </p>
               <p className={`text-xs mt-1 leading-relaxed ${darkMode ? 'text-white/60' : 'text-neutral-500'}`}>
-                Get instant alerts for messages, connection requests, and activity — even when the app is closed.
+                {Notification.permission === 'granted'
+                  ? 'Permission is on. Send a test alert to check push delivery to this device.'
+                  : 'Get instant alerts for messages, connection requests, and activity — even when the app is closed.'}
               </p>
             </div>
           </div>
@@ -138,7 +148,11 @@ export default function NotificationBanner({ userId, darkMode }: Props) {
               ) : (
                 <Bell className="w-4 h-4" />
               )}
-              {loading ? 'Enabling…' : Notification.permission === 'denied' ? 'Try again' : 'Enable Notifications'}
+              {loading
+                ? Notification.permission === 'granted' ? 'Sending test…' : 'Enabling…'
+                : Notification.permission === 'granted'
+                  ? 'Send Test Notification'
+                  : Notification.permission === 'denied' ? 'Try again' : 'Enable Notifications'}
             </button>
             <button
               onClick={dismiss}

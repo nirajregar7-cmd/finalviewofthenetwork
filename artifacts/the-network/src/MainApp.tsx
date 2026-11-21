@@ -1215,7 +1215,7 @@ export default function App() {
           playNetworkNotificationSound();
         }}
       />
-      {currentUser && typeof Notification !== 'undefined' && Notification.permission !== 'granted' && (
+      {currentUser && typeof Notification !== 'undefined' && (
         <NotificationBanner userId={currentUser.id} darkMode={darkMode} />
       )}
       <PushToast
@@ -2262,7 +2262,7 @@ export default function App() {
       setPushToast(p as any);
       playNetworkNotificationSound();
     }} />}
-    {currentUser && (typeof Notification !== 'undefined') && Notification.permission !== 'granted' && (
+    {currentUser && (typeof Notification !== 'undefined') && (
       <NotificationBanner userId={currentUser.id} darkMode={darkMode} />
     )}
     <PushToast
