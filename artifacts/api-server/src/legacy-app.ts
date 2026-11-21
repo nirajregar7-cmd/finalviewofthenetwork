@@ -4279,6 +4279,14 @@ app.post('/api/messages', async (req, res) => {
         } catch {
           requestLogger?.warn({ messageId: savedMessage.id }, 'Direct message notification could not be saved');
         }
+        const directMessageEmail = sendDirectMessageEmail({
+          recipient: receiver[0] || {},
+          subject: `${sender[0].fullName} sent you a message`,
+          title: `New message from ${sender[0].fullName}`,
+          body: preview,
+          params: { userId: senderId },
+        }).catch((error) => logEmailFailure('direct message email background task', error));
+        if (IS_VERCEL_RUNTIME) await directMessageEmail;
         await dispatchPush(receiverId, {
           title: sender[0].fullName,
           body: preview,
@@ -4290,14 +4298,6 @@ app.post('/api/messages', async (req, res) => {
           senderAvatar: sender[0].avatar || null,
           data: { userId: senderId, senderId, receiverId, messageId: savedMessage.id },
         });
-        const directMessageEmail = sendDirectMessageEmail({
-          recipient: receiver[0] || {},
-          subject: `${sender[0].fullName} sent you a message`,
-          title: `New message from ${sender[0].fullName}`,
-          body: preview,
-          params: { userId: senderId },
-        }).catch((error) => logEmailFailure('direct message email background task', error));
-        if (IS_VERCEL_RUNTIME) await directMessageEmail;
       })().catch(() => {
         requestLogger?.warn({ messageId: savedMessage.id }, 'Direct message saved, but notification setup failed');
       });
