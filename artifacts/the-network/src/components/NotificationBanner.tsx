@@ -44,10 +44,21 @@ export default function NotificationBanner({ userId, darkMode }: Props) {
       return;
     }
     // A user-initiated test confirms registration and push-provider acceptance.
-    const testResult = await sendPushTest(userId);
+    let testResult = await sendPushTest(userId);
+    if (!testResult.ok && testResult.failureCodes?.includes('messaging/mismatched-credential')) {
+      const refreshed = await subscribePush(userId, true).catch(() => false);
+      if (!refreshed) {
+        setLoading(false);
+        setError('Firebase rejected the saved token, and this device could not register a replacement. Check notification permission and try again.');
+        return;
+      }
+      testResult = await sendPushTest(userId);
+    }
     setLoading(false);
     if (!testResult.ok) {
-      setError(testResult.message || 'The test alert could not be sent. Please try again.');
+      setError(testResult.failureCodes?.includes('messaging/mismatched-credential')
+        ? 'Firebase still rejects this device token (SenderId mismatch). The web app and Azure service account must use the same Firebase project.'
+        : testResult.message || 'The test alert could not be sent. Please try again.');
       return;
     }
     try {

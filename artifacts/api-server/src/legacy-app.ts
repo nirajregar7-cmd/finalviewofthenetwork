@@ -1022,7 +1022,8 @@ async function sendFCMMessage(fcmToken: string, payload: Record<string, any>): P
     // Clean up invalid/expired tokens
     if (['messaging/registration-token-not-registered',
          'messaging/invalid-registration-token',
-         'messaging/invalid-argument'].includes(err.code)) {
+         'messaging/invalid-argument',
+         'messaging/mismatched-credential'].includes(err.code)) {
       await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, fcmToken)).catch(() => {});
     }
     throw err;

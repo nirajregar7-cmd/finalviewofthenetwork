@@ -4,7 +4,7 @@
  * Fallback: VAPID Web Push — if FCM token fetch fails.
  */
 import { useEffect, useRef } from 'react';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { deleteToken, getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { firebaseApp } from '../lib/firebase';
 import { API_ORIGIN } from '../api';
 import { getPushProviderAttempts } from './push-provider';
@@ -107,7 +107,7 @@ async function showForegroundDeviceNotification(payload: {
 }
 
 // ── FCM Token registration ─────────────────────────────────────────────────
-async function registerFCM(userId: string): Promise<boolean> {
+async function registerFCM(userId: string, forceRefresh = false): Promise<boolean> {
   if (!('Notification' in window) || !FCM_VAPID_KEY) {
     if (!FCM_VAPID_KEY) console.warn('[FCM] Web Push certificate key is not configured');
     return false;
@@ -142,6 +142,8 @@ async function registerFCM(userId: string): Promise<boolean> {
         await waitForActiveWorker(swReg);
       }
     }
+
+    if (forceRefresh) await deleteToken(messaging);
 
     const token = await getToken(messaging, {
       vapidKey: FCM_VAPID_KEY,
@@ -244,7 +246,7 @@ async function getPushCapabilities(): Promise<{ fcm: boolean; webPush: boolean }
 }
 
 // ── Combined registration: FCM first, VAPID as fallback ───────────────────
-export async function subscribePush(userId: string): Promise<boolean> {
+export async function subscribePush(userId: string, forceRefreshFcm = false): Promise<boolean> {
   if (!('Notification' in window)) return false;
   const perm = await Notification.requestPermission();
   if (perm !== 'granted') return false;
@@ -253,14 +255,14 @@ export async function subscribePush(userId: string): Promise<boolean> {
   // Register FCM only when the backend explicitly confirms it can send FCM.
   // If capability discovery is unavailable, safely try VAPID instead.
   for (const provider of getPushProviderAttempts(capabilities, Boolean(FCM_VAPID_KEY))) {
-    if (provider === 'fcm' && await registerFCM(userId)) return true;
+    if (provider === 'fcm' && await registerFCM(userId, forceRefreshFcm)) return true;
     if (provider === 'webPush' && await registerVAPID(userId)) return true;
   }
 
   return false;
 }
 
-export async function sendPushTest(userId: string): Promise<{ ok: boolean; message?: string }> {
+export async function sendPushTest(userId: string): Promise<{ ok: boolean; message?: string; failureCodes?: string[] }> {
   try {
     const res = await fetch(`${API_BASE}/push/test`, {
       method: 'POST',
@@ -279,6 +281,7 @@ export async function sendPushTest(userId: string): Promise<{ ok: boolean; messa
       return {
         ok: false,
         message: failureCodes.length ? `${errorMessage} (${failureCodes.join(', ')})` : errorMessage,
+        failureCodes,
       };
     } catch {
       return { ok: false, message: `Test notification failed (${res.status}).` };
