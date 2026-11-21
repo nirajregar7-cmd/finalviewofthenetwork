@@ -333,7 +333,7 @@ function canonicalizeCollegeName(value: string | null | undefined): string | nul
 
 // ── Email delivery ─────────────────────────────────────────────────────────────
 // Authentication/security mail uses Brevo. Activity mail is queued in Neon
-// and delivered by the Render worker using its existing Gmail SMTP settings.
+// and delivered by the Render worker using Brevo when configured.
 // Credentials stay server-only and are never returned to clients.
 const PRIMARY_ADMIN_EMAIL = (process.env.PRIMARY_ADMIN_EMAIL || 'admin@thenetwork.app').trim().toLowerCase();
 const EMAIL_FROM_ADDRESS = (process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@thenetwork.app').trim();
@@ -378,7 +378,7 @@ const brevoSmtpTransporter = !IS_VERCEL_RUNTIME && BREVO_SMTP_HOST && BREVO_SMTP
       socketTimeout: SMTP_SOCKET_TIMEOUT,
     })
   : null;
-const { sendBrevoEmail, sendSmtpEmail, sendSmtpBulkEmail } = createEmailDelivery({
+const { sendBrevoEmail, sendBrevoBulkEmail, sendSmtpEmail, sendSmtpBulkEmail } = createEmailDelivery({
   brevoApiKey: BREVO_API_KEY,
   emailFromAddress: EMAIL_FROM_ADDRESS,
   brevoEmailFromAddress: BREVO_EMAIL_FROM_ADDRESS,
@@ -387,6 +387,16 @@ const { sendBrevoEmail, sendSmtpEmail, sendSmtpBulkEmail } = createEmailDelivery
   preferBrevoApi: IS_VERCEL_RUNTIME || Boolean(BREVO_API_KEY),
   apiTimeoutMs: IS_VERCEL_RUNTIME ? 4_000 : 8_000,
 });
+const activityEmailProvider = BREVO_API_KEY
+  ? 'brevo-api'
+  : brevoSmtpTransporter
+    ? 'brevo-smtp'
+    : smtpTransporter
+      ? 'smtp'
+      : 'none';
+const activityEmailProviderConfigured = activityEmailProvider !== 'none';
+const sendQueuedActivityEmail = activityEmailProvider === 'smtp' ? sendSmtpEmail : sendBrevoEmail;
+const sendQueuedActivityBulkEmail = activityEmailProvider === 'smtp' ? sendSmtpBulkEmail : sendBrevoBulkEmail;
 if (BREVO_API_KEY) {
   console.info('[email] Brevo API preferred for transactional mail');
 }
@@ -401,8 +411,8 @@ if (brevoSmtpTransporter) {
 if (smtpTransporter) {
   console.log(`[email] SMTP fallback configured host=${SMTP_HOST} port=${SMTP_PORT} secure=${SMTP_SECURE}`);
 }
-if (ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED && !smtpTransporter) {
-  console.error('[email] SMTP is not configured; activity email queue worker cannot deliver');
+if (ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED && !activityEmailProviderConfigured) {
+  console.error('[email] activity email queue worker cannot deliver code=provider_not_configured');
 }
 
 function logEmailFailure(context: string, error: unknown) {
@@ -766,7 +776,7 @@ type ValidActivityEmailQueueRow = ActivityEmailQueueRow & {
 let activityEmailQueueWorkerRunning = false;
 
 async function processActivityEmailQueue() {
-  if (!ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED || !smtpTransporter || activityEmailQueueWorkerRunning) return;
+  if (!ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED || !activityEmailProviderConfigured || activityEmailQueueWorkerRunning) return;
   activityEmailQueueWorkerRunning = true;
 
   try {
@@ -856,21 +866,21 @@ async function processActivityEmailQueue() {
       const recipients = [...new Set(group.map((row) => row.email!))];
       try {
         if (group.length > 1 && first.eventType.toLowerCase().includes('community')) {
-          await sendSmtpBulkEmail({
+          await sendQueuedActivityBulkEmail({
             to: EMAIL_FROM_ADDRESS,
             bcc: recipients,
             subject: payload.subject,
             html: payload.html,
           });
         } else {
-          await sendSmtpEmail({ to: recipients[0], subject: payload.subject, html: payload.html });
+          await sendQueuedActivityEmail({ to: recipients[0], subject: payload.subject, html: payload.html });
         }
         await pool.query(`
           UPDATE notification_email_queue
           SET status = 'sent', locked_at = NULL, sent_at = now(), last_error = NULL
           WHERE id = ANY($1::text[])
         `, [group.map((row) => row.id)]);
-        console.log(`[email] queued activity emails delivered provider=smtp count=${group.length}`);
+        console.log(`[email] queued activity emails delivered provider=${activityEmailProvider} count=${group.length}`);
       } catch (error) {
         const status = group.some((row) => row.attempts >= 5) ? 'failed' : 'pending';
         const attempts = Math.max(...group.map((row) => row.attempts));
@@ -884,7 +894,7 @@ async function processActivityEmailQueue() {
               last_error = $4
           WHERE id = ANY($1::text[])
         `, [group.map((row) => row.id), status, delaySeconds, lastError]);
-        logEmailFailure('queued activity email smtp', error);
+        logEmailFailure(`queued activity email ${activityEmailProvider}`, error);
       }
     }
   } catch (error) {
@@ -994,12 +1004,17 @@ async function sendFCMMessage(fcmToken: string, payload: Record<string, any>): P
       /^https?:\/\//i.test(payload.senderAvatar) &&
       payload.senderAvatar.length < 500
         ? payload.senderAvatar : undefined;
+    const notificationTitle = String(payload.title || 'The Network');
+    const notificationBody = String(payload.body || '');
 
-    // Send a data-only web message. Firebase automatically displays messages
-    // containing a notification payload, while firebase-messaging-sw.js also
-    // displays its onBackgroundMessage payload. Using both creates duplicates.
+    // Let FCM display background notifications natively. The service worker
+    // skips its custom renderer for notification payloads to avoid duplicates.
     await fcmApp.messaging().send({
       token: fcmToken,
+      notification: {
+        title: notificationTitle,
+        body: notificationBody,
+      },
       data,
       android: {
         priority: 'high',
@@ -1009,6 +1024,14 @@ async function sendFCMMessage(fcmToken: string, payload: Record<string, any>): P
         payload: { aps: { sound: 'default', badge: 1 } },
       },
       webpush: {
+        notification: {
+          title: notificationTitle,
+          body: notificationBody,
+          icon: String(payload.icon || '/icons/icon-192x192.png'),
+          badge: String(payload.badge || '/icons/icon-72x72.png'),
+          tag: String(payload.tag || `network-${Date.now()}`),
+          data,
+        },
         // High urgency improves delivery while the app is backgrounded.
         // Deliberately omit Topic/collapse settings: every message is
         // independent and must remain visible as its own notification.
@@ -11371,12 +11394,12 @@ if (!IS_SERVERLESS_RUNTIME) {
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     if (ACTIVITY_EMAIL_QUEUE_WORKER_ENABLED) {
-      if (smtpTransporter) {
-        console.info('[email] activity email queue worker started provider=smtp');
+      if (activityEmailProviderConfigured) {
+        console.info(`[email] activity email queue worker started provider=${activityEmailProvider}`);
         void processActivityEmailQueue();
         setInterval(() => void processActivityEmailQueue(), 15_000);
       } else {
-        console.error('[email] activity email queue worker stopped code=smtp_not_configured');
+        console.error('[email] activity email queue worker stopped code=provider_not_configured');
       }
     }
     autoSeedDomainCommunities();
