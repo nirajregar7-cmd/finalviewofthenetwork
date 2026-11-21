@@ -4262,16 +4262,14 @@ app.post('/api/messages', async (req, res) => {
     if (!newMsg.length) return res.status(409).json({ error: 'Message could not be created.' });
     const savedMessage = { ...newMsg[0], createdAt: newMsg[0].createdAt.toISOString() };
     broadcastDirectMessage(savedMessage);
-    // Keep notification delivery inside the request lifecycle. A fire-and-
-    // forget task can be paused or dropped when a scaled backend finishes the
-    // response and goes idle, which makes notifications arrive several minutes
-    // late even though the message itself was already saved.
-    try {
-      const [sender, receiver] = await Promise.all([
-        db.select().from(users).where(eq(users.id, senderId)),
-        db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, receiverId)),
-      ]);
-      if (sender.length) {
+    const requestLogger = (req as any).log;
+    setImmediate(() => {
+      void (async () => {
+        const [sender, receiver] = await Promise.all([
+          db.select().from(users).where(eq(users.id, senderId)),
+          db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, receiverId)),
+        ]);
+        if (!sender.length) return;
         const notificationContent = normalizedContent || (
           normalizedPollOptions.length >= 2 ? `Poll: ${normalizedPollOptions[0]}` : `Shared ${attachmentName || 'a file'}`
         );
@@ -4279,7 +4277,7 @@ app.post('/api/messages', async (req, res) => {
         try {
           await createNotification(receiverId, senderId, 'message', `💬 ${sender[0].fullName}`, preview);
         } catch {
-          (req as any).log?.warn({ messageId: savedMessage.id }, 'Direct message notification could not be saved');
+          requestLogger?.warn({ messageId: savedMessage.id }, 'Direct message notification could not be saved');
         }
         await dispatchPush(receiverId, {
           title: sender[0].fullName,
@@ -4291,8 +4289,6 @@ app.post('/api/messages', async (req, res) => {
           type: 'message',
           senderAvatar: sender[0].avatar || null,
           data: { userId: senderId, senderId, receiverId, messageId: savedMessage.id },
-        }).catch(() => {
-          (req as any).log?.warn({ messageId: savedMessage.id }, 'Direct message push could not be delivered');
         });
         const directMessageEmail = sendDirectMessageEmail({
           recipient: receiver[0] || {},
@@ -4302,12 +4298,10 @@ app.post('/api/messages', async (req, res) => {
           params: { userId: senderId },
         }).catch((error) => logEmailFailure('direct message email background task', error));
         if (IS_VERCEL_RUNTIME) await directMessageEmail;
-      }
-    } catch {
-      // The message is already durable. Notification-provider errors must not
-      // make the sender retry it as a second message.
-      (req as any).log?.warn({ messageId: savedMessage.id }, 'Direct message saved, but notification setup failed');
-    }
+      })().catch(() => {
+        requestLogger?.warn({ messageId: savedMessage.id }, 'Direct message saved, but notification setup failed');
+      });
+    });
     return res.json(savedMessage);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -9546,38 +9540,44 @@ app.post('/api/group-chats/:id/messages', async (req, res) => {
       ...(normalizedClientMessageId ? { clientMessageId: normalizedClientMessageId } : {}),
     };
     broadcastGroupMessage(req.params.id, savedMessage, memberIds, true);
-    const sender = await db.select().from(users).where(eq(users.id, senderId));
-    if (sender.length) {
-      const senderName = sender[0].fullName;
-      const notificationContent = normalizedContent || (
-        normalizedPollOptions.length >= 2 ? `Poll: ${normalizedPollOptions[0]}` : `Shared ${attachmentName || 'a file'}`
-      );
-      const bodyPreview = notificationContent.length > 80 ? notificationContent.substring(0, 80) + '…' : notificationContent;
-      const members = (Array.isArray(group.memberIds) ? group.memberIds : []) as string[];
-      const deliveries = await Promise.allSettled(members.filter(uid => uid !== senderId).map(async uid => {
-        await createNotification(
-          uid,
-          senderId,
-          'group_message',
-          `💬 ${group.name}`,
-          `${senderName}: ${bodyPreview} [[group:${req.params.id}]]`,
+    const requestLogger = (req as any).log;
+    setImmediate(() => {
+      void (async () => {
+        const sender = await db.select().from(users).where(eq(users.id, senderId));
+        if (!sender.length) return;
+        const senderName = sender[0].fullName;
+        const notificationContent = normalizedContent || (
+          normalizedPollOptions.length >= 2 ? `Poll: ${normalizedPollOptions[0]}` : `Shared ${attachmentName || 'a file'}`
         );
-        await dispatchPush(uid, {
-          title: group.name,
-          body: `${senderName}: ${bodyPreview}`,
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
-          tag: `grpmsg-${created[0].id}`,
-          view: 'messages',
-          type: 'group_message',
-          senderAvatar: sender[0].avatar || null,
-           data: { groupId: req.params.id, senderId, receiverId: uid, messageId: created[0].id },
-        });
-      }));
-      if (deliveries.some(result => result.status === 'rejected')) {
-        (req as any).log?.warn({ messageId: savedMessage.id }, 'Some group chat notifications could not be delivered');
-      }
-    }
+        const bodyPreview = notificationContent.length > 80 ? notificationContent.substring(0, 80) + '…' : notificationContent;
+        const members = (Array.isArray(group.memberIds) ? group.memberIds : []) as string[];
+        const deliveries = await Promise.allSettled(members.filter(uid => uid !== senderId).map(async uid => {
+          await createNotification(
+            uid,
+            senderId,
+            'group_message',
+            `💬 ${group.name}`,
+            `${senderName}: ${bodyPreview} [[group:${req.params.id}]]`,
+          );
+          await dispatchPush(uid, {
+            title: group.name,
+            body: `${senderName}: ${bodyPreview}`,
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/icon-72x72.png',
+            tag: `grpmsg-${created[0].id}`,
+            view: 'messages',
+            type: 'group_message',
+            senderAvatar: sender[0].avatar || null,
+            data: { groupId: req.params.id, senderId, receiverId: uid, messageId: created[0].id },
+          });
+        }));
+        if (deliveries.some(result => result.status === 'rejected')) {
+          requestLogger?.warn({ messageId: savedMessage.id }, 'Some group chat notifications could not be delivered');
+        }
+      })().catch(() => {
+        requestLogger?.warn({ messageId: savedMessage.id }, 'Group message saved, but notification setup failed');
+      });
+    });
     return res.json(savedMessage);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -9978,113 +9978,119 @@ app.post('/api/entity-messages/:type/:id', async (req, res) => {
     };
     broadcastEntityMessage(gid, responseMessage, memberIds, true);
 
-    const sender = (await db.select().from(users).where(eq(users.id, senderId)))[0];
-    if (sender) {
-      const rawMembers = Array.isArray(entity.memberIds) ? entity.memberIds as string[] : [];
-      const memberIds = [...new Set([
-        ...rawMembers,
-        ...(req.params.type === 'project' ? [entity.creatorId] : []),
-      ])].filter((id): id is string => typeof id === 'string' && id.length > 0 && id !== senderId);
-      const notificationText = sharedPost
-        ? `Shared a post: ${sharedPost.title}`
-        : normalizedContent || (
-        typeof attachmentMimeType === 'string' && attachmentMimeType.startsWith('image/')
-          ? 'Photo'
-          : (typeof attachmentName === 'string' && attachmentName.trim()) || 'Attachment'
-      );
-      const preview = notificationText.length > 80 ? notificationText.substring(0, 80) + '…' : notificationText;
-      const entityName = (entity as { name?: string; title?: string }).name
-        || (entity as { name?: string; title?: string }).title
-        || 'The Network';
-      const type = req.params.type === 'community' ? 'community_message' : 'project_message';
-      const view = req.params.type === 'community' ? 'messages' : 'projects';
-      const mentionCandidates = req.params.type === 'community' && memberIds.length &&
-        /(?:^|[\s([{])@[a-z0-9][a-z0-9._-]*/i.test(normalizedContent)
-        ? await db.select({
-            id: users.id,
-            fullName: users.fullName,
-            email: users.email,
-          }).from(users).where(inArray(users.id, memberIds))
-        : [];
-      const broadcastMention = req.params.type === 'community'
-        && hasBroadcastMention(normalizedContent);
-      const mentionedMemberIds = new Set(
-        broadcastMention
-          ? memberIds
-          : extractMentionedUserIds(normalizedContent, mentionCandidates)
-            .filter(userId => memberIds.includes(userId)),
-      );
+    const requestLogger = (req as any).log;
+    setImmediate(() => {
+      void (async () => {
+        const sender = (await db.select().from(users).where(eq(users.id, senderId)))[0];
+        if (!sender) return;
+        const rawMembers = Array.isArray(entity.memberIds) ? entity.memberIds as string[] : [];
+        const memberIds = [...new Set([
+          ...rawMembers,
+          ...(req.params.type === 'project' ? [entity.creatorId] : []),
+        ])].filter((id): id is string => typeof id === 'string' && id.length > 0 && id !== senderId);
+        const notificationText = sharedPost
+          ? `Shared a post: ${sharedPost.title}`
+          : normalizedContent || (
+            typeof attachmentMimeType === 'string' && attachmentMimeType.startsWith('image/')
+              ? 'Photo'
+              : (typeof attachmentName === 'string' && attachmentName.trim()) || 'Attachment'
+          );
+        const preview = notificationText.length > 80 ? notificationText.substring(0, 80) + '…' : notificationText;
+        const entityName = (entity as { name?: string; title?: string }).name
+          || (entity as { name?: string; title?: string }).title
+          || 'The Network';
+        const type = req.params.type === 'community' ? 'community_message' : 'project_message';
+        const view = req.params.type === 'community' ? 'messages' : 'projects';
+        const mentionCandidates = req.params.type === 'community' && memberIds.length &&
+          /(?:^|[\s([{])@[a-z0-9][a-z0-9._-]*/i.test(normalizedContent)
+          ? await db.select({
+              id: users.id,
+              fullName: users.fullName,
+              email: users.email,
+            }).from(users).where(inArray(users.id, memberIds))
+          : [];
+        const broadcastMention = req.params.type === 'community'
+          && hasBroadcastMention(normalizedContent);
+        const mentionedMemberIds = new Set(
+          broadcastMention
+            ? memberIds
+            : extractMentionedUserIds(normalizedContent, mentionCandidates)
+              .filter(userId => memberIds.includes(userId)),
+        );
 
-      if (broadcastMention) {
-        await sendCommunityPostActivityEmail({
-          recipientEmails: mentionCandidates.map(candidate => candidate.email),
-          subject: `${sender.fullName} mentioned everyone in ${entityName}`,
-          title: `${sender.fullName} mentioned everyone`,
-          body: `${sender.fullName} mentioned everyone in ${entityName}:\n\n${preview}`,
-          view: 'messages',
-          params: { communityId: req.params.id },
-          ctaLabel: 'Open community chat',
-          context: 'community-wide chat mention email',
-        }).catch(() => {
-          (req as any).log?.warn({ messageId: created[0].id }, 'Community mention email could not be delivered');
-        });
-      }
+        if (broadcastMention) {
+          await sendCommunityPostActivityEmail({
+            recipientEmails: mentionCandidates.map(candidate => candidate.email),
+            subject: `${sender.fullName} mentioned everyone in ${entityName}`,
+            title: `${sender.fullName} mentioned everyone`,
+            body: `${sender.fullName} mentioned everyone in ${entityName}:\n\n${preview}`,
+            view: 'messages',
+            params: { communityId: req.params.id },
+            ctaLabel: 'Open community chat',
+            context: 'community-wide chat mention email',
+          }).catch(() => {
+            requestLogger?.warn({ messageId: created[0].id }, 'Community mention email could not be delivered');
+          });
+        }
 
-      const deliveryResults = await Promise.allSettled(memberIds.map(async userId => {
-        const isMentioned = mentionedMemberIds.has(userId);
-        const notificationType = isMentioned ? 'mention' : type;
-        const mentionTitle = broadcastMention
-          ? `🔔 ${sender.fullName} mentioned everyone`
-          : `🔔 ${sender.fullName} mentioned you`;
-        const notificationTitle = isMentioned
-          ? mentionTitle
-          : `💬 ${entityName}`;
-        const marker = req.params.type === 'community'
-          ? ` [[community:${req.params.id}]]`
-          : ` [[project:${req.params.id}]]`;
-        const notificationBody = isMentioned
-          ? `${sender.fullName} ${broadcastMention ? 'mentioned everyone' : 'mentioned you'} in ${entityName}: ${preview}${marker}`
-          : `${sender.fullName}: ${preview}${marker}`;
-        await createNotification(userId, senderId, notificationType, notificationTitle, notificationBody);
-        await dispatchPush(userId, {
-          title: isMentioned ? notificationTitle : entityName,
-          body: isMentioned
-            ? `${sender.fullName} ${broadcastMention ? 'mentioned everyone' : 'mentioned you'} in ${entityName}: ${preview}`
-            : `${sender.fullName}: ${preview}`,
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
-          tag: `${notificationType}-${req.params.id}-${created[0].id}-${userId}`,
-          view,
-          type: notificationType,
-          senderAvatar: sender.avatar || null,
-          data: {
-            entityId: req.params.id,
-            communityId: req.params.type === 'community' ? req.params.id : undefined,
-            projectId: req.params.type === 'project' ? req.params.id : undefined,
-            senderId,
+        const deliveryResults = await Promise.allSettled(memberIds.map(async userId => {
+          const isMentioned = mentionedMemberIds.has(userId);
+          const notificationType = isMentioned ? 'mention' : type;
+          const mentionTitle = broadcastMention
+            ? `🔔 ${sender.fullName} mentioned everyone`
+            : `🔔 ${sender.fullName} mentioned you`;
+          const notificationTitle = isMentioned
+            ? mentionTitle
+            : `💬 ${entityName}`;
+          const marker = req.params.type === 'community'
+            ? ` [[community:${req.params.id}]]`
+            : ` [[project:${req.params.id}]]`;
+          const notificationBody = isMentioned
+            ? `${sender.fullName} ${broadcastMention ? 'mentioned everyone' : 'mentioned you'} in ${entityName}: ${preview}${marker}`
+            : `${sender.fullName}: ${preview}${marker}`;
+          await createNotification(userId, senderId, notificationType, notificationTitle, notificationBody);
+          await dispatchPush(userId, {
+            title: isMentioned ? notificationTitle : entityName,
+            body: isMentioned
+              ? `${sender.fullName} ${broadcastMention ? 'mentioned everyone' : 'mentioned you'} in ${entityName}: ${preview}`
+              : `${sender.fullName}: ${preview}`,
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/icon-72x72.png',
+            tag: `${notificationType}-${req.params.id}-${created[0].id}-${userId}`,
+            view,
+            type: notificationType,
+            senderAvatar: sender.avatar || null,
+            data: {
+              entityId: req.params.id,
+              communityId: req.params.type === 'community' ? req.params.id : undefined,
+              projectId: req.params.type === 'project' ? req.params.id : undefined,
+              senderId,
               messageId: created[0].id,
-          },
-        });
+            },
+          });
           if (isMentioned && !broadcastMention) {
-           const mentionedUser = mentionCandidates.find(candidate => candidate.id === userId);
-           await sendImmediateActivityEmail({
-             recipient: mentionedUser || {},
-             subject: `${sender.fullName} mentioned you in ${entityName}`,
-             title: `${sender.fullName} mentioned you`,
-             body: `${sender.fullName} mentioned you in ${entityName}:\n\n${preview}`,
-             view,
-             params: req.params.type === 'community'
+            const mentionedUser = mentionCandidates.find(candidate => candidate.id === userId);
+            await sendImmediateActivityEmail({
+              recipient: mentionedUser || {},
+              subject: `${sender.fullName} mentioned you in ${entityName}`,
+              title: `${sender.fullName} mentioned you`,
+              body: `${sender.fullName} mentioned you in ${entityName}:\n\n${preview}`,
+              view,
+              params: req.params.type === 'community'
                 ? { communityId: req.params.id }
                 : { projectId: req.params.id },
-           }).catch(() => {
-             (req as any).log?.warn({ messageId: created[0].id, userId }, 'Chat mention email could not be delivered');
-           });
-         }
-      }));
-      if (deliveryResults.some(result => result.status === 'rejected')) {
-        (req as any).log?.warn({ messageId: created[0].id }, 'Some community chat notifications could not be delivered');
-      }
-    }
+            }).catch(() => {
+              requestLogger?.warn({ messageId: created[0].id, userId }, 'Chat mention email could not be delivered');
+            });
+          }
+        }));
+        if (deliveryResults.some(result => result.status === 'rejected')) {
+          requestLogger?.warn({ messageId: created[0].id }, 'Some community chat notifications could not be delivered');
+        }
+      })().catch(() => {
+        requestLogger?.warn({ messageId: created[0].id }, 'Entity message saved, but notification setup failed');
+      });
+    });
 
     return res.json(responseMessage);
   } catch (err: any) {
