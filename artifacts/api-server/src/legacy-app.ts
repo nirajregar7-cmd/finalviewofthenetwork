@@ -935,7 +935,7 @@ try {
   const serviceAccount = JSON.parse(credStr) as admin.ServiceAccount;
   const projectId = (serviceAccount as admin.ServiceAccount & { project_id?: string }).project_id
     || serviceAccount.projectId;
-  const expectedProjectId = 'the-network-a1188';
+  const expectedProjectId = 'the-network-72bba';
   if (projectId !== expectedProjectId) {
     throw new Error('Firebase service account belongs to a different project');
   }
