@@ -7700,9 +7700,9 @@ app.get('/api/admin/analytics/overview', async (_req, res) => {
 });
 
 app.get('/api/admin/analytics/quiz-attempts', async (req, res) => {
- const actorId = typeof req.query.actorId === 'string' ? req.query.actorId.trim() : '';
- if (!(await isPlatformAdmin(actorId))) {
-   return res.status(403).json({ error: 'Only platform admins can view quiz attempts.' });
+ const authUser = (req as any).authUser as { id: string; role: string } | undefined;
+ if (authUser?.role !== 'admin') {
+   return res.status(403).json({ error: 'Administrator access is required.' });
  }
  const limit = Math.min(Math.max(Number(req.query.limit) || 500, 1), 1000);
  try {
