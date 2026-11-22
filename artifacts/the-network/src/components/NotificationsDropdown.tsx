@@ -29,6 +29,7 @@ const TYPE_META: Record<string, {
   group_message:        { icon: <MessageSquare size={14} />,               color: 'bg-violet-500 text-white',  dot: 'bg-violet-500',  label: 'group message' },
   community_message:    { icon: <MessageSquare size={14} />,               color: 'bg-emerald-500 text-white', dot: 'bg-emerald-500', label: 'community message' },
   community_post:      { icon: <Megaphone size={14} />,                    color: 'bg-indigo-500 text-white',  dot: 'bg-indigo-500',  label: 'new community post' },
+  community_quiz:       { icon: <Lightbulb size={14} />,                    color: 'bg-pink-500 text-white',  dot: 'bg-pink-500',  label: 'daily community quiz' },
   project_message:      { icon: <MessageSquare size={14} />,               color: 'bg-cyan-500 text-white',    dot: 'bg-cyan-500',    label: 'project message' },
   group_invite:         { icon: <Users size={14} />,                       color: 'bg-amber-500 text-white',   dot: 'bg-amber-500',   label: 'group invite' },
   profile_view:         { icon: <Bell size={14} />,                        color: 'bg-sky-500 text-white',     dot: 'bg-sky-500',     label: 'viewed your profile' },
@@ -59,6 +60,7 @@ function viewForType(type: string): string {
   if (type === 'message' || type === 'group_message' || type === 'group_invite') return 'messages';
   if (type === 'community_message') return 'communities';
   if (type === 'community_post') return 'communities';
+  if (type === 'community_quiz') return 'communities';
   if (type === 'project_message') return 'projects';
   if (type === 'like' || type === 'comment' || type === 'mention') return 'feed';
   // Incoming requests live in the Connect/Discovery view, not the dashboard.

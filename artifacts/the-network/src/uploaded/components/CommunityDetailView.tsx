@@ -572,14 +572,14 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
   React.useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get('tab');
     if (requestedTab === 'quizzes') {
-      setActiveTab(isCollegeCommunity ? 'feed' : 'quizzes');
+      setActiveTab('quizzes');
     } else if (isAptitudeCommunity && requestedTab === 'aptitude') {
       setActiveTab('aptitude');
     }
-  }, [community.id, isAptitudeCommunity, isCollegeCommunity]);
+  }, [community.id, isAptitudeCommunity]);
   React.useEffect(() => {
-    if (quizOpenRequest > 0 && !isCollegeCommunity) setActiveTab('quizzes');
-  }, [quizOpenRequest, isCollegeCommunity]);
+    if (quizOpenRequest > 0) setActiveTab('quizzes');
+  }, [quizOpenRequest]);
   const feedPosts =
     feedFilter === 'projects'
       ? projectPosts
@@ -1290,12 +1290,12 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
         {(
           [
             { id: 'feed', label: 'Feed' },
-            ...(isAptitudeCommunity ? [{ id: 'aptitude', label: 'Aptitude' }] : []),
-            { id: 'members', label: 'Members' },
+            { id: 'quizzes', label: 'Quizzes' },
             { id: 'chat', label: 'Chat' },
             { id: 'groups', label: 'Groups' },
             { id: 'resources', label: 'Resources' },
-            ...(!isCollegeCommunity ? [{ id: 'quizzes', label: 'Quizzes' }] : []),
+            { id: 'members', label: 'Members' },
+            ...(isAptitudeCommunity ? [{ id: 'aptitude', label: 'Aptitude' }] : []),
             { id: 'about', label: 'About' },
           ] as const
         ).map((tab) => (
@@ -1897,7 +1897,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
             <button type="button" onClick={() => openComposerFor('post')} className="mt-4 w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700">Start a discussion</button>
           </div>
         </section>
-      ) : activeTab === 'quizzes' && !isCollegeCommunity ? (
+      ) : activeTab === 'quizzes' ? (
         <DailyCommunityQuizPanel
           communityId={community.id}
           communityName={community.displayName || community.name}

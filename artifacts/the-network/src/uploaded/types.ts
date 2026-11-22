@@ -1,6 +1,7 @@
 export type NavTab =
   | 'home'
   | 'communities'
+  | 'quizzes'
   | 'anonymous'
   | 'connect'
   | 'compete'
