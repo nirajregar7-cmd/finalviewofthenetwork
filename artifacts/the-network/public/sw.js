@@ -1,4 +1,4 @@
-const CACHE_NAME = 'the-network-v68';
+const CACHE_NAME = 'the-network-v69';
 const STATIC_ASSETS = ['/', '/manifest.json', '/favicon.png'];
 const EXTERNAL_API_ORIGIN = 'https://the-network-api.onrender.com';
 const AZURE_API_ORIGIN = 'https://thenetworkapi.proudrock-aea1c198.eastasia.azurecontainerapps.io';
