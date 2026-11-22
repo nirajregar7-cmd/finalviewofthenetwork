@@ -600,11 +600,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <p className="mt-1 text-[11px] text-slate-400">Likes, messages and connections will appear here.</p>
                   </div>
                 ) : (
-                  [...(notifications || [])]
-                    .sort((a: any, b: any) =>
-                      Number(b.type === 'community_quiz') - Number(a.type === 'community_quiz'),
-                    )
-                    .map((notification: any) => (
+                  (notifications || []).map((notification: any) => (
                     <button
                       key={notification.id}
                       onClick={() => {

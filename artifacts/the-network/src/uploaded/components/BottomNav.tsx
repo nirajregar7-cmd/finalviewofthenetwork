@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Users, UserPlus, BookOpen, MessageCircle, Trophy, Brain } from 'lucide-react';
+import { Home, Users, UserPlus, BookOpen, MessageCircle, Trophy } from 'lucide-react';
 import { NavTab } from '../types';
 import { InstallAppButton } from './InstallAppButton';
 
@@ -25,7 +25,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <nav className="network-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-white/98 backdrop-blur-md border-t border-slate-200/80 py-1.5 px-2 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
-       <div className={`max-w-2xl mx-auto grid ${showCompete ? 'grid-cols-7' : 'grid-cols-6'} items-end gap-0 relative`}>
+       <div className={`max-w-2xl mx-auto grid ${showCompete ? 'grid-cols-6' : 'grid-cols-5'} items-end gap-0 relative`}>
         {!hideInstallAction && (
           <InstallAppButton
             id="floating-install-app-button"
@@ -89,20 +89,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <span className="text-[10px] leading-tight">Compete</span>
           </button>
         )}
-
-        {/* Quizzes */}
-        <button
-          onClick={() => onSelectTab('quizzes')}
-          id="nav-tab-quizzes"
-          className={`flex flex-col items-center justify-center w-full py-1 gap-1 transition-colors cursor-pointer ${
-            currentTab === 'quizzes'
-              ? 'text-indigo-600 font-bold'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Brain className={`w-5 h-5 ${currentTab === 'quizzes' ? 'stroke-[2.5]' : 'stroke-2'}`} />
-          <span className="text-[10px] leading-tight">Quizzes</span>
-        </button>
 
         {/* Learn */}
         <button
