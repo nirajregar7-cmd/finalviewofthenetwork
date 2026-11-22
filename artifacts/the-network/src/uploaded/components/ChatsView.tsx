@@ -1988,13 +1988,13 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                             <>
                               <SafeAvatar
                                 src={user?.avatar}
-                                name={user?.name || 'Network member'}
+                                name={user?.name || 'Student'}
                                 className="h-10 w-10 shrink-0 rounded-full object-cover"
                               />
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-center gap-1.5">
                                   <span className="truncate text-xs font-bold text-slate-800">
-                                    {user?.name || 'Network member'}
+                                    {user?.name || 'Student'}
                                   </span>
                                   {isAdmin && (
                                     <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-black text-indigo-700">
@@ -2003,7 +2003,7 @@ export const ChatsView: React.FC<ChatsViewProps> = ({
                                   )}
                                 </span>
                                 <span className="mt-0.5 block truncate text-[10px] text-slate-500">
-                                  {[user?.branch, user?.college].filter(Boolean).join(' · ') || 'Community member'}
+                                  {[user?.branch, user?.college].filter(Boolean).join(' · ') || 'Student'}
                                 </span>
                               </span>
                               {user?.isOnline && (

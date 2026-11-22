@@ -191,8 +191,8 @@ export function toUploadedPost(
 ): Post {
   const realAuthor = usersById[post.authorId] || {
     id: post.authorId,
-    name: 'Network member',
-    avatar: avatarFor('', 'Network member'),
+    name: 'Student',
+    avatar: avatarFor('', 'Student'),
     college: '',
     branch: '',
     verified: false,
@@ -342,8 +342,8 @@ export function toUploadedConversations(
     const anonymousPostId = items.find((message) => message.anonymousPostId)?.anonymousPostId;
     const participant = usersById[otherId] || {
       id: otherId,
-      name: 'Network member',
-      avatar: avatarFor('', 'Network member'),
+      name: 'Student',
+      avatar: avatarFor('', 'Student'),
       college: '',
       branch: '',
       verified: false,
@@ -383,7 +383,7 @@ export function toUploadedConversations(
         id: message.id,
         clientMessageId: message.clientMessageId,
         senderId: message.senderId,
-        senderName: message.isAnonymous ? 'Anonymous person' : usersById[message.senderId]?.name || 'Network member',
+        senderName: message.isAnonymous ? 'Anonymous person' : usersById[message.senderId]?.name || 'Student',
         text: message.content,
         timestamp: relativeTime(message.createdAt),
         createdAt: message.createdAt,
