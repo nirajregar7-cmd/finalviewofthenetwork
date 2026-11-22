@@ -2761,6 +2761,7 @@ app.get('/api/feed', async (req, res) => {
       `SELECT
          p.id,
          p.author_id AS "authorId",
+         CASE WHEN p.is_anonymous THEN NULL ELSE u.full_name END AS "authorName",
          p.is_anonymous AS "isAnonymous",
          p.content,
           p.likes,
@@ -7697,6 +7698,80 @@ app.get('/api/admin/analytics/overview', async (_req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/admin/analytics/quiz-attempts', async (req, res) => {
+ const authUser = (req as any).authUser as { id: string; role: string } | undefined;
+ if (authUser?.role !== 'admin') {
+   return res.status(403).json({ error: 'Administrator access is required.' });
+ }
+ const limit = Math.min(Math.max(Number(req.query.limit) || 500, 1), 1000);
+ try {
+   const raw = await db.execute(sql`
+     SELECT
+       a.id AS attempt_id,
+       a.quiz_id,
+       q.quiz_date,
+       q.title AS quiz_title,
+       c.id AS community_id,
+       c.name AS community_name,
+       u.id AS user_id,
+       u.full_name,
+       u.email,
+       u.college,
+       u.avatar,
+       a.score,
+       a.max_score,
+       a.submitted_at
+     FROM daily_community_quiz_attempts a
+     INNER JOIN daily_community_quizzes q ON q.id = a.quiz_id
+     INNER JOIN communities c ON c.id = q.community_id
+     INNER JOIN users u ON u.id = a.user_id
+     ORDER BY a.submitted_at DESC
+     LIMIT ${limit}
+   `);
+   const rows = Array.isArray(raw) ? raw : ((raw as any)?.rows || []);
+   const attempts = rows.map((row: any) => ({
+     attemptId: String(row.attempt_id),
+     quizId: String(row.quiz_id),
+     quizDate: row.quiz_date,
+     quizTitle: row.quiz_title,
+     communityId: String(row.community_id),
+     communityName: row.community_name,
+     userId: String(row.user_id),
+     userName: row.full_name || 'Student',
+     email: row.email || '',
+     college: row.college || '',
+     avatar: row.avatar || '',
+     score: Number(row.score || 0),
+     maxScore: Number(row.max_score || 0),
+     submittedAt: row.submitted_at,
+   }));
+
+   const byCommunityMap = new Map<string, { communityId: string; communityName: string; attempts: number }>();
+   for (const attempt of attempts) {
+     const key = attempt.communityId;
+     const existing = byCommunityMap.get(key);
+     if (existing) existing.attempts += 1;
+     else byCommunityMap.set(key, {
+       communityId: key,
+       communityName: attempt.communityName,
+       attempts: 1,
+     });
+   }
+
+   res.json({
+     attempts,
+     summary: {
+       totalAttempts: attempts.length,
+       uniqueUsers: new Set(attempts.map((attempt: any) => attempt.userId)).size,
+       communities: byCommunityMap.size,
+       byCommunity: [...byCommunityMap.values()].sort((a, b) => b.attempts - a.attempts),
+     },
+   });
+ } catch (error: any) {
+   res.status(500).json({ error: error.message });
+ }
 });
 
 app.get('/api/admin/analytics/sessions', async (req, res) => {

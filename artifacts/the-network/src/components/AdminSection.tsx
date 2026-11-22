@@ -7,7 +7,7 @@ import {
   Calendar, Mail, BookOpen, KeyRound, Eye, EyeOff,
   Upload, Download, CheckCircle2, AlertCircle, Send, Crown, Building2,
   BarChart2, GitMerge, ArrowRight, History, LockKeyhole, Inbox, RefreshCw,
-  MessageCircle, Loader2
+  MessageCircle, Loader2, Brain
 } from 'lucide-react';
 import Avatar from './Avatar';
 import { api } from '../api';
@@ -28,7 +28,7 @@ interface AdminSectionProps {
   darkMode: boolean;
 }
 
-type AdminTab = 'analytics' | 'users' | 'reports' | 'posts' | 'import' | 'email' | 'email_inbox' | 'college_admins' | 'community_merge';
+type AdminTab = 'analytics' | 'quiz_attempts' | 'users' | 'reports' | 'posts' | 'import' | 'email' | 'email_inbox' | 'college_admins' | 'community_merge';
 
 type EmailInboxMessage = {
   id: string;
@@ -107,6 +107,45 @@ export default function AdminSection({
   const [mergeConfirmText, setMergeConfirmText] = useState('');
   const [mergeAudit, setMergeAudit] = useState<any | null>(null);
   const [mergeAudits, setMergeAudits] = useState<any[]>([]);
+  const [quizAttemptsLoading, setQuizAttemptsLoading] = useState(false);
+  const [quizAttemptsError, setQuizAttemptsError] = useState('');
+  const [quizAttemptsData, setQuizAttemptsData] = useState<{
+    attempts: Array<{
+      attemptId: string;
+      quizId: string;
+      quizDate: string;
+      quizTitle: string;
+      communityId: string;
+      communityName: string;
+      userId: string;
+      userName: string;
+      email: string;
+      college: string;
+      avatar: string;
+      score: number;
+      maxScore: number;
+      submittedAt: string;
+    }>;
+    summary: {
+      totalAttempts: number;
+      uniqueUsers: number;
+      communities: number;
+      byCommunity: Array<{ communityId: string; communityName: string; attempts: number }>;
+    } | null;
+  }>({ attempts: [], summary: null });
+
+  useEffect(() => {
+    if (activeTab !== 'quiz_attempts') return;
+    setQuizAttemptsLoading(true);
+    setQuizAttemptsError('');
+    api.analytics.quizAttempts(currentUser.id)
+      .then((result) => setQuizAttemptsData({
+        attempts: Array.isArray(result?.attempts) ? result.attempts : [],
+        summary: result?.summary || null,
+      }))
+      .catch((error: any) => setQuizAttemptsError(error?.message || 'Could not load quiz attempts.'))
+      .finally(() => setQuizAttemptsLoading(false));
+  }, [activeTab, currentUser.id]);
 
   useEffect(() => {
     if (activeTab !== 'community_merge') return;
@@ -408,6 +447,7 @@ export default function AdminSection({
 
   const tabs: { id: AdminTab; label: string; count?: number }[] = [
     { id: 'analytics', label: 'Analytics' },
+    { id: 'quiz_attempts', label: 'Quiz Attempts' },
     { id: 'users', label: 'All Users', count: allUsers.length },
     { id: 'college_admins', label: 'College Admins', count: collegeAdmins.length },
     { id: 'reports', label: 'Reports', count: pendingReports.length },
@@ -473,6 +513,128 @@ export default function AdminSection({
         {/* ANALYTICS TAB */}
         {activeTab === 'analytics' && (
           <AdminAnalytics darkMode={darkMode} />
+        )}
+
+        {/* QUIZ ATTEMPTS TAB */}
+        {activeTab === 'quiz_attempts' && (
+          <div className="p-4 space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-black">
+                  <Brain size={16} className="text-indigo-500" />
+                  Daily Quiz Attempts
+                </h3>
+                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  Students who submitted quizzes, grouped by community.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={quizAttemptsLoading}
+                onClick={() => {
+                  setQuizAttemptsLoading(true);
+                  setQuizAttemptsError('');
+                  api.analytics.quizAttempts(currentUser.id)
+                    .then((result) => setQuizAttemptsData({
+                      attempts: Array.isArray(result?.attempts) ? result.attempts : [],
+                      summary: result?.summary || null,
+                    }))
+                    .catch((error: any) => setQuizAttemptsError(error?.message || 'Could not load quiz attempts.'))
+                    .finally(() => setQuizAttemptsLoading(false));
+                }}
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-bold ${darkMode ? 'bg-white/8 text-slate-300' : 'bg-neutral-100 text-slate-600'} disabled:opacity-50`}
+              >
+                <RefreshCw size={12} className={quizAttemptsLoading ? 'animate-spin' : ''} />
+                Refresh
+              </button>
+            </div>
+
+            {quizAttemptsError && (
+              <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">
+                <AlertCircle size={14} />
+                {quizAttemptsError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {[
+                { label: 'Total attempts', value: quizAttemptsData.summary?.totalAttempts ?? 0, color: 'text-indigo-500' },
+                { label: 'Students attempted', value: quizAttemptsData.summary?.uniqueUsers ?? 0, color: 'text-emerald-500' },
+                { label: 'Communities', value: quizAttemptsData.summary?.communities ?? 0, color: 'text-violet-500' },
+              ].map((stat) => (
+                <div key={stat.label} className={`rounded-2xl border p-4 ${darkMode ? 'border-white/10 bg-[#121217]' : 'border-neutral-200 bg-white'}`}>
+                  <p className={`text-2xl font-black ${stat.color}`}>{quizAttemptsLoading ? '—' : stat.value}</p>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {quizAttemptsData.summary?.byCommunity?.length > 0 && (
+              <div className={`rounded-2xl border p-4 ${darkMode ? 'border-white/10 bg-[#121217]' : 'border-neutral-200 bg-white'}`}>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">Attempts by community</h4>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {[...quizAttemptsData.summary.byCommunity].map((community) => (
+                    <div key={community.communityId} className={`rounded-xl border px-3 py-2.5 ${darkMode ? 'border-white/8 bg-white/[0.03]' : 'border-neutral-100 bg-neutral-50'}`}>
+                      <p className="truncate text-xs font-bold">{community.communityName}</p>
+                      <p className="mt-1 text-[11px] font-black text-indigo-500">{community.attempts} attempts</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className={`overflow-hidden rounded-2xl border ${darkMode ? 'border-white/10' : 'border-neutral-200'}`}>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[820px] text-left">
+                  <thead className={darkMode ? 'bg-white/5' : 'bg-neutral-50'}>
+                    <tr className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <th className="px-4 py-3">Student</th>
+                      <th className="px-4 py-3">Community</th>
+                      <th className="px-4 py-3">Quiz</th>
+                      <th className="px-4 py-3">Score</th>
+                      <th className="px-4 py-3">Submitted</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${darkMode ? 'divide-white/5' : 'divide-neutral-100'}`}>
+                    {quizAttemptsLoading ? (
+                      <tr><td colSpan={5} className="px-4 py-10 text-center text-xs text-slate-400">Loading quiz attempts…</td></tr>
+                    ) : quizAttemptsData.attempts.length === 0 ? (
+                      <tr><td colSpan={5} className="px-4 py-10 text-center text-xs text-slate-400">No quiz attempts yet.</td></tr>
+                    ) : quizAttemptsData.attempts.map((attempt) => (
+                      <tr key={attempt.attemptId} className={darkMode ? 'hover:bg-white/[0.03]' : 'hover:bg-neutral-50'}>
+                        <td className="px-4 py-3">
+                          <p className="text-xs font-bold">{attempt.userName}</p>
+                          <p className="mt-0.5 max-w-[180px] truncate text-[10px] text-slate-400">{attempt.email || attempt.college || 'Student'}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-xs font-bold text-indigo-500">{attempt.communityName}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="max-w-[220px] truncate text-xs font-semibold">{attempt.quizTitle}</p>
+                          <p className="mt-0.5 text-[10px] text-slate-400">{attempt.quizDate}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                            {attempt.score}/{attempt.maxScore}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-[10px] font-semibold text-slate-500">
+                          {new Date(attempt.submittedAt).toLocaleString('en-IN', {
+                            timeZone: 'Asia/Kolkata',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* COMMUNITY MERGE TAB */}

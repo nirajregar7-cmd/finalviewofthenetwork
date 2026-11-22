@@ -123,7 +123,7 @@ function uploadedChatMessage(message: any, usersById: Record<string, User>): Cha
     senderId: message.senderId,
     senderName: message.isAnonymous
       ? 'Anonymous person'
-      : usersById[message.senderId]?.name || 'Network member',
+      : usersById[message.senderId]?.name || 'Student',
     text: message.content || '',
     timestamp: relativeTimeForUploaded(message.createdAt),
     createdAt: message.createdAt,
@@ -1433,7 +1433,7 @@ export const App: React.FC<UploadedAppProps> = ({
           senderId: message.senderId,
           senderName: message.senderId === authenticatedUser.id
             ? authenticatedUser.fullName
-            : users[message.senderId]?.name || 'Network member',
+            : users[message.senderId]?.name || 'Student',
           text: message.content || '',
           timestamp: message.createdAt
             ? new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
@@ -1566,7 +1566,7 @@ export const App: React.FC<UploadedAppProps> = ({
           id: message.id,
           clientMessageId: message.clientMessageId,
           senderId: message.senderId,
-          senderName: users[message.senderId]?.name || 'Network member',
+          senderName: users[message.senderId]?.name || 'Student',
           text: message.content || '',
           timestamp: relativeTimeForUploaded(message.createdAt),
           createdAt: message.createdAt,
@@ -1739,7 +1739,7 @@ export const App: React.FC<UploadedAppProps> = ({
               ...(existing || {}),
               id: message.id,
               senderId: message.senderId,
-              senderName: users[message.senderId]?.name || 'Network member',
+              senderName: users[message.senderId]?.name || 'Student',
               text: message.content || '',
               timestamp: relativeTimeForUploaded(message.createdAt),
               createdAt: message.createdAt,
@@ -2685,7 +2685,7 @@ export const App: React.FC<UploadedAppProps> = ({
       senderId: message.senderId,
       senderName: message.isAnonymous
         ? 'Anonymous person'
-        : users[message.senderId]?.name || 'Network member',
+        : users[message.senderId]?.name || 'Student',
       text: message.content || '',
       timestamp: relativeTimeForUploaded(message.createdAt),
       createdAt: message.createdAt,
@@ -3142,7 +3142,7 @@ export const App: React.FC<UploadedAppProps> = ({
         messages: sortedMessages.map((message): ChatMessage => ({
           id: message.id,
           senderId: message.senderId,
-          senderName: users[message.senderId]?.name || 'Network member',
+          senderName: users[message.senderId]?.name || 'Student',
           text: message.content,
           timestamp: relativeTimeForUploaded(message.createdAt),
           createdAt: message.createdAt,
@@ -3309,7 +3309,7 @@ export const App: React.FC<UploadedAppProps> = ({
       messages: sortedMessages.map((message): ChatMessage => ({
         id: message.id,
         senderId: message.senderId,
-        senderName: users[message.senderId]?.name || 'Network member',
+        senderName: users[message.senderId]?.name || 'Student',
         text: message.content,
         timestamp: relativeTimeForUploaded(message.createdAt),
         createdAt: message.createdAt,

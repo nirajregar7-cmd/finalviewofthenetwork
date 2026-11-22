@@ -375,6 +375,8 @@ export const api = {
     dailyActive: () => get('/admin/analytics/daily-active'),
     hourlyToday: () => get('/admin/analytics/hourly-today'),
     weeklyStats: () => get('/admin/analytics/weekly-stats'),
+    quizAttempts: (_actorId: string, limit = 500) =>
+      get(`/admin/analytics/quiz-attempts?limit=${limit}`),
   },
   auth: {
     login: (email: string, password: string) => post('/auth/login', { email, password }),

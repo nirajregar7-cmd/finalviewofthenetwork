@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { UserProfile } from '../types';
-import { toUploadedUser } from './liveAdapter';
+import type { Post as ApiPost, UserProfile } from '../types';
+import { toUploadedPost, toUploadedUser } from './liveAdapter';
 
 function makeProfile(avatar: string, fullName = 'New Student'): UserProfile {
   return {
@@ -58,5 +58,35 @@ describe('profile photo adaptation', () => {
 
     expect(() => decodeURIComponent(encodedSvg)).not.toThrow();
     expect(decodeURIComponent(encodedSvg)).toContain('�S');
+  });
+});
+
+describe('feed post author adaptation', () => {
+  const makePost = (overrides: Partial<ApiPost> = {}): ApiPost => ({
+    id: 'post-1',
+    authorId: 'author-1',
+    content: 'Looking for a collaborator',
+    likes: [],
+    comments: [],
+    createdAt: '2026-11-22T00:00:00.000Z',
+    ...overrides,
+  });
+
+  it('uses the feed-provided real author name when the profile is unavailable', () => {
+    const post = toUploadedPost(makePost({ authorName: 'Aarav Sharma' }), {}, {}, 'viewer-1');
+
+    expect(post.author.name).toBe('Aarav Sharma');
+  });
+
+  it('does not expose the real author name on an anonymous post', () => {
+    const post = toUploadedPost(
+      makePost({ authorName: 'Aarav Sharma', isAnonymous: true }),
+      {},
+      {},
+      'viewer-1',
+    );
+
+    expect(post.author.name).not.toBe('Aarav Sharma');
+    expect(post.author.name).toMatch(/^Anonymous student #/);
   });
 });

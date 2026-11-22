@@ -205,7 +205,7 @@ export const AnonymousCampusView: React.FC<AnonymousCampusViewProps> = ({
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] text-slate-500">?</div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="text-[11px] font-black text-slate-700">{comment.isAnonymous ? comment.author.name : 'Community member'}</p>
+                              <p className="text-[11px] font-black text-slate-700">{comment.isAnonymous ? comment.author.name : 'Student'}</p>
                               <span className="text-[10px] text-slate-400">{comment.timestamp}</span>
                             </div>
                             <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{comment.content}</p>

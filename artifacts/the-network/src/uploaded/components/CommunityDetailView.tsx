@@ -1426,12 +1426,12 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                         {!isOwn && (
                           <SafeAvatar
                             src={sender?.avatar}
-                            name={sender?.name || 'Community member'}
+                            name={sender?.name || 'Student'}
                             className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
                           />
                         )}
                         <div className={`max-w-[78%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
-                          {!isOwn && <span className="mb-1 px-1 text-[10px] font-bold text-slate-500">{sender?.name || 'Community member'}</span>}
+                          {!isOwn && <span className="mb-1 px-1 text-[10px] font-bold text-slate-500">{sender?.name || 'Student'}</span>}
                           <div className={`rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
                             isOwn
                               ? 'rounded-br-md bg-indigo-600 text-white'
@@ -1448,7 +1448,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                                  }`}
                                >
                                  <span className="block font-bold">
-                                   Replying to {replyTarget.senderId === currentUser.id ? 'yourself' : users[replyTarget.senderId]?.name || 'community member'}
+                                   Replying to {replyTarget.senderId === currentUser.id ? 'yourself' : users[replyTarget.senderId]?.name || 'Student'}
                                  </span>
                                  <span className="block truncate">{replyTarget.content || replyTarget.attachmentName || 'Attachment'}</span>
                                </button>
@@ -1639,7 +1639,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-[11px] font-bold text-slate-800">{member.name}</span>
-                      <span className="block truncate text-[10px] text-slate-400">{member.isOnline ?? member.id === currentUser.id ? 'Online now' : 'Community member'}</span>
+                      <span className="block truncate text-[10px] text-slate-400">{member.isOnline ?? member.id === currentUser.id ? 'Online now' : 'Student'}</span>
                     </span>
                   </button>
                 ))}
@@ -1795,7 +1795,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                         )}
                       </div>
                       <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
-                        {[member.branch, member.college].filter(Boolean).join(' · ') || 'Network member'}
+                        {[member.branch, member.college].filter(Boolean).join(' · ') || 'Student'}
                       </p>
                       <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-slate-400">
                         <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`} />
@@ -2709,7 +2709,7 @@ export const CommunityDetailView: React.FC<CommunityDetailViewProps> = ({
                 <div className="mt-3 max-h-52 space-y-1.5 overflow-y-auto">
                   {directConversations.slice(0, 12).map((conversation) => (
                     <div key={conversation.id} className="flex items-center gap-2.5 rounded-xl border border-slate-100 px-2.5 py-2">
-                      <SafeAvatar src={conversation.avatar} name={conversation.title || 'Network member'} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                      <SafeAvatar src={conversation.avatar} name={conversation.title || 'Student'} className="h-8 w-8 shrink-0 rounded-full object-cover" />
                       <p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-800">{conversation.title}</p>
                       <button
                         type="button"

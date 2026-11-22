@@ -189,10 +189,19 @@ export function toUploadedPost(
   communitiesById: Record<string, Community>,
   currentUserId: string,
 ): Post {
+  // Older API deployments may omit isAnonymous while still preserving the
+  // server-enforced anonymous topic marker. Treat both shapes consistently.
+  const isAnonymous = Boolean(
+    post.isAnonymous ||
+    (typeof post.academicTag === 'string' && post.academicTag.trim().toLowerCase().startsWith('anonymous topic:'))
+  );
+  const authorName = !isAnonymous && typeof post.authorName === 'string'
+    ? post.authorName.trim()
+    : '';
   const realAuthor = usersById[post.authorId] || {
     id: post.authorId,
-    name: 'Network member',
-    avatar: avatarFor('', 'Network member'),
+    name: authorName || 'Student',
+    avatar: avatarFor('', authorName || 'Student'),
     college: '',
     branch: '',
     verified: false,
@@ -200,12 +209,6 @@ export function toUploadedPost(
     skills: [],
     communities: [],
   };
-  // Older API deployments may omit isAnonymous while still preserving the
-  // server-enforced anonymous topic marker. Treat both shapes consistently.
-  const isAnonymous = Boolean(
-    post.isAnonymous ||
-    (typeof post.academicTag === 'string' && post.academicTag.trim().toLowerCase().startsWith('anonymous topic:'))
-  );
   const author = isAnonymous ? anonymousUserFor(post.authorId) : realAuthor;
   const community = post.communityId ? communitiesById[post.communityId] : undefined;
   const likes = Array.isArray(post.likes) ? post.likes : [];
@@ -342,8 +345,8 @@ export function toUploadedConversations(
     const anonymousPostId = items.find((message) => message.anonymousPostId)?.anonymousPostId;
     const participant = usersById[otherId] || {
       id: otherId,
-      name: 'Network member',
-      avatar: avatarFor('', 'Network member'),
+      name: 'Student',
+      avatar: avatarFor('', 'Student'),
       college: '',
       branch: '',
       verified: false,
@@ -383,7 +386,7 @@ export function toUploadedConversations(
         id: message.id,
         clientMessageId: message.clientMessageId,
         senderId: message.senderId,
-        senderName: message.isAnonymous ? 'Anonymous person' : usersById[message.senderId]?.name || 'Network member',
+        senderName: message.isAnonymous ? 'Anonymous person' : usersById[message.senderId]?.name || 'Student',
         text: message.content,
         timestamp: relativeTime(message.createdAt),
         createdAt: message.createdAt,
