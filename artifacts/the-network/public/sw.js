@@ -1,4 +1,4 @@
-const CACHE_NAME = 'the-network-v64';
+const CACHE_NAME = 'the-network-v66';
 const STATIC_ASSETS = ['/', '/manifest.json', '/favicon.png'];
 const EXTERNAL_API_ORIGIN = 'https://the-network-api.onrender.com';
 const AZURE_API_ORIGIN = 'https://thenetworkapi.proudrock-aea1c198.eastasia.azurecontainerapps.io';
@@ -245,6 +245,7 @@ self.addEventListener('notificationclick', (event) => {
         client.postMessage({
             type: 'SW_NAVIGATE',
             view: targetView,
+            type,
             userId: targetUser,
             groupId: targetGroup,
             communityId,
@@ -257,6 +258,7 @@ self.addEventListener('notificationclick', (event) => {
       }
       if (clients.openWindow) {
         let url = `/?view=${targetView}`;
+        if (type === 'community_quiz') url += '&tab=quizzes';
         if (targetUser)  url += `&userId=${targetUser}`;
         if (targetGroup) url += `&groupId=${targetGroup}`;
         if (communityId) url += `&communityId=${communityId}`;

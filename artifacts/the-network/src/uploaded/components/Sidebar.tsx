@@ -4,6 +4,7 @@ import {
   Users,
   UserPlus,
   MessageCircle,
+  Brain,
   ChevronRight,
   ShieldAlert,
   Trophy,
@@ -60,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'Explore',
       links: [
+        { id: 'quizzes', label: 'Quizzes', icon: <Brain className="h-5 w-5" /> },
         ...(showCompete ? [{ id: 'compete' as NavTab, label: 'Compete', icon: <Trophy className="h-5 w-5" /> }] : []),
         { id: 'workshops', label: 'Workshops & Events', icon: <CalendarDays className="h-5 w-5" /> },
         { id: 'resources', label: 'Resources', icon: <FileText className="h-5 w-5" /> },

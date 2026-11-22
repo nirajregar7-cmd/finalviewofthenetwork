@@ -75,6 +75,7 @@ self.addEventListener('notificationclick', (event) => {
   if (data.communityId) params.set('communityId', data.communityId);
   if (data.projectId) params.set('projectId', data.projectId);
   if (data.postId) params.set('postId', data.postId);
+  if (data.type === 'community_quiz') params.set('tab', 'quizzes');
   const url = `${self.location.origin}/?${params.toString()}`;
 
   event.waitUntil(
@@ -84,6 +85,7 @@ self.addEventListener('notificationclick', (event) => {
           client.postMessage({
             type: 'SW_NAVIGATE',
             view,
+            type: data.type,
             userId: data.userId,
             communityId: data.communityId,
             projectId: data.projectId,

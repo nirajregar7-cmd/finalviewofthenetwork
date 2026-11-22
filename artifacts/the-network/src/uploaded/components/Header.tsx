@@ -1,6 +1,6 @@
 import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Bell, X, Sparkles, Hash, UserCheck, ChevronRight, SlidersHorizontal, Trophy, CalendarDays, FileText, UsersRound, Send, LayoutDashboard, Plus, LogOut } from 'lucide-react';
+import { Search, Bell, X, Sparkles, Hash, UserCheck, ChevronRight, SlidersHorizontal, Trophy, CalendarDays, FileText, UsersRound, Send, LayoutDashboard, Plus, LogOut, Brain } from 'lucide-react';
 import { User, Community, Post, NavTab } from '../types';
 import { SafeAvatar } from './SafeAvatar';
 import NetworkLogo from '../../components/NetworkLogo';
@@ -592,7 +592,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 )}
               </div>
-              <div className="max-h-[min(60vh,420px)] overflow-y-auto">
+              <div className="max-h-[min(68vh,520px)] overflow-y-auto">
                 {(notifications || []).length === 0 ? (
                   <div className="px-4 py-12 text-center">
                     <Bell className="mx-auto h-7 w-7 text-slate-300" />
@@ -600,7 +600,11 @@ export const Header: React.FC<HeaderProps> = ({
                     <p className="mt-1 text-[11px] text-slate-400">Likes, messages and connections will appear here.</p>
                   </div>
                 ) : (
-                  (notifications || []).map((notification: any) => (
+                  [...(notifications || [])]
+                    .sort((a: any, b: any) =>
+                      Number(b.type === 'community_quiz') - Number(a.type === 'community_quiz'),
+                    )
+                    .map((notification: any) => (
                     <button
                       key={notification.id}
                       onClick={() => {
@@ -619,7 +623,11 @@ export const Header: React.FC<HeaderProps> = ({
                           onOpenNotification({
                             ...notification,
                             communityId: notification.communityId || (
-                              notification.type === 'community' ? legacyCommunity?.id : undefined
+                              notification.type === 'community' ||
+                              notification.type === 'community_quiz' ||
+                              notification.type === 'community_post'
+                                ? legacyCommunity?.id
+                                : undefined
                             ),
                           });
                           setIsNotificationsOpen(false);
@@ -631,7 +639,19 @@ export const Header: React.FC<HeaderProps> = ({
                       className={`flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 cursor-pointer ${notification.unread ? 'bg-indigo-50/60' : 'bg-white'}`}
                     >
                        <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm ${notification.unread ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
-                          {notification.type === 'message' ? '💬' : notification.type === 'upvote' ? '♥' : notification.type === 'connection_request' ? '👋' : notification.type === 'poll' ? '📊' : notification.type === 'community_post' ? '📢' : '🔔'}
+                          {notification.type === 'community_quiz'
+                            ? <Brain className="h-4 w-4" aria-hidden="true" />
+                            : notification.type === 'message'
+                              ? '💬'
+                              : notification.type === 'upvote'
+                                ? '♥'
+                                : notification.type === 'connection_request'
+                                  ? '👋'
+                                  : notification.type === 'poll'
+                                    ? '📊'
+                                    : notification.type === 'community_post'
+                                      ? '📢'
+                                      : '🔔'}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-xs font-bold text-slate-800">{notification.title}</span>

@@ -493,7 +493,9 @@ export const App: React.FC<UploadedAppProps> = ({
   } | null>(() => initialPostId
     ? { postId: initialPostId, reply: initialUrlParams.get('focus') === 'comment' }
     : null);
-  const [communityQuizOpenRequest, setCommunityQuizOpenRequest] = useState(0);
+  const [communityQuizOpenRequest, setCommunityQuizOpenRequest] = useState(() =>
+    initialUrlParams.get('tab') === 'quizzes' ? 1 : 0,
+  );
   const [adminUsers, setAdminUsers] = useState<UserProfile[]>([]);
   const [adminReports, setAdminReports] = useState<UserReport[]>([]);
   const [adminPosts, setAdminPosts] = useState<CorePost[]>([]);
@@ -645,7 +647,13 @@ export const App: React.FC<UploadedAppProps> = ({
       } else if (data.view === 'communities' && data.communityId) {
         setActiveTab('communities');
         const target = communities.find((community) => community.id === data.communityId);
-        if (target) setSelectedCommunitySlug(target.slug);
+        if (target) {
+          setSelectedCommunitySlug(target.slug);
+          setIsCommunityChatActive(false);
+          if (data.type === 'community_quiz') {
+            setCommunityQuizOpenRequest((request) => request + 1);
+          }
+        }
       }
     };
     navigator.serviceWorker?.addEventListener('message', handlePushNavigation);
