@@ -45,6 +45,7 @@ export interface CollegeAnnouncement {
 export interface Post {
   id: string;
   authorId: string;
+  authorName?: string | null;
   isAnonymous?: boolean;
   content: string;
   likes: string[]; // List of user IDs who liked

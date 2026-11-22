@@ -2761,6 +2761,7 @@ app.get('/api/feed', async (req, res) => {
       `SELECT
          p.id,
          p.author_id AS "authorId",
+         CASE WHEN p.is_anonymous THEN NULL ELSE u.full_name END AS "authorName",
          p.is_anonymous AS "isAnonymous",
          p.content,
           p.likes,

@@ -189,10 +189,19 @@ export function toUploadedPost(
   communitiesById: Record<string, Community>,
   currentUserId: string,
 ): Post {
+  // Older API deployments may omit isAnonymous while still preserving the
+  // server-enforced anonymous topic marker. Treat both shapes consistently.
+  const isAnonymous = Boolean(
+    post.isAnonymous ||
+    (typeof post.academicTag === 'string' && post.academicTag.trim().toLowerCase().startsWith('anonymous topic:'))
+  );
+  const authorName = !isAnonymous && typeof post.authorName === 'string'
+    ? post.authorName.trim()
+    : '';
   const realAuthor = usersById[post.authorId] || {
     id: post.authorId,
-    name: 'Student',
-    avatar: avatarFor('', 'Student'),
+    name: authorName || 'Student',
+    avatar: avatarFor('', authorName || 'Student'),
     college: '',
     branch: '',
     verified: false,
@@ -200,12 +209,6 @@ export function toUploadedPost(
     skills: [],
     communities: [],
   };
-  // Older API deployments may omit isAnonymous while still preserving the
-  // server-enforced anonymous topic marker. Treat both shapes consistently.
-  const isAnonymous = Boolean(
-    post.isAnonymous ||
-    (typeof post.academicTag === 'string' && post.academicTag.trim().toLowerCase().startsWith('anonymous topic:'))
-  );
   const author = isAnonymous ? anonymousUserFor(post.authorId) : realAuthor;
   const community = post.communityId ? communitiesById[post.communityId] : undefined;
   const likes = Array.isArray(post.likes) ? post.likes : [];
