@@ -18,6 +18,7 @@ import { getCommunityImage } from '../data/communityImages';
 import CommunityShareModal from './CommunityShareModal';
 import CommunityDiscovery from './CommunityDiscovery';
 import { getEducationDisplay } from '../utils/education';
+import { DailyCommunityQuizPanel } from '../uploaded/components/DailyCommunityQuizPanel';
 
 interface CommunitiesSectionProps {
   currentUser: UserProfile;
@@ -87,8 +88,14 @@ export default function CommunitiesSection({
     }
   }, [initialCommunityId]);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tab') === 'quizzes') {
+      setActiveTab('quizzes');
+    }
+  }, [activeCommunityId]);
+
   // Specific community workspace tabs
-  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'events' | 'polls' | 'resources' | 'threads' | 'chat' | 'groups'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'quizzes' | 'chat' | 'groups' | 'resources' | 'members' | 'about'>('feed');
 
   const [communityGroups, setCommunityGroups] = useState<GroupChat[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
@@ -929,13 +936,12 @@ export default function CommunitiesSection({
             <div className="flex overflow-x-auto scrollbar-hide border-t border-neutral-200/80 dark:border-white/5 pt-3 mt-2 gap-1">
               {([
                 { id: 'feed',      label: 'Feed',        emoji: '💬', active: 'border-indigo-500 text-indigo-500' },
+                { id: 'quizzes',   label: 'Quizzes',     emoji: '🧠', active: 'border-pink-500 text-pink-600' },
                 { id: 'chat',      label: 'Chat',        emoji: '🗨️',  active: 'border-violet-500 text-violet-500' },
-                { id: 'members',   label: `Members (${selectedComm.memberIds.length})`, emoji: '👥', active: 'border-sky-500 text-sky-500' },
-                { id: 'events',    label: 'Events',      emoji: '📅', active: 'border-amber-500 text-amber-500' },
-                { id: 'polls',     label: `Polls (${(selectedComm.polls || []).length})`, emoji: '🗳️', active: 'border-emerald-500 text-emerald-500' },
-                { id: 'resources', label: `Resources (${selectedComm.resources?.length || 0})`, emoji: '📁', active: 'border-indigo-500 text-indigo-500' },
-                { id: 'threads',   label: `Discussions (${selectedComm.threads?.length || 0})`, emoji: '🧵', active: 'border-indigo-500 text-indigo-500' },
                 { id: 'groups',    label: 'Groups', emoji: '', active: 'border-emerald-500 text-emerald-600 dark:text-emerald-400' },
+                { id: 'resources', label: `Resources (${selectedComm.resources?.length || 0})`, emoji: '📁', active: 'border-indigo-500 text-indigo-500' },
+                { id: 'members',   label: `Members (${selectedComm.memberIds.length})`, emoji: '👥', active: 'border-sky-500 text-sky-500' },
+                { id: 'about',     label: 'About', emoji: 'ℹ️', active: 'border-slate-500 text-slate-600 dark:text-slate-300' },
               ] as const).map(tab => (
                 <button
                   key={tab.id}
@@ -957,6 +963,28 @@ export default function CommunitiesSection({
 
           {/* TAB CONTENTS */}
           <div className="space-y-4">
+            {activeTab === 'quizzes' && (
+              <DailyCommunityQuizPanel
+                communityId={selectedComm.id}
+                communityName={selectedComm.displayName || selectedComm.name}
+                currentUserId={currentUser.id}
+                shareUrl={`${window.location.origin}/community/${encodeURIComponent(selectedComm.slug)}?tab=quizzes`}
+              />
+            )}
+            {activeTab === 'about' && (
+              <section className={`rounded-2xl border p-5 sm:p-6 ${darkMode ? 'border-white/10 bg-[#111118]' : 'border-slate-200 bg-white'}`}>
+                <h3 className={`text-lg font-black ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  About {selectedComm.displayName || selectedComm.name}
+                </h3>
+                <p className={`mt-2 text-sm leading-6 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {selectedComm.description || 'This community brings students together to learn, discuss, and grow.'}
+                </p>
+                <div className={`mt-4 flex flex-wrap gap-3 text-xs font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span>{selectedComm.memberIds.length} members</span>
+                  <span>{selectedComm.category || 'Community'}</span>
+                </div>
+              </section>
+            )}
             {activeTab === 'groups' && (
               <section className="space-y-4" data-testid="community-groups-view">
                 <div className={`relative overflow-hidden rounded-2xl border p-5 sm:p-7 ${
