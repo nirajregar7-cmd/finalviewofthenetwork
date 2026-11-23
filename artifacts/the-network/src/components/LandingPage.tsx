@@ -610,8 +610,8 @@ function IndiaMap({ onJoin }: { onJoin: () => void }) {
           className="absolute"
           style={{
             width: '62%', height: '86%', maxHeight: 440,
-            maskImage: 'url(/india-map.png)',
-            WebkitMaskImage: 'url(/india-map.png)',
+            maskImage: 'url(/india-map.svg)',
+            WebkitMaskImage: 'url(/india-map.svg)',
             maskSize: 'contain',
             WebkitMaskSize: 'contain',
             maskRepeat: 'no-repeat',
@@ -625,8 +625,8 @@ function IndiaMap({ onJoin }: { onJoin: () => void }) {
         <div
           style={{
             width: '62%', height: '86%', maxHeight: 440,
-            maskImage: 'url(/india-map.png)',
-            WebkitMaskImage: 'url(/india-map.png)',
+            maskImage: 'url(/india-map.svg)',
+            WebkitMaskImage: 'url(/india-map.svg)',
             maskSize: 'contain',
             WebkitMaskSize: 'contain',
             maskRepeat: 'no-repeat',
@@ -644,8 +644,8 @@ function IndiaMap({ onJoin }: { onJoin: () => void }) {
           className="absolute"
           style={{
             width: '62%', height: '86%', maxHeight: 440,
-            maskImage: 'url(/india-map.png)',
-            WebkitMaskImage: 'url(/india-map.png)',
+            maskImage: 'url(/india-map.svg)',
+            WebkitMaskImage: 'url(/india-map.svg)',
             maskSize: 'contain',
             WebkitMaskSize: 'contain',
             maskRepeat: 'no-repeat',
