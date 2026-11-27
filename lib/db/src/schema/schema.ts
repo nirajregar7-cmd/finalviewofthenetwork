@@ -270,6 +270,7 @@ export const dailyCommunityQuizzes = pgTable('daily_community_quizzes', {
   title: text('title').notNull(),
   description: text('description').notNull(),
   questions: jsonb('questions').notNull().default([]),
+  vocabulary: jsonb('vocabulary').notNull().default([]),
   notificationSentAt: timestamp('notification_sent_at', { withTimezone: true }),
   resultsEmailQueuedAt: timestamp('results_email_queued_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
