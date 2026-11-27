@@ -34,6 +34,11 @@ import {
   EmailDeliveryError,
 } from './email-delivery.js';
 import {
+  validateDailyCommunityQuizContent,
+  type DailyCommunityQuizQuestion,
+  type DailyCommunityVocabularyWord,
+} from './daily-community-quiz-content.js';
+import {
   consumeOtpChallenge,
   deleteOtpChallenge,
   generateOtpCode,
@@ -4660,14 +4665,6 @@ type AptitudeQuestion = {
   source: string;
 };
 
-type DailyCommunityQuizQuestion = {
-  id: string;
-  prompt: string;
-  options: string[];
-  answerIndex: number;
-  explanation: string;
-};
-
 type QuizLearningCommunitySpec = {
   id: string;
   name: string;
@@ -4760,8 +4757,8 @@ const QUIZ_LEARNING_COMMUNITIES: QuizLearningCommunitySpec[] = [
   {
     id: 'quiz-learning-english',
     name: 'English Learning Community',
-    description: 'Practice English vocabulary, grammar, reading, and communication.',
-    tags: ['english', 'english learning', 'language learning', 'learning'],
+    description: 'Learn 100 useful English words every day and practice 25 of them in a daily vocabulary quiz.',
+    tags: ['english', 'english learning', 'language learning', 'vocabulary', 'daily words', 'learning'],
     aliases: ['english learning', 'english learners', 'english learning community', 'english language', 'english conversation', 'learn english', 'spoken english'],
   },
   {
@@ -4826,6 +4823,11 @@ function matchesQuizLearningCommunity(
   });
 }
 
+function isEnglishLearningCommunity(community: typeof communities.$inferSelect): boolean {
+  const spec = QUIZ_LEARNING_COMMUNITIES.find(({ id }) => id === 'quiz-learning-english');
+  return Boolean(spec && matchesQuizLearningCommunity(community, spec));
+}
+
 async function ensureQuizLearningCommunities() {
   let allCommunities = await db.select().from(communities);
   for (const spec of QUIZ_LEARNING_COMMUNITIES) {
@@ -4852,6 +4854,37 @@ async function ensureQuizLearningCommunities() {
     }
   }
   return allCommunities;
+}
+
+async function ensureEnglishLearningCommunity() {
+  const spec = QUIZ_LEARNING_COMMUNITIES.find(({ id }) => id === 'quiz-learning-english');
+  if (!spec) throw new Error('English learning community configuration is missing.');
+
+  let allCommunities = await db.select().from(communities);
+  const existing = allCommunities.find((community) => matchesQuizLearningCommunity(community, spec));
+  if (existing) return existing;
+
+  const [created] = await db.insert(communities).values({
+    id: spec.id,
+    name: spec.name,
+    description: spec.description,
+    icon: 'BookOpen',
+    memberIds: [],
+    tags: spec.tags,
+    category: 'Interest',
+    threads: [],
+    resources: [],
+    polls: [],
+    creatorId: 'system',
+    adminIds: [],
+    blockedMemberIds: [],
+  }).onConflictDoNothing({ target: communities.id }).returning();
+  if (created) return created;
+
+  allCommunities = await db.select().from(communities);
+  const createdConcurrently = allCommunities.find((community) => matchesQuizLearningCommunity(community, spec));
+  if (!createdConcurrently) throw new Error('English learning community could not be created.');
+  return createdConcurrently;
 }
 
 function isLearningCommunity(community: typeof communities.$inferSelect): boolean {
@@ -4882,52 +4915,39 @@ function safeQuizErrorMessage(error: unknown): string {
     .slice(0, 500);
 }
 
-function validateDailyQuiz(value: unknown): {
-  title: string;
-  description: string;
-  questions: DailyCommunityQuizQuestion[];
-} {
-  if (!value || typeof value !== 'object') throw new DailyQuizFailure('validation', 'Gemini returned an invalid quiz object.');
-  const quiz = value as Record<string, unknown>;
-  if (typeof quiz.title !== 'string' || !quiz.title.trim() || quiz.title.length > 120) {
-    throw new DailyQuizFailure('validation', 'Gemini returned an invalid quiz title.');
+function validateDailyQuiz(value: unknown, community: typeof communities.$inferSelect) {
+  const isEnglish = isEnglishLearningCommunity(community);
+  try {
+    return validateDailyCommunityQuizContent(value, {
+      questionCount: isEnglish ? 25 : 10,
+      vocabularyCount: isEnglish ? 100 : 0,
+    });
+  } catch (error) {
+    throw new DailyQuizFailure(
+      'validation',
+      error instanceof Error ? error.message : 'Gemini returned invalid quiz content.',
+      { cause: error },
+    );
   }
-  if (typeof quiz.description !== 'string' || !quiz.description.trim() || quiz.description.length > 300) {
-    throw new DailyQuizFailure('validation', 'Gemini returned an invalid quiz description.');
-  }
-  if (!Array.isArray(quiz.questions) || quiz.questions.length !== 10) {
-    throw new DailyQuizFailure('validation', 'Gemini must return exactly ten quiz questions.');
-  }
+}
 
-  const questions = quiz.questions.map((item, index): DailyCommunityQuizQuestion => {
-    if (!item || typeof item !== 'object') throw new DailyQuizFailure('validation', `Gemini returned an invalid question at position ${index + 1}.`);
-    const question = item as Record<string, unknown>;
-    if (typeof question.prompt !== 'string' || !question.prompt.trim() || question.prompt.length > 500) {
-      throw new DailyQuizFailure('validation', `Gemini returned an invalid question prompt at position ${index + 1}.`);
+function validateStoredDailyQuiz(value: unknown, community: typeof communities.$inferSelect) {
+  try {
+    return validateDailyQuiz(value, community);
+  } catch (error) {
+    const stored = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+    if (isEnglishLearningCommunity(community) &&
+      Array.isArray(stored.questions) &&
+      stored.questions.length === 10 &&
+      (!Array.isArray(stored.vocabulary) || stored.vocabulary.length === 0)) {
+      try {
+        return validateDailyCommunityQuizContent(value);
+      } catch {
+        // Legacy ten-question English quizzes remain valid until the next daily quiz is generated.
+      }
     }
-    if (!Array.isArray(question.options) || question.options.length !== 4 ||
-      question.options.some((option) => typeof option !== 'string' || !option.trim() || option.length > 240) ||
-      new Set(question.options.map((option) => (option as string).trim().toLowerCase())).size !== 4) {
-      throw new DailyQuizFailure('validation', `Gemini returned invalid answer options at position ${index + 1}.`);
-    }
-    if (!Number.isInteger(question.answerIndex) || Number(question.answerIndex) < 0 || Number(question.answerIndex) > 3) {
-      throw new DailyQuizFailure('validation', `Gemini returned an invalid correct answer at position ${index + 1}.`);
-    }
-    if (typeof question.explanation !== 'string' || !question.explanation.trim() || question.explanation.length > 700) {
-      throw new DailyQuizFailure('validation', `Gemini returned an invalid explanation at position ${index + 1}.`);
-    }
-    return {
-      id: `q${index + 1}`,
-      prompt: question.prompt.trim(),
-      options: question.options.map((option) => (option as string).trim()),
-      answerIndex: Number(question.answerIndex),
-      explanation: question.explanation.trim(),
-    };
-  });
-  if (new Set(questions.map((question) => question.prompt.trim().toLowerCase())).size !== 10) {
-    throw new DailyQuizFailure('validation', 'Gemini returned duplicate quiz questions.');
+    throw error;
   }
-  return { title: quiz.title.trim(), description: quiz.description.trim(), questions };
 }
 
 async function generateDailyCommunityQuiz(
@@ -4936,6 +4956,8 @@ async function generateDailyCommunityQuiz(
 ): Promise<ReturnType<typeof validateDailyQuiz>> {
   if (!GEMINI_API_KEY) throw new DailyQuizFailure('gemini', 'GEMINI_API_KEY is not configured.');
   const tags = Array.isArray(community.tags) ? community.tags.join(', ') : '';
+  const isEnglish = isEnglishLearningCommunity(community);
+  const questionCount = isEnglish ? 25 : 10;
   let response: globalThis.Response;
   try {
     response = await fetch(
@@ -4946,27 +4968,40 @@ async function generateDailyCommunityQuiz(
           'Content-Type': 'application/json',
           'x-goog-api-key': GEMINI_API_KEY,
         },
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(isEnglish ? 90_000 : 30_000),
         body: JSON.stringify({
           contents: [{
             parts: [{
               text: [
-                'Create a short, accurate, original daily learning quiz for a student community.',
+                isEnglish
+                  ? 'Create a practical, accurate, original daily English vocabulary learning pack for an English learners community.'
+                  : 'Create a short, accurate, original daily learning quiz for a student community.',
                 `Community: ${community.name}`,
                 `Description: ${community.description}`,
                 `Category: ${community.category}`,
                 `Topics/tags: ${tags || 'infer from the community name and description'}`,
                 `Quiz date in India: ${quizDate}`,
-                'Return exactly ten distinct, student-level multiple-choice questions in English.',
-                'Each question must have exactly four concise options, one unambiguous correct answer, and a short explanation.',
+                isEnglish
+                  ? [
+                    'Return exactly 100 distinct useful English vocabulary words. For each provide word, partOfSpeech, a concise accurate definition, and one original example sentence.',
+                    'Choose words suitable for English learners, include a balanced range of useful intermediate and advanced vocabulary, and use American English spelling where variants exist.',
+                    'Return exactly 25 distinct multiple-choice questions, each testing a different word from the 100 words. Every question must include vocabularyWord matching that word exactly.',
+                    'Each question must have exactly four concise options, one unambiguous correct answer, and a short explanation. Do not reveal the answer in the question prompt.',
+                    'Return only a JSON object with title, description, vocabulary, and questions. Each vocabulary entry must have word, partOfSpeech, definition, and example. Each question must have vocabularyWord, prompt, options, answerIndex (0-3), and explanation.',
+                  ].join('\n')
+                  : [
+                    'Return exactly ten distinct, student-level multiple-choice questions in English.',
+                    'Each question must have exactly four concise options, one unambiguous correct answer, and a short explanation.',
+                    'Return only a JSON object with title, description, and questions. Each question must have prompt, options, answerIndex (0-3), and explanation.',
+                  ].join('\n'),
                 'Vary the questions from recent days; do not make up current facts or cite sources you cannot verify.',
-                'Return only a JSON object with title, description, and questions. Each question must have prompt, options, answerIndex (0-3), and explanation.',
               ].join('\n'),
             }],
           }],
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.7,
+            ...(isEnglish ? { maxOutputTokens: 12_000 } : {}),
           },
         }),
       },
@@ -5012,7 +5047,7 @@ async function generateDailyCommunityQuiz(
   } catch (error) {
     throw new DailyQuizFailure('validation', 'Gemini returned malformed quiz JSON.', { cause: error });
   }
-  return validateDailyQuiz(generated);
+  return validateDailyQuiz(generated, community);
 }
 
 async function getDailyQuizLeaderboard(quizId: string) {
@@ -5047,6 +5082,7 @@ async function notifyDailyQuizMembers(
   quizId: string,
   quizDate: string,
   title: string,
+  questionCount = 10,
 ) {
   const memberIds = Array.isArray(community.memberIds)
     ? [...new Set((community.memberIds as unknown[]).filter((id): id is string => typeof id === 'string'))]
@@ -5058,7 +5094,7 @@ async function notifyDailyQuizMembers(
     .where(inArray(users.id, memberIds));
   const pushUsers = await getDailyQuizPushUsers(memberIds);
   const notificationTitle = `🧠 Daily quiz: ${community.name}`;
-  const body = `${title} is ready for ${quizDate}. Take today's 10-question community quiz. [[community:${community.id}]] [[quiz:${quizId}]]`;
+  const body = `${title} is ready for ${quizDate}. Take today's ${questionCount}-question community quiz. [[community:${community.id}]] [[quiz:${quizId}]]`;
 
   for (let offset = 0; offset < recipients.length; offset += 20) {
     await Promise.all(recipients.slice(offset, offset + 20).map(async (recipient) => {
@@ -5073,7 +5109,7 @@ async function notifyDailyQuizMembers(
       if (notification && pushUsers.has(recipient.id)) {
         await dispatchPush(recipient.id, {
           title: notificationTitle,
-          body: `${community.name}: ${title} is ready. Take today's ten-question quiz.`,
+          body: `${community.name}: ${title} is ready. Take today's ${questionCount}-question quiz.`,
           icon: '/icons/icon-192x192.png',
           badge: '/icons/icon-72x72.png',
           tag: `community-quiz-${quizId}`,
@@ -5089,7 +5125,7 @@ async function notifyDailyQuizMembers(
     recipientEmails: recipients.map((recipient) => recipient.email),
     subject: `Today's quiz is ready in ${community.name}`,
     title: `Your ${community.name} daily quiz is ready`,
-    body: `${title}\n\nTake today's ten-question quiz and compare your score with the community leaderboard.`,
+    body: `${title}\n\nTake today's ${questionCount}-question quiz and compare your score with the community leaderboard.`,
     view: 'communities',
     params: { communityId: community.id, tab: 'quizzes' },
     context: 'daily community quiz email',
@@ -5272,6 +5308,7 @@ async function createDailyQuizForCommunity(
     title: string;
     description: string;
     questions: unknown;
+    vocabulary: unknown;
     notificationSentAt: Date | null;
   }>;
   try {
@@ -5280,6 +5317,7 @@ async function createDailyQuizForCommunity(
       title: dailyCommunityQuizzes.title,
       description: dailyCommunityQuizzes.description,
       questions: dailyCommunityQuizzes.questions,
+      vocabulary: dailyCommunityQuizzes.vocabulary,
       notificationSentAt: dailyCommunityQuizzes.notificationSentAt,
     })
       .from(dailyCommunityQuizzes)
@@ -5292,10 +5330,11 @@ async function createDailyQuizForCommunity(
     throw new DailyQuizFailure('database', 'Could not check for an existing community quiz.', { cause: error });
   }
   if (existing[0]) {
-    validateDailyQuiz(existing[0]);
+    validateStoredDailyQuiz(existing[0], community);
     if (sendNotifications && !existing[0].notificationSentAt) {
       try {
-        await notifyDailyQuizMembers(community, existing[0].id, quizDate, existing[0].title);
+        const questions = Array.isArray(existing[0].questions) ? existing[0].questions : [];
+        await notifyDailyQuizMembers(community, existing[0].id, quizDate, existing[0].title, questions.length || 10);
       } catch (error) {
         throw new DailyQuizFailure('notification', 'Quiz exists, but member notification delivery failed.', { cause: error });
       }
@@ -5320,6 +5359,7 @@ async function createDailyQuizForCommunity(
       title: generated.title,
       description: generated.description,
       questions: generated.questions,
+      vocabulary: generated.vocabulary,
     }).onConflictDoNothing({
       target: [dailyCommunityQuizzes.communityId, dailyCommunityQuizzes.quizDate],
     }).returning();
@@ -5330,7 +5370,7 @@ async function createDailyQuizForCommunity(
   if (!quiz) return 'already_exists';
   if (sendNotifications) {
     try {
-      await notifyDailyQuizMembers(community, quiz.id, quizDate, quiz.title);
+      await notifyDailyQuizMembers(community, quiz.id, quizDate, quiz.title, generated.questions.length);
     } catch (error) {
       throw new DailyQuizFailure('notification', 'Quiz was saved, but member notification delivery failed.', { cause: error });
     }
@@ -5627,6 +5667,7 @@ app.get('/api/communities/:communityId/quizzes/today', async (req, res) => {
         description: quiz.description,
         opensAt: quizWindow.opensAt.toISOString(),
         closesAt: quizWindow.closesAt.toISOString(),
+        vocabulary: Array.isArray(quiz.vocabulary) ? quiz.vocabulary as DailyCommunityVocabularyWord[] : [],
         questions: questions.map(({ answerIndex: _answerIndex, explanation: _explanation, ...question }) => question),
       },
       myAttempt,
@@ -5681,7 +5722,7 @@ app.post('/api/communities/:communityId/quizzes/:quizId/submit', async (req, res
       return res.status(400).json({ error: 'One or more submitted answers are invalid.' });
     }
     if (questions.some((question) => !Object.hasOwn(answers, question.id))) {
-      return res.status(400).json({ error: 'Answer all ten questions before submitting.' });
+      return res.status(400).json({ error: `Answer all ${questions.length} questions before submitting.` });
     }
 
     const score = questions.reduce(
@@ -5881,6 +5922,7 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
       title: string;
       description: string;
       questions: unknown;
+      vocabulary: unknown;
     }>;
     try {
       storedQuizzes = await db.select({
@@ -5888,6 +5930,7 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
         title: dailyCommunityQuizzes.title,
         description: dailyCommunityQuizzes.description,
         questions: dailyCommunityQuizzes.questions,
+        vocabulary: dailyCommunityQuizzes.vocabulary,
       })
         .from(dailyCommunityQuizzes)
         .where(and(
@@ -5913,7 +5956,7 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
         continue;
       }
       try {
-        validateDailyQuiz(stored);
+        validateStoredDailyQuiz(stored, community);
       } catch (error) {
         const existingFailure = results.find((result) =>
           result.communityId === community.id && result.status === 'failed',
@@ -5966,6 +6009,7 @@ app.post('/api/internal/community-quizzes/run', async (req, res) => {
 app.get('/api/communities', async (_req, res) => {
   try {
     await ensureAptitudeCommunity();
+    await ensureEnglishLearningCommunity();
     const all = await db.select().from(communities).orderBy(communities.createdAt);
     const normalized = await Promise.all(all.map(ensureCommunityHeadAdmin));
     return res.json(normalized.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })));
@@ -11248,6 +11292,7 @@ await pool.query(`
     duration_seconds integer NOT NULL DEFAULT 900,
     max_marks integer NOT NULL DEFAULT 15,
     questions jsonb NOT NULL DEFAULT '[]',
+    vocabulary jsonb NOT NULL DEFAULT '[]',
     source_note text NOT NULL DEFAULT '',
     created_at timestamptz NOT NULL DEFAULT now()
   );
@@ -11279,6 +11324,8 @@ await pool.query(`
   );
   ALTER TABLE daily_community_quizzes
     ADD COLUMN IF NOT EXISTS notification_sent_at timestamptz;
+  ALTER TABLE daily_community_quizzes
+    ADD COLUMN IF NOT EXISTS vocabulary jsonb NOT NULL DEFAULT '[]';
   ALTER TABLE daily_community_quizzes
     ADD COLUMN IF NOT EXISTS results_email_queued_at timestamptz;
   CREATE INDEX IF NOT EXISTS daily_community_quizzes_date_idx

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Award, Check, CheckCircle2, CircleHelp, Copy, Loader2, RotateCw, Share2, Trophy } from 'lucide-react';
+import { AlertCircle, Award, BookOpen, Check, CheckCircle2, CircleHelp, Copy, Loader2, RotateCw, Share2, Trophy } from 'lucide-react';
 import { api } from '../../api';
 
 type QuizQuestion = {
@@ -39,6 +39,12 @@ type DailyQuiz = {
   opensAt?: string;
   closesAt?: string;
   questions: QuizQuestion[];
+  vocabulary?: Array<{
+    word: string;
+    partOfSpeech: string;
+    definition: string;
+    example: string;
+  }>;
 };
 
 type QuizResponse = {
@@ -179,7 +185,7 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
         </div>
         <h2 className="mt-4 text-base font-black text-slate-900">Today’s quiz is being prepared</h2>
         <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-500">
-          A fresh ten-question quiz is scheduled for midnight IST every day. Check back soon.
+          A fresh quiz is scheduled for midnight IST every day. Check back soon.
         </p>
         {error && <p className="mt-3 text-xs font-semibold text-rose-600" role="alert">{error}</p>}
         <button type="button" onClick={() => void loadQuiz()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">
@@ -190,6 +196,7 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
   }
 
   const attempt = data.myAttempt;
+  const questionCount = data.quiz.questions.length;
   const reviewByQuestion = new Map((attempt?.review || []).map((item) => [item.id, item]));
   const allAnswered = data.quiz.questions.every((question) => answers[question.id] !== undefined);
   const quizClosesAt = data.quiz.closesAt
@@ -210,7 +217,7 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-100">
             <Award className="h-3.5 w-3.5" /> Daily quiz · {data.quiz.date}
           </div>
-          <span className="text-[10px] font-bold text-indigo-100">10 questions · 1 point each</span>
+          <span className="text-[10px] font-bold text-indigo-100">{questionCount} questions · 1 point each</span>
         </div>
         <h2 className="mt-3 text-xl font-black tracking-tight">{data.quiz.title}</h2>
         <p className="mt-2 max-w-2xl text-xs leading-5 text-indigo-100">{data.quiz.description}</p>
@@ -247,6 +254,30 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
         </p>
         {shareNotice && <p className="mt-2 text-[11px] font-semibold text-white" role="status">{shareNotice}</p>}
       </div>
+
+      {data.quiz.vocabulary && data.quiz.vocabulary.length > 0 && (
+        <section className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-xs" aria-label="Today's English vocabulary">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-100 bg-sky-50 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-sky-700" />
+              <h3 className="text-sm font-black text-sky-950">100 English words for today</h3>
+            </div>
+            <span className="text-[10px] font-bold text-sky-700">{data.quiz.vocabulary.length} words · {data.quiz.date}</span>
+          </div>
+          <ol className="grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3">
+            {data.quiz.vocabulary.map((entry, index) => (
+              <li key={`${entry.word}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-xs font-black text-slate-900">{index + 1}. {entry.word}</span>
+                  <span className="text-[10px] font-semibold italic text-sky-700">{entry.partOfSpeech}</span>
+                </div>
+                <p className="mt-1 text-[11px] leading-4 text-slate-700">{entry.definition}</p>
+                <p className="mt-1 text-[10px] leading-4 text-slate-500">{entry.example}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {attempt ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5" aria-live="polite">
@@ -319,7 +350,7 @@ export function DailyCommunityQuizPanel({ communityId, communityName, currentUse
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             Submit daily quiz
           </button>
-          {!allAnswered && <p className="text-[11px] text-slate-500">Choose one answer for all ten questions to submit.</p>}
+          {!allAnswered && <p className="text-[11px] text-slate-500">Choose one answer for all {questionCount} questions to submit.</p>}
         </div>
       )}
 
